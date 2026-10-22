@@ -115,6 +115,24 @@ namespace CozyFishing
         }
 
         Label moneyLbl;
+        // มุมบุคคลที่หนึ่งถือปลาโชว์อยู่: การ์ดย้ายลงล่าง พื้นหลังจางลง ไม่ต้องมีรูปปลาในการ์ด (เห็นตัวจริงตรงหน้า)
+        bool showcase3D;
+        public bool Showcase3D
+        {
+            get => showcase3D;
+            set
+            {
+                if (showcase3D == value || card == null) return;
+                showcase3D = value;
+                card.style.justifyContent = value ? Justify.FlexEnd : Justify.Center;
+                card.style.alignItems = value ? Align.FlexEnd : Align.Center;        // การ์ดชิดขวา เว้นซ้ายให้มือกับปลา
+                card.style.paddingRight = value ? 18 : 0;
+                card.ElementAt(0).style.maxWidth = value ? Length.Percent(58) : new StyleLength(980);
+                card.style.paddingBottom = value ? 24 : 0;
+                card.style.backgroundColor = new Color(0.02f, 0.03f, 0.04f, value ? 0.12f : 0.55f);
+                if (value) cardImg.style.display = DisplayStyle.None;
+            }
+        }
         VisualElement actIco;
         // ไอคอนเล็ก (Resources/UI/Icons/<name>.png)
         static VisualElement Ico(VisualElement parent, string name, float size)
@@ -503,7 +521,7 @@ namespace CozyFishing
             // ภาพถ่ายปลาจริงคมกว่าภาพเรนเดอร์ · ไม่มีภาพถ่ายค่อยใช้ภาพเรนเดอร์โมเดล
             if (sp != null && sp.Photo != null) cardImg.style.backgroundImage = Background.FromTexture2D(sp.Photo);
             else cardImg.style.backgroundImage = image is RenderTexture rt ? Background.FromRenderTexture(rt) : default;
-            cardImg.style.display = image != null || sp?.Photo != null ? DisplayStyle.Flex : DisplayStyle.None;
+            cardImg.style.display = !showcase3D && (image != null || sp?.Photo != null) ? DisplayStyle.Flex : DisplayStyle.None;
             cardNew.style.display = isNew ? DisplayStyle.Flex : DisplayStyle.None;
             if (dexCount != null) dexCount.text = $"{FishDex.Discovered}/{DexTotal}";
             cardName.text = sp.name;

@@ -15,17 +15,20 @@ namespace CozyFishing
         public void Init(IWorld w, FishingController f, CameraRig r)
         {
             world = w; fishing = f; rig = r;
-            // ผิวน้ำมองจากใต้น้ำ: ใช้ mesh เดียวกับผิวน้ำ วัสดุอีกแบบ (เปิดเฉพาะตอนดำน้ำ)
+            // ผิวน้ำมองจากใต้น้ำ: แผ่นใหญ่ระดับผิวน้ำตามกล้องไป (mesh ผิวน้ำของบางด่านเล็ก มองไกลแล้วทะลุเห็นฟ้า) · ตลิ่งที่สูงกว่าน้ำบังส่วนเกินเอง
+            Material waterMat = null;
             foreach (var mr in FindObjectsByType<MeshRenderer>(FindObjectsSortMode.None))
+                if (mr.sharedMaterial != null && mr.sharedMaterial.shader != null && mr.sharedMaterial.shader.name == "CozyFishing/Water") { waterMat = mr.sharedMaterial; break; }
+            if (waterMat != null)
             {
-                var m = mr.sharedMaterial;
-                if (m == null || m.shader == null || m.shader.name != "CozyFishing/Water") continue;
-                var under = new GameObject("WaterUnderside"); unders.Add(under);   // ทุกผิวน้ำในฉาก (บ้านมีทั้งบ่อและน้ำในนา)
-                under.transform.SetPositionAndRotation(mr.transform.position, mr.transform.rotation); under.transform.localScale = mr.transform.lossyScale;
-                under.AddComponent<MeshFilter>().sharedMesh = mr.GetComponent<MeshFilter>().sharedMesh;
+                var under = new GameObject("WaterUnderside"); unders.Add(under);
+                var q = new Mesh { name = "UnderQuad" };
+                q.SetVertices(new[] { new Vector3(-200, 0, -200), new Vector3(-200, 0, 200), new Vector3(200, 0, 200), new Vector3(200, 0, -200) });
+                q.SetTriangles(new[] { 0, 1, 2, 0, 2, 3 }, 0); q.RecalculateNormals(); q.bounds = new Bounds(Vector3.zero, new Vector3(400, 1, 400));
+                under.AddComponent<MeshFilter>().sharedMesh = q;
                 var ur = under.AddComponent<MeshRenderer>(); ur.sharedMaterial = new Material(Resources.Load<Material>("Water/WaterUnder")); ur.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-                var deep = m.HasProperty("_Deep") ? m.GetColor("_Deep") : new Color(0.2f, 0.35f, 0.3f);
-                var shallow = m.HasProperty("_Shallow") ? m.GetColor("_Shallow") : new Color(0.6f, 0.7f, 0.6f);
+                var deep = waterMat.HasProperty("_Deep") ? waterMat.GetColor("_Deep") : new Color(0.2f, 0.35f, 0.3f);
+                var shallow = waterMat.HasProperty("_Shallow") ? waterMat.GetColor("_Shallow") : new Color(0.6f, 0.7f, 0.6f);
                 fogColor = Color.Lerp(deep, shallow, 0.35f);
                 ur.sharedMaterial.SetColor("_Tint", Color.Lerp(shallow, Color.white, 0.3f));
                 under.SetActive(false);
@@ -77,6 +80,7 @@ namespace CozyFishing
             bait.transform.position = b; bait.transform.rotation = Quaternion.Euler(Mathf.Sin(Time.time * 3) * 25, Time.time * 20, 90);
             leader.SetPosition(0, bob); leader.SetPosition(1, b);
             motes.transform.position = Camera.main ? Camera.main.transform.position + Camera.main.transform.forward * 1.2f : b;
+            foreach (var u in unders) u.transform.position = new Vector3(cam.x, world.WaterY, cam.z);
         }
 
         bool FindCam(Vector3 b, Vector3 d, Vector3 right, out Vector3 cam)

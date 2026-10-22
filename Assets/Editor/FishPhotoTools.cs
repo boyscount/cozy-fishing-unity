@@ -54,6 +54,18 @@ public static class FishPhotoTools
         var mp = $"{wd}/Mote.mat";
         if (AssetDatabase.LoadAssetAtPath<Material>(mp) == null && src != null) AssetDatabase.CreateAsset(new Material(src), mp);
         foreach (var m in new[] { bait, line }) EditorUtility.SetDirty(m);
+        // คันเบ็ด (HandIK สร้างตอนเล่น): ไม้ก๊อก · โลหะ · ตัวคันกราไฟต์
+        Directory.CreateDirectory("Assets/Game/Resources/Rod");
+        Material RodMat(string name, Color c, float smooth, float metal)
+        {
+            var p = $"Assets/Game/Resources/Rod/{name}.mat"; var m = AssetDatabase.LoadAssetAtPath<Material>(p);
+            if (m == null) { m = new Material(Shader.Find("Universal Render Pipeline/Lit")); AssetDatabase.CreateAsset(m, p); }
+            m.SetColor("_BaseColor", c); m.SetFloat("_Smoothness", smooth); m.SetFloat("_Metallic", metal); EditorUtility.SetDirty(m);
+            return m;
+        }
+        RodMat("Cork", new Color(0.72f, 0.56f, 0.38f), 0.2f, 0);
+        RodMat("Metal", new Color(0.75f, 0.76f, 0.78f), 0.8f, 0.9f);
+        RodMat("Blank", new Color(0.08f, 0.09f, 0.1f), 0.75f, 0.2f);
     }
 
     // ตาราง N คอลัมน์ตามความยาว · จุดในภาพหนาตามระยะห่างจากขอบ (sqrt ให้ท้องป่องโค้งมน) · หน้า-หลังแยกจุดยอดกัน

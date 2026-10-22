@@ -15,7 +15,8 @@ namespace CozyFishing
         float pitch = 35f, zoom = 1f;
         bool fixedShot; Vector3 shotPos, shotLook;
         /// มุมกล้องตายตัว (ฉากที่บ้าน) · ClearOverride กลับไปตามตัวละคร
-        public void Override(Vector3 pos, Vector3 look) { fixedShot = true; shotPos = pos; shotLook = look; transform.position = pos; transform.LookAt(look); }
+        public void Override(Vector3 pos, Vector3 look, bool sway = true) { fixedShot = true; shotSway = sway; shotPos = pos; shotLook = look; transform.position = pos; transform.LookAt(look); }
+        bool shotSway = true;   // ฉากที่บ้านลอยไปมาเบา ๆ · มุมบุคคลที่หนึ่ง/ใต้น้ำไม่ลอย
         public void ClearOverride() => fixedShot = false;
 
         public void Init(IWorld w) { world = w; cam = GetComponent<Camera>(); ViewYaw = 0; Snap(); }
@@ -36,7 +37,7 @@ namespace CozyFishing
             {
                 // ฉากที่บ้าน: กล้องลอยช้า ๆ เล็กน้อยให้ดูมีชีวิต
                 float s = Time.time * 0.15f;
-                transform.position = shotPos + new Vector3(Mathf.Sin(s) * 0.25f, Mathf.Sin(s * 1.3f) * 0.08f, 0);
+                transform.position = shotPos + (shotSway ? new Vector3(Mathf.Sin(s) * 0.25f, Mathf.Sin(s * 1.3f) * 0.08f, 0) : Vector3.zero);
                 transform.LookAt(shotLook);
                 return;
             }

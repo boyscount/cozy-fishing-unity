@@ -14,7 +14,7 @@ namespace CozyFishing
         public StoryDirector director;
         VisualElement statusBox, clockBox, homeBtn, ask, askBox, askBtns, fadeEl, dialogEl, morning, morningBody, evening, eveList, eveSum, bag, bagList;
         VisualElement fadeArt;
-        VisualElement timeIco, skyIco; Label dayTxt, tempTxt, windTxt;
+        VisualElement timeIco, skyIco, viewBtn; Label dayTxt, tempTxt, windTxt;
         Label statusTxt, clockTxt, askTxt, fadeTxt, dialogWho, dialogSay, bagTitle;
         Action<string> onMorningGo; Action onMorningPay;
         Action<bool[]> onEveningDone;
@@ -87,6 +87,14 @@ namespace CozyFishing
             tempTxt = L(r2, "28°", 22, Sub); tempTxt.style.marginLeft = 6;
             Ico(r2, "wind", 22).style.marginLeft = 14; windTxt = L(r2, "1.7", 22, Sub); windTxt.style.marginLeft = 5;
             BuildCase();
+            // ปุ่มสลับมุมกล้องตอนตกปลา: ตา = มุมบุคคลที่หนึ่ง · ตาขีดฆ่า = มุมกล้องหลังตัวละคร
+            Label vl = null;
+            viewBtn = IconButton(FirstPersonView.Enabled ? "eye" : "eye_off", new Color(0.55f, 0.75f, 0.85f), () =>
+            {
+                FirstPersonView.Enabled = !FirstPersonView.Enabled;
+                SetIco(viewBtn.ElementAt(0).ElementAt(0), FirstPersonView.Enabled ? "eye" : "eye_off");
+                Toast(FirstPersonView.Enabled ? "มุมมองบุคคลที่หนึ่ง (เห็นมือถือคันเบ็ด)" : "มุมกล้องจากด้านหลัง");
+            }, out vl);
             homeBtn = IconButton("home", new Color(0.85f, 0.55f, 0.3f), () => director?.RequestHome(), out var hl);
             hl.text = "กลับบ้าน";
 
@@ -162,6 +170,7 @@ namespace CozyFishing
         void UpdateStoryUi()
         {
             homeBtn.style.display = homeFishing && !CardOpen && !ModalOpen && fightBox.style.display != DisplayStyle.Flex ? DisplayStyle.Flex : DisplayStyle.None;   // สู้ปลาอยู่: ซ่อนไม่ให้ทับเกจ
+            viewBtn.style.display = homeFishing && !CardOpen && !ModalOpen ? DisplayStyle.Flex : DisplayStyle.None;
             caseBtn.style.display = Mystery.Started && !CardOpen && !ModalOpen ? DisplayStyle.Flex : DisplayStyle.None;
             caseBtnTxt.text = Mystery.Solved ? "ปิดคดี" : Mystery.ReadyToSolve ? "ไขคดีได้!" : $"{Mystery.CluesFound}/{Mystery.Current.clues.Length}";
             caseBtnTxt.style.color = Mystery.ReadyToSolve && !Mystery.Solved ? new Color(1f, 0.82f, 0.35f) : Color.white;

@@ -26,6 +26,12 @@ namespace CozyFishing
         public float TimeToBite => State == FishState.Waiting ? biteAt - t : -1;
         /// ชนิดปลาที่สุ่มไว้ว่าจะติดเบ็ดรอบนี้ (ขยะ = null)
         public FishSpecies HookedSpecies => fish.IsJunk ? null : fish.species;
+        /// มุมบุคคลที่หนึ่งถือปลาโชว์เอง (ไม่ให้ปลาลอยหมุนเหนือหัวแบบเดิม)
+        public bool ExternalShowcase;
+        public GameObject CaughtGo => caughtGo;
+        public Vector3 CastTarget => target;
+        public float CaughtCm => fish.cm;
+        public Vector3 AimPoint => aim != null && aim.activeSelf ? aim.transform.position : player.Pos + player.transform.forward * 8;
         bool paused;
         /// อยู่บ้าน/ระหว่างเดินทาง: หยุดระบบตกปลา ซ่อนทุ่นและสาย
         public bool Paused
@@ -177,13 +183,13 @@ namespace CozyFishing
                 case FishState.Caught:
                     float kc = Mathf.Min(1, t / 0.7f);
                     var top = player.Pos + Vector3.up * 2.4f;
-                    if (caughtGo)
+                    if (caughtGo && !ExternalShowcase)
                     {
                         caughtGo.transform.position = Vector3.Lerp(from, top, kc) + Vector3.up * Mathf.Sin(kc * Mathf.PI) * 1.2f;
                         caughtGo.transform.rotation = Quaternion.Euler(Mathf.Sin(t * 9) * 17, t * 140, Mathf.Sin(t * 12) * 14);
                     }
-                    bob = caughtGo ? caughtGo.transform.position : top;
-                    if (t > 0.9f && !hud.CardOpen && caughtGo && !cardShown) { cardShown = true; ShowCard(); }
+                    bob = caughtGo ? (ExternalShowcase ? caughtGo.transform.TransformPoint(0.48f, 0, 0) : caughtGo.transform.position) : top;   // ถือโชว์: สายผูกที่ปากปลา
+                    if (t > (ExternalShowcase ? 2.2f : 0.9f) && !hud.CardOpen && caughtGo && !cardShown) { cardShown = true; ShowCard(); }   // มุมบุคคลที่หนึ่ง: ให้ชื่นชมปลาในมือก่อนการ์ดขึ้น
                     break;
             }
             if (State != FishState.Charging) aim.SetActive(false);
@@ -252,7 +258,7 @@ namespace CozyFishing
 
         void NewBite()
         {
-            biteAt = t + (2.2f + (float)rng.NextDouble() * 5.5f) * Story.BiteMul;
+            biteAt = t + (Bot && Application.absoluteURL.Contains("fastcatch") ? 1.5f : (2.2f + (float)rng.NextDouble() * 5.5f) * Story.BiteMul);
             nibbles.Clear();
             int n = rng.Next(3);
             for (int i = 0; i < n; i++) nibbles.Add(biteAt - 0.6f - (float)rng.NextDouble() * 1.8f);
@@ -263,6 +269,7 @@ namespace CozyFishing
 
         void StartFight()
         {
+            if (Bot && !fish.IsJunk && Application.absoluteURL.Contains("fastcatch")) { OnCaught(); return; }   // ทดสอบ: ข้ามมินิเกมดึงปลา ดูฉากยกปลาโชว์เร็ว ๆ
             if (fish.IsJunk)
             {
                 var bottle = fish.junk == Mystery.BottleJunk ? Mystery.OnBottle() : null;

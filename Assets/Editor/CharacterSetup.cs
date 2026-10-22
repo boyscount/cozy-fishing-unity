@@ -58,12 +58,22 @@ public static class CharacterSetup
 
     static AnimationClip Clip(string name) => AssetDatabase.LoadAllAssetsAtPath($"{Dir}/{name}.fbx").OfType<AnimationClip>().First(c => !c.name.StartsWith("__preview__"));
 
+    // เปิด IK Pass ให้ controller ที่มีอยู่ (ไม่ต้องสร้างฉากใหม่ทั้งหมด)
+    public static void EnableIK()
+    {
+        var ac = AssetDatabase.LoadAssetAtPath<AnimatorController>(ControllerPath);
+        var layers = ac.layers; layers[0].iKPass = true; ac.layers = layers;
+        EditorUtility.SetDirty(ac); AssetDatabase.SaveAssets();
+        Debug.Log("[CharacterSetup] IK pass on");
+    }
+
     static RuntimeAnimatorController BuildController()
     {
         if (File.Exists(ControllerPath)) AssetDatabase.DeleteAsset(ControllerPath);
         var ac = AnimatorController.CreateAnimatorControllerAtPath(ControllerPath);
         ac.AddParameter("Speed", AnimatorControllerParameterType.Float);
         ac.AddParameter("Pose", AnimatorControllerParameterType.Int);
+        var layers = ac.layers; layers[0].iKPass = true; ac.layers = layers;   // มุมบุคคลที่หนึ่ง: มือซ้ายจับปลาโชว์ (HandIK)
         var sm = ac.layers[0].stateMachine;
 
         var loco = ac.CreateBlendTreeInController("Locomotion", out var tree, 0);

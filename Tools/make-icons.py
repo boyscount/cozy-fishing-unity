@@ -117,3 +117,12 @@ for a in range(4):
     d.polygon(p, fill=c)
 save(img, 'move')
 print('hud icons ok')
+
+# มุมกล้อง: ตา (บุคคลที่หนึ่ง) · ตาขีดฆ่า (กล้องหลังตัวละคร)
+def eye(d):
+    d.chord([(70, 150), (442, 470)], 200, 340, outline=c, width=W)
+    d.chord([(70, 40), (442, 360)], 20, 160, outline=c, width=W)
+    d.ellipse([(196, 196), (316, 316)], fill=c)
+img, d = canvas(); eye(d); save(img, 'eye')
+img, d = canvas(); eye(d); d.line([(100, 90), (412, 422)], fill=c, width=W + 4); save(img, 'eye_off')
+print('eye ok')

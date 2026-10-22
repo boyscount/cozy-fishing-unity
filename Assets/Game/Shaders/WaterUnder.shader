@@ -15,7 +15,7 @@ Shader "CozyFishing/WaterUnder"
             Tags { "LightMode"="UniversalForward" }
             Blend SrcAlpha OneMinusSrcAlpha
             ZWrite Off
-            Cull Front
+            Cull Off   // เปิดเฉพาะตอนดำน้ำ วาดทั้งสองหน้าไม่ต้องสนทิศของ mesh
             HLSLPROGRAM
             #pragma vertex vert
             #pragma fragment frag
@@ -54,7 +54,7 @@ Shader "CozyFishing/WaterUnder"
                 half3 col = lerp(_Deep.rgb * 1.2 + c * 0.05, sky, window);
                 col *= (_CozyDim > 0 ? _CozyDim : 1);
                 col = MixFog(col, i.fog * 0.5);
-                return half4(col, lerp(0.85, 0.7, window));
+                return half4(col, 1);   // ทึบ: มองไกลแล้วหมอกจางลงจนเห็นฟ้าทะลุไม่ได้
             }
             ENDHLSL
         }
