@@ -1,0 +1,5 @@
+ภาพสมจริงจาก Poly Haven (https://polyhaven.com) — สัญญาอนุญาต CC0 (ใช้ได้ฟรี ไม่ต้องให้เครดิต แต่ขอบคุณไว้ตรงนี้)
+ฟ้า HDRI: kloofendal_48d_partly_cloudy_puresky
+พื้นผิว PBR: leafy_grass, brown_mud_02, grass_path_3, weathered_brown_planks, bark_brown_02, thatch_roof_angled
+โมเดล: jacaranda_tree, rock_moss_set_01, boulder_01, namaqualand_boulder_02, stone_01, fern_02, shrub_02, shrub_03, shrub_04, flower_empodium, weed_plant_02
+(ดาวน์โหลดด้วย Tools/polyhaven-fetch.py · ลด polygon/ย่อพื้นผิวด้วย Tools/blender_optimize.py)

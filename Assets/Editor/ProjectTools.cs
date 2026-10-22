@@ -1,6 +1,7 @@
 // เครื่องมือสั่งงานโปรเจกต์ผ่าน batchmode (ไม่ต้องเปิดหน้าต่าง Unity)
 //   Unity.exe -batchmode -projectPath . -executeMethod ProjectTools.AddPackages
 //   Unity.exe -batchmode -projectPath . -executeMethod ProjectTools.BuildWebGL -quit
+//   Unity.exe -batchmode -projectPath . -executeMethod ProjectTools.Snapshot -quit   (ภาพฉากจากมุมกล้องเกม → Builds/snap_*.png)
 using System.IO;
 using System.Linq;
 using UnityEditor;
@@ -8,6 +9,7 @@ using UnityEditor.Build.Reporting;
 using UnityEditor.PackageManager;
 using UnityEditor.PackageManager.Requests;
 using UnityEngine;
+using UnityEditor.SceneManagement;
 
 public static class ProjectTools
 {
@@ -60,5 +62,38 @@ public static class ProjectTools
         var s = report.summary;
         Debug.Log($"[ProjectTools] build {s.result} size={s.totalSize / 1024 / 1024}MB time={s.totalTime} out={outDir}");
         EditorApplication.Exit(s.result == BuildResult.Succeeded ? 0 : 1);
+    }
+
+    // ถ่ายภาพฉากจากมุมกล้องเกม (แนวนอน + แนวตั้ง) ด้วยคุณภาพระดับเดียวกับ WebGL — ใช้เทียบภาพโดยไม่ต้อง build
+    public static void Snapshot()
+    {
+        EditorSceneManager.OpenScene(EditorBuildSettings.scenes[0].path);
+        QualitySettings.SetQualityLevel(0, true);
+        ShaderUtil.allowAsyncCompilation = false;
+        var cam = Camera.main;
+        // ต้นข้าว/หญ้าวาดตอนเล่น: เรียก Start + Update ของ FoliageRenderer ให้ส่งคำสั่งวาดก่อนถ่าย
+        var fol = Object.FindAnyObjectByType<CozyFishing.FoliageRenderer>();
+        var flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
+        if (fol != null) typeof(CozyFishing.FoliageRenderer).GetMethod("Start", flags)?.Invoke(fol, null);
+        Shader.SetGlobalVector("_CozyWind", new Vector4(3, 0.9f, 0, 0));
+        Shader.SetGlobalFloat("_CozyDim", 1);
+        var focus = new Vector3(1.5f * 0.75f, 0, -7.6f * 0.6f + 6 * 0.4f);
+        Directory.CreateDirectory("Builds");
+        foreach (var (name, w, h, k) in new[] { ("land", 1600, 900, 1f), ("port", 900, 1600, 1.6f) })
+        {
+            cam.transform.position = focus + new Vector3(0, 10.5f * k, -15f * k);
+            cam.transform.LookAt(focus + Vector3.up * 1.4f);
+            var rt = new RenderTexture(w, h, 24, RenderTextureFormat.ARGB32) { antiAliasing = 1 };
+            cam.targetTexture = rt;
+            cam.aspect = (float)w / h;
+            if (fol != null) typeof(CozyFishing.FoliageRenderer).GetMethod("Update", flags)?.Invoke(fol, null);
+            cam.Render(); cam.Render();   // รอบแรกให้ SRP Batcher อัปโหลดค่าวัสดุก่อน
+            RenderTexture.active = rt;
+            var tex = new Texture2D(w, h, TextureFormat.RGB24, false);
+            tex.ReadPixels(new Rect(0, 0, w, h), 0, 0); tex.Apply();
+            File.WriteAllBytes($"Builds/snap_{name}.png", tex.EncodeToPNG());
+            cam.targetTexture = null; RenderTexture.active = null;
+            Debug.Log($"[ProjectTools] snapshot Builds/snap_{name}.png");
+        }
     }
 }

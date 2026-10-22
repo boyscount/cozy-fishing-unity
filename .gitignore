@@ -27,3 +27,4 @@ crashlytics-build.properties
 # ฟอนต์ระบบที่ใช้ทดสอบในเครื่องเท่านั้น (ห้ามแจกในเกม)
 /Assets/LocalOnly/
 /Assets/LocalOnly.meta
+/Raw/
