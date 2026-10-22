@@ -22,6 +22,10 @@ namespace CozyFishing
         public Vector3 BobberPos => bob;
         public bool LineOut => State >= FishState.Casting && State <= FishState.Fight;
         public bool Busy => State == FishState.Strike || State == FishState.Fight || State == FishState.Caught;
+        /// วินาทีที่เหลือก่อนปลากินเหยื่อ (รอทุ่นอยู่) · -1 = ไม่ได้รอ — PondLife ใช้พาปลาว่ายมาหาเหยื่อ
+        public float TimeToBite => State == FishState.Waiting ? biteAt - t : -1;
+        /// ชนิดปลาที่สุ่มไว้ว่าจะติดเบ็ดรอบนี้ (ขยะ = null)
+        public FishSpecies HookedSpecies => fish.IsJunk ? null : fish.species;
         bool paused;
         /// อยู่บ้าน/ระหว่างเดินทาง: หยุดระบบตกปลา ซ่อนทุ่นและสาย
         public bool Paused
@@ -402,13 +406,13 @@ namespace CozyFishing
             bool touch = hud.TouchUi;
             switch (State)
             {
-                case FishState.Free: hud.Hint(touch ? "กดค้างปุ่มเหวี่ยงเพื่อเล็ง · ลากจอเพื่อหมุนกล้อง" : "คลิกค้าง / กด E ค้าง เพื่อเล็ง · ปล่อยเพื่อเหวี่ยง\nWASD เดิน · Space กระโดด · คลิกขวาลาก หมุนกล้อง · ล้อเมาส์ ซูม"); hud.ActionLabel("เหวี่ยง", false); break;
-                case FishState.Charging: hud.Hint(""); hud.ActionLabel("ปล่อย!", false); break;
-                case FishState.Casting: case FishState.Landed: case FishState.Retrieve: hud.Hint(""); hud.ActionLabel("…", false); break;
-                case FishState.Waiting: hud.Hint("รอให้ทุ่นจม… (กดเพื่อเก็บสาย)"); hud.ActionLabel("เก็บสาย", false); break;
-                case FishState.Bite: hud.Hint("ทุ่นจม! กดเลย!"); hud.ActionLabel("ดึง!", true); break;
-                case FishState.Strike: hud.Hint("กดตอนเข็มอยู่ในโซนทอง!"); hud.ActionLabel("ตีเบ็ด!", true); break;
-                case FishState.Fight: hud.Hint(touch ? "กดค้างกรอสาย · ปล่อยเมื่อใกล้แดง" : "กดค้างเพื่อกรอสาย · ปล่อยเมื่อเข็มใกล้สีแดง"); hud.ActionLabel("กรอสาย", false); break;
+                case FishState.Free: hud.Hint(touch ? "กดค้างปุ่มเหวี่ยงเพื่อเล็ง · ลากจอเพื่อหมุนกล้อง" : "คลิกค้าง / กด E ค้าง เพื่อเล็ง · ปล่อยเพื่อเหวี่ยง\nWASD เดิน · Space กระโดด · คลิกขวาลาก หมุนกล้อง · ล้อเมาส์ ซูม"); hud.ActionLabel("", false, "cast"); break;
+                case FishState.Charging: hud.Hint(""); hud.ActionLabel("", true, "cast"); break;
+                case FishState.Casting: case FishState.Landed: case FishState.Retrieve: hud.Hint(""); hud.ActionLabel("", false, "wait"); break;
+                case FishState.Waiting: hud.Hint("รอให้ทุ่นจม… (กดเพื่อเก็บสาย)"); hud.ActionLabel("", false, "reelin"); break;
+                case FishState.Bite: hud.Hint("ทุ่นจม! กดเลย!"); hud.ActionLabel("ดึง!", true, "hook"); break;
+                case FishState.Strike: hud.Hint("กดตอนเข็มอยู่ในโซนทอง!"); hud.ActionLabel("ตีเบ็ด!", true, "strike"); break;
+                case FishState.Fight: hud.Hint(touch ? "กดค้างกรอสาย · ปล่อยเมื่อใกล้แดง" : "กดค้างเพื่อกรอสาย · ปล่อยเมื่อเข็มใกล้สีแดง"); hud.ActionLabel("", false, "reel"); break;
                 default: hud.Hint(""); break;
             }
             hud.Power(State == FishState.Charging ? charge : -1);
@@ -419,9 +423,31 @@ namespace CozyFishing
         }
 
         // ---------- สร้างวัตถุ ----------
+        // วัสดุปลาจากภาพถ่าย (หนึ่งชิ้นต่อชนิด ใช้ซ้ำ) · ปลาหายากเรืองแสงทองจาง ๆ
+        static readonly Dictionary<string, Material> photoMats = new Dictionary<string, Material>();
+        public static Material PhotoMat(FishSpecies sp)
+        {
+            if (photoMats.TryGetValue(sp.id, out var m) && m != null) return m;
+            var baseMat = Resources.Load<Material>("Fish/FishPhoto");
+            m = new Material(baseMat) { name = "FishPhoto_" + sp.id };
+            m.SetTexture("_BaseMap", sp.Photo);
+            m.SetFloat("_Wiggle", 0.07f); m.SetFloat("_SwimSpeed", 13f);
+            if (sp.glow) m.SetColor("_EmissionColor", new Color(0.16f, 0.11f, 0.02f));
+            photoMats[sp.id] = m;
+            return m;
+        }
         // ปลาที่ตกได้: โคลนโมเดลจาก Blender แล้วย้อมสีตามชนิด
         public GameObject MakeFish(FishSpecies sp, float size)
         {
+            var mesh = sp.Photo != null ? sp.PhotoMesh : null;
+            if (mesh != null)
+            {
+                var pg = new GameObject("Fish_" + sp.id);
+                pg.AddComponent<MeshFilter>().sharedMesh = mesh;
+                pg.AddComponent<MeshRenderer>().sharedMaterial = PhotoMat(sp);
+                pg.transform.localScale = Vector3.one * size * 1.15f;
+                return pg;
+            }
             var g = Instantiate(fishTemplate);
             g.SetActive(true);
             g.transform.localScale = new Vector3(sp.shape[0], sp.shape[1], sp.shape[2]) * size;

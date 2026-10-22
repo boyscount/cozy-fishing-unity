@@ -19,6 +19,8 @@ namespace CozyFishing
             player.Init(w);
             fishing.Init(w);
             rig.Init(w);
+            gameObject.AddComponent<PondLife>().Init(w, fishing);          // ฝูงปลาว่ายใต้น้ำ
+            gameObject.AddComponent<UnderwaterView>().Init(w, fishing, rig); // มองใต้น้ำตอนรอปลากินเหยื่อ
             if (director != null) director.Begin(w);
         }
     }

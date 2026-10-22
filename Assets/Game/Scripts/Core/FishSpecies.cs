@@ -21,6 +21,33 @@ namespace CozyFishing
         public Color BellyColor => Hex(belly);
         public Color FinColor => Hex(fin);
         public static Color Hex(string h) => ColorUtility.TryParseHtmlString(h, out var c) ? c : Color.white;
+
+        // ภาพถ่ายปลาจริง (Resources/Fish/<id>.png ตัดพื้นหลังแล้ว หัวหันซ้าย) + โมเดลพองจากภาพ (<id>_mesh) — ไม่มีก็ใช้ปลาโมเดลเดิม
+        [NonSerialized] Texture2D photo; [NonSerialized] bool photoLoaded;
+        public Texture2D Photo { get { if (!photoLoaded) { photo = Resources.Load<Texture2D>("Fish/" + id); photoLoaded = true; } return photo; } }
+        public Mesh PhotoMesh => Resources.Load<Mesh>("Fish/" + id + "_mesh");
+        public string Credit => FishCredits.Get(id);
+    }
+
+    // เครดิตภาพปลา (Resources/Fish/credits.txt: id|ข้อความ) — ภาพจาก Wikimedia Commons สัญญาอนุญาตเสรี
+    public static class FishCredits
+    {
+        static Dictionary<string, string> map;
+        public static string Get(string id)
+        {
+            if (map == null)
+            {
+                map = new Dictionary<string, string>();
+                var ta = Resources.Load<TextAsset>("Fish/credits");
+                if (ta != null)
+                    foreach (var line in ta.text.Split('\n'))
+                    {
+                        int bar = line.IndexOf('|');
+                        if (bar > 0) map[line.Substring(0, bar).Trim()] = line.Substring(bar + 1).Trim();
+                    }
+            }
+            return map.TryGetValue(id, out var s) ? s : null;
+        }
     }
 
     [Serializable]

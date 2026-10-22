@@ -41,9 +41,11 @@ namespace CozyFishing
         /// เปลี่ยนไปฉาก scene · progress(0..1) ระหว่างดาวน์โหลด · fail เมื่อโหลดไม่ได้ (กลับบ้านแทน)
         public static void Go(string scene, Action<float> progress = null, Action<string> fail = null)
         {
-            if (Loading) return;
+            // ฉากใหม่เริ่มทำงาน (Start) ก่อนการโหลดรอบก่อนจะจบ → เข้าคิวไว้ ไม่งั้นคำขอหายและจอดำค้าง
+            if (Loading) { queued = (scene, progress, fail); return; }
             Inst.StartCoroutine(Inst.Run(scene, progress, fail));
         }
+        static (string scene, Action<float> progress, Action<string> fail)? queued;
 
         static string BaseUrl()
         {
@@ -106,7 +108,7 @@ namespace CozyFishing
                 if (bundle == null)
                 {
                     Debug.LogWarning($"[StageLoader] {scene}: {err}");
-                    Loading = false;
+                    Loading = false; queued = null;
                     fail?.Invoke(err);
                     yield break;
                 }
@@ -119,6 +121,7 @@ namespace CozyFishing
             if (!booted) { booted = true; CozyBootDone(); }
             if (old != null && old != loaded) old.Unload(true);   // ออกจากด่านเดิมแล้ว คืนหน่วยความจำ
             Loading = false;
+            if (queued is { } q) { queued = null; Go(q.scene, q.progress, q.fail); }
         }
 
         // ครั้งแรก (ก่อนเข้าเกม) แสดงบนจอโหลดหน้าเว็บ · หลังจากนั้นแสดงบนจอเดินทางในเกม

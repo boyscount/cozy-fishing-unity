@@ -14,6 +14,7 @@ namespace CozyFishing
         public StoryDirector director;
         VisualElement statusBox, clockBox, homeBtn, ask, askBox, askBtns, fadeEl, dialogEl, morning, morningBody, evening, eveList, eveSum, bag, bagList;
         VisualElement fadeArt;
+        VisualElement timeIco, skyIco; Label dayTxt, tempTxt, windTxt;
         Label statusTxt, clockTxt, askTxt, fadeTxt, dialogWho, dialogSay, bagTitle;
         Action<string> onMorningGo; Action onMorningPay;
         Action<bool[]> onEveningDone;
@@ -76,8 +77,15 @@ namespace CozyFishing
             statusBox = countBoxRef; statusTxt = count;
             statusBox.pickingMode = PickingMode.Position;
             statusBox.RegisterCallback<PointerDownEvent>(e => OpenBag());
-            clockBox = Box(root, Paper, 12); Abs(clockBox, 24, null, 78); Pad(clockBox, 6, 18);
-            clockTxt = L(clockBox, "06:00", 22, Ink); clockTxt.style.unityTextAlign = TextAnchor.MiddleLeft;
+            // นาฬิกา + วันที่ + อากาศ แบบไอคอน: ☀ 06:11  📅 2  /  ⛅ 28°  ༄ 1.7
+            clockBox = Box(root, Paper, 12); Abs(clockBox, 24, null, 84); Pad(clockBox, 6, 14);
+            VisualElement Row2() { var r = new VisualElement { pickingMode = PickingMode.Ignore }; r.style.flexDirection = FlexDirection.Row; r.style.alignItems = Align.Center; clockBox.Add(r); return r; }
+            var r1 = Row2(); timeIco = Ico(r1, "sun", 26);
+            clockTxt = L(r1, "06:00", 24, Ink); clockTxt.style.marginLeft = 6;
+            Ico(r1, "calendar", 22).style.marginLeft = 14; dayTxt = L(r1, "1", 24, Ink); dayTxt.style.marginLeft = 5;
+            var r2 = Row2(); r2.style.marginTop = 2; skyIco = Ico(r2, "partly", 26);
+            tempTxt = L(r2, "28°", 22, Sub); tempTxt.style.marginLeft = 6;
+            Ico(r2, "wind", 22).style.marginLeft = 14; windTxt = L(r2, "1.7", 22, Sub); windTxt.style.marginLeft = 5;
             BuildCase();
             homeBtn = IconButton("home", new Color(0.85f, 0.55f, 0.3f), () => director?.RequestHome(), out var hl);
             hl.text = "กลับบ้าน";
@@ -126,7 +134,7 @@ namespace CozyFishing
             fadeArt.style.width = 600; fadeArt.style.height = 400; fadeArt.style.maxWidth = Length.Percent(88); fadeArt.style.marginBottom = 28;
             fadeArt.style.backgroundSize = new BackgroundSize(BackgroundSizeType.Cover);
             Radius(fadeArt, 18); Border(fadeArt, 3, new Color(0.85f, 0.7f, 0.38f, 0.85f));
-            fadeEl.Add(fadeArt);
+            fadeEl.Add(fadeArt); fadeArt.style.display = DisplayStyle.None;
             fadeTxt = L(fadeEl, "", 40, new Color(0.96f, 0.93f, 0.85f)); fadeTxt.style.maxWidth = 900;
             // เริ่มฉากด้วยจอมืดเสมอ (ทุกฉากเรียก Fade(fromBlack) ตอนเริ่ม) — ไม่ให้เห็นฉากแวบก่อนจอเดินทาง
             fadeEl.style.display = DisplayStyle.Flex; fadeEl.style.opacity = 1;
@@ -163,12 +171,14 @@ namespace CozyFishing
             var s = $"{clock}|{day}|{n}|{cap}|{money}|{fishingNow}";
             if (s == lastStatus) return;
             lastStatus = s;
-            statusTxt.text = $"ข้อง {n}/{cap} · {Story.Baht(money)}";
+            statusTxt.text = $"{n}/{cap}"; moneyLbl.text = Story.Baht(money);
+            statusTxt.style.color = n >= cap ? Gold : Ink;
             var lk = Story.CurrentLuck;
             float temp = Mathf.Round(26 + 7 * Mathf.Sin(Mathf.InverseLerp(6, 18, Story.S.time) * Mathf.PI) - (lk.rain ? 4 : lk.sun < 0.6f ? 2 : 0));
             float wind = 1.2f + (1 - lk.sun) * 4.5f;
-            string sky = lk.id == "great" ? "ฟ้าใส" : lk.id == "normal" ? "มีเมฆบางส่วน" : lk.id == "slow" ? "ฟ้าครึ้ม" : "ฝนพรำ";
-            clockTxt.text = $"{clock} น. · วันที่ {day}\n{sky} · {temp:0}°C · ลม {wind:0.0} ม./วิ";
+            SetIco(skyIco, lk.id == "great" ? "sun" : lk.id == "normal" ? "partly" : lk.id == "slow" ? "cloud" : "rain");
+            SetIco(timeIco, Story.S.time >= 18.5f || Story.S.time < 5.5f ? "moon" : "sun");
+            clockTxt.text = clock; dayTxt.text = day.ToString(); tempTxt.text = $"{temp:0}°"; windTxt.text = $"{wind:0.0}";
             clockTxt.style.color = Story.S.time >= 17 ? Gold : Ink;
             homeFishing = fishingNow;
         }
