@@ -47,6 +47,7 @@ public static class ProjectTools
         PlayerSettings.WebGL.decompressionFallback = true;
         PlayerSettings.WebGL.dataCaching = true;
         PlayerSettings.WebGL.showDiagnostics = false;
+        PlayerSettings.WebGL.template = "PROJECT:Cozy";   // หน้าเว็บเต็มจอ รองรับมือถือ (Assets/WebGLTemplates/Cozy)
         PlayerSettings.SetManagedStrippingLevel(UnityEditor.Build.NamedBuildTarget.WebGL, ManagedStrippingLevel.High);
 
         var scenes = EditorBuildSettings.scenes.Where(s => s.enabled).Select(s => s.path).ToArray();
