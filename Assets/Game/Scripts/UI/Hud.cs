@@ -281,12 +281,13 @@ namespace CozyFishing
         }
 
         // ---------- สมุดสะสมปลา: แท็บตามด่าน · ตกได้แล้วเห็นรูป/ชื่อ/ตัวหนักสุด · ยังไม่เคยตก = เงาดำ "???" ----------
-        static readonly (string id, string name)[] Stages = { ("paddy", "ทุ่งนา"), ("forest", "ป่าลึก"), ("falls", "น้ำตก"), ("beach", "ชายหาด"), ("sea", "ทะเล") };
+        static (string id, string name)[] DexStages => System.Linq.Enumerable.ToArray(System.Linq.Enumerable.Select(CozyFishing.Stages.All, s => (s.id, s.name)));
+        static int DexTotal => System.Linq.Enumerable.Count(FishDatabase.All, sp => System.Linq.Enumerable.Any(CozyFishing.Stages.All, st => st.id == sp.stage));
 
         void BuildDex()
         {
             dexBtn = Box(root, Paper, 12); Abs(dexBtn, null, 24, 24); Pad(dexBtn, 8, 24); dexBtn.pickingMode = PickingMode.Position;
-            dexCount = L(dexBtn, $"สมุดปลา {FishDex.Discovered}/{FishDatabase.All.Count}", 28, Ink);
+            dexCount = L(dexBtn, $"สมุดปลา {FishDex.Discovered}/{DexTotal}", 28, Ink);
             dexBtn.RegisterCallback<PointerDownEvent>(e => OpenDex());
 
             dex = new VisualElement(); Abs(dex, 0, 0, 0, 0); dex.style.backgroundColor = new Color(0.1f, 0.16f, 0.13f, 0.6f);
@@ -297,7 +298,7 @@ namespace CozyFishing
             var close = new Button(() => { dex.style.display = DisplayStyle.None; GameInput.Blocked = false; }) { text = "ปิด" };
             StyleButton(close, Gray); head.Add(close);
             var tabs = new VisualElement { pickingMode = PickingMode.Ignore }; tabs.style.flexDirection = FlexDirection.Row; tabs.style.flexWrap = Wrap.Wrap; tabs.style.marginTop = 10; tabs.style.flexShrink = 0; book.Add(tabs);
-            foreach (var (id, name) in Stages)
+            foreach (var (id, name) in DexStages)
             {
                 var tab = new Button(() => { dexStage = id; FillDex(); }) { text = name, name = "tab-" + id };
                 StyleButton(tab, Green); tab.style.fontSize = 24; Pad(tab, 6, 18); tab.style.marginRight = 8; tab.style.marginBottom = 6;
@@ -345,7 +346,7 @@ namespace CozyFishing
         {
             dexGrid.Clear();
             int got = 0, total = 0;
-            foreach (var (id, name) in Stages)
+            foreach (var (id, name) in DexStages)
             {
                 var tab = dex.Q<Button>("tab-" + id);
                 if (tab != null) tab.style.backgroundColor = id == dexStage ? Gold : new Color(0.36f, 0.6f, 0.27f, 0.75f);
@@ -362,7 +363,7 @@ namespace CozyFishing
                 cell.Add(img);
                 L(cell, has ? sp.name : "???", 28, Ink);
                 L(cell, new string('*', 0) + $"{FishDatabase.Rarity[sp.stars]} · {sp.stars} ดาว", 20, Gold);
-                L(cell, has ? $"ได้ {FishDex.Count(sp.id)} ตัว · หนักสุด {FishDex.BestKg(sp.id):0.00} กก." : (sp.stage == "paddy" ? "ยังไม่เคยตกได้" : "ด่านนี้ยังไม่เปิด"), 20, Sub, false);
+                L(cell, has ? $"ได้ {FishDex.Count(sp.id)} ตัว · หนักสุด {FishDex.BestKg(sp.id):0.00} กก." : (CozyFishing.Stages.Unlocked(sp.stage) ? "ยังไม่เคยตกได้" : "ด่านนี้ยังไม่เปิด"), 20, Sub, false);
                 // ความลับของปลา: ปลดล็อกแล้วเห็นข้อความ · ยังไม่ปลดล็อกเห็นเงื่อนไข
                 var sec = Mystery.SecretOf(sp.id);
                 if (sec != null)
@@ -373,7 +374,7 @@ namespace CozyFishing
                 }
             }
             dexTitle.text = $"สมุดสะสมปลา · {got}/{total}";
-            dexCount.text = $"สมุดปลา {FishDex.Discovered}/{FishDatabase.All.Count}";
+            dexCount.text = $"สมุดปลา {FishDex.Discovered}/{DexTotal}";
         }
 
         // ---------- API ให้ระบบตกปลาเรียก ----------
@@ -446,7 +447,7 @@ namespace CozyFishing
             cardImg.style.backgroundImage = image is RenderTexture rt ? Background.FromRenderTexture(rt) : default;
             cardImg.style.display = image != null ? DisplayStyle.Flex : DisplayStyle.None;
             cardNew.style.display = isNew ? DisplayStyle.Flex : DisplayStyle.None;
-            if (dexCount != null) dexCount.text = $"สมุดปลา {FishDex.Discovered}/{FishDatabase.All.Count}";
+            if (dexCount != null) dexCount.text = $"สมุดปลา {FishDex.Discovered}/{DexTotal}";
             cardName.text = sp.name;
             cardStars.text = $"{FishDatabase.Rarity[sp.stars]} · {sp.stars} ดาว";
             cardKg.text = $"{c.kg:0.00} กก.";

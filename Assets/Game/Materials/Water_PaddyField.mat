@@ -35,6 +35,7 @@ Material:
     m_Colors:
     - _Deep: {r: 0.2901961, g: 0.2901961, b: 0.1882353, a: 1}
     - _Flow: {r: 0.05, g: 0.04, b: 0, a: 0}
+    - _RapidZone: {r: 0, g: 0, b: 0, a: 0}
     - _Shallow: {r: 0.72156864, g: 0.7058824, b: 0.5568628, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

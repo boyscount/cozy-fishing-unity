@@ -12,7 +12,7 @@ using UnityEngine.Rendering.Universal;
 using UnityEngine.SceneManagement;
 using UnityEngine.UIElements;
 
-public static class SceneBuilder
+public static partial class SceneBuilder
 {
     const string ModelPath = "Assets/Game/Models/assets.glb";
     const string NatureDir = "Assets/Game/Models/Nature";
@@ -236,94 +236,10 @@ public static class SceneBuilder
                 else if (fr < 0.38) MeshObj("LotusBud", budMesh, lotus, new Vector3(x + 0.2f, PaddyWorld.Water + Rf(0.1f, 0.35f), z), Rf(0, 360), Rf(0.16f, 0.22f), true);
             }
 
-        // ---------- ตัวละคร + ปลาแม่แบบ ----------
-        var fisher = Place("Fisher", 1.5f, -7.6f, 1, 0, 0);
-        var player = fisher.AddComponent<PlayerController>();
-        player.legL = FindDeep(fisher.transform, "LegL"); player.legR = FindDeep(fisher.transform, "LegR");
-        player.armL = FindDeep(fisher.transform, "ArmL"); player.armR = FindDeep(fisher.transform, "ArmR");
-        player.head = FindDeep(fisher.transform, "Head"); player.rodTip = FindDeep(fisher.transform, "RodTip");
-        // ตัวละครคนจริงจาก Mixamo (ถ้ามีไฟล์) — คันเบ็ด/หมวกงอบของโมเดลเดิมย้ายไปติดมือ/หัว
-        if (File.Exists(CharacterSetup.ModelPath)) { CharacterSetup.Configure(); player.animator = CharacterSetup.Attach(fisher); }
-        var fishTpl = Place("Fish", 0, 0, 1, 0, -50);
-        fishTpl.SetActive(false);
-
-        // ---------- แสง ฟ้า HDRI หมอก กล้อง post-processing ----------
-        var sunGo = new GameObject("Sun");
-        var sun = sunGo.AddComponent<Light>();
-        sun.type = LightType.Directional; sun.color = Hex("#ffe9cc"); sun.intensity = 2.1f; sun.shadows = LightShadows.Soft; sun.shadowStrength = 0.85f;
-        sunGo.transform.rotation = Quaternion.Euler(42, 150, 0);
-        RenderSettings.sun = sun;
-        var sky = LoadOrCreate($"{MatDir}/Sky_Kloofendal.mat", Shader.Find("Skybox/Cubemap"));
-        sky.SetTexture("_Tex", AssetDatabase.LoadAssetAtPath<Cubemap>(HdriPath));
-        sky.SetFloat("_Exposure", 1.05f); sky.SetFloat("_Rotation", 150);
-        RenderSettings.skybox = sky;
-        RenderSettings.ambientMode = AmbientMode.Skybox; RenderSettings.ambientIntensity = 1.1f;
-        RenderSettings.defaultReflectionMode = DefaultReflectionMode.Skybox; RenderSettings.defaultReflectionResolution = 256; RenderSettings.reflectionIntensity = 1;
-        RenderSettings.fog = true; RenderSettings.fogMode = FogMode.Linear; RenderSettings.fogColor = Hex("#c6d6dc");
-        RenderSettings.fogStartDistance = 35; RenderSettings.fogEndDistance = 130;
-        var camGo = new GameObject("Main Camera") { tag = "MainCamera" };
-        var cam = camGo.AddComponent<Camera>();
-        cam.fieldOfView = 40; cam.nearClipPlane = 0.3f; cam.farClipPlane = 300;
-        cam.clearFlags = CameraClearFlags.Skybox;
-        var camData = camGo.AddComponent<UniversalAdditionalCameraData>();
-        camData.renderPostProcessing = true;
-        camData.antialiasing = AntialiasingMode.SubpixelMorphologicalAntiAliasing;
-        var rig = camGo.AddComponent<CameraRig>();
-        rig.player = player;
-        var volume = new GameObject("PostFx").AddComponent<Volume>();
-        volume.isGlobal = true;
-        volume.sharedProfile = BuildPostProfile();
-
-        // ---------- ระบบเกม ----------
-        var sys = new GameObject("Game");
-        sys.AddComponent<WaterFx>();
-        var foliage = sys.AddComponent<FoliageRenderer>();
-        var gm = LoadOrCreate($"{MatDir}/Grass_Field.mat", Shader.Find("CozyFishing/Grass"));
-        gm.enableInstancing = true;
-        foliage.material = gm;
-        BuildHudPanel();
-        var hud = new GameObject("Hud").AddComponent<Hud>();
-        hud.cam = cam;
-        var fishing = sys.AddComponent<FishingController>();
-        fishing.player = player; fishing.hud = hud; fishing.fishTemplate = fishTpl;
-        // กล้องถ่ายรูปปลา (การ์ดได้ปลา + สมุดปลา) — เห็นเฉพาะเลเยอร์ 31 ที่ซ่อนใต้แผนที่ กล้องหลักไม่เห็นเลเยอร์นี้
-        var pvGo = new GameObject("FishPreview");
-        var pvCam = pvGo.AddComponent<Camera>();
-        pvCam.clearFlags = CameraClearFlags.SolidColor; pvCam.backgroundColor = new Color(0, 0, 0, 0);
-        pvCam.fieldOfView = 30; pvCam.nearClipPlane = 0.1f; pvCam.farClipPlane = 10; pvCam.cullingMask = 1 << FishPreview.Layer;
-        var pvData = pvGo.AddComponent<UniversalAdditionalCameraData>(); pvData.renderPostProcessing = false; pvData.renderShadows = false;
-        var preview = pvGo.AddComponent<FishPreview>(); preview.cam = pvCam; preview.fishing = fishing;
-        fishing.preview = preview; hud.preview = preview;
-        cam.cullingMask &= ~(1 << FishPreview.Layer);
-        // ทุ่น (แดง-ขาว) · วงเล็ง · สายเบ็ด
-        var bobber = new GameObject("Bobber");
-        Prim(PrimitiveType.Sphere, "Top", Vector3.zero, Vector3.one * 0.22f, SurfMat("BobberRed", Hex("#d23a2c"), smooth: 0.6f)).transform.SetParent(bobber.transform, false);
-        Prim(PrimitiveType.Sphere, "Bottom", new Vector3(0, -0.03f, 0), new Vector3(0.215f, 0.16f, 0.215f), SurfMat("BobberWhite", Hex("#f2f2f2"), smooth: 0.6f)).transform.SetParent(bobber.transform, false);
-        Prim(PrimitiveType.Cylinder, "Stick", new Vector3(0, 0.17f, 0), new Vector3(0.024f, 0.08f, 0.024f), SurfMat("BobberRed", Hex("#d23a2c"), smooth: 0.6f)).transform.SetParent(bobber.transform, false);
-        Prim(PrimitiveType.Sphere, "Glow", new Vector3(0, 0.26f, 0), Vector3.one * 0.056f, UnlitMat("BobberGlow", Hex("#c8ff5a"))).transform.SetParent(bobber.transform, false);
-        var aim = Prim(PrimitiveType.Cylinder, "AimRing", new Vector3(0, -50, 0), new Vector3(0.8f, 0.005f, 0.8f), UnlitMat("Aim", Color.white));
-        aim.GetComponent<Renderer>().shadowCastingMode = ShadowCastingMode.Off;
-        var line = new GameObject("FishingLine").AddComponent<LineRenderer>();
-        line.widthMultiplier = 0.014f; line.sharedMaterial = UnlitMat("Line", Hex("#f8f8f0")); line.shadowCastingMode = ShadowCastingMode.Off;
-        fishing.bobber = bobber; fishing.aim = aim; fishing.line = line;
-        rig.fishing = fishing;
-        var root = sys.AddComponent<GameRoot>();
-        root.world = world; root.player = player; root.fishing = fishing; root.rig = rig;
-        // ---------- โหมดเนื้อเรื่อง: แสงตามเวลา · หลังคารั่ว · ลำดับวัน ----------
-        var cycle = sys.AddComponent<DayCycle>(); cycle.sun = sun;
-        var director = sys.AddComponent<StoryDirector>();
-        director.fishing = fishing; director.player = player; director.rig = rig; director.hud = hud; director.sky = cycle;
-        director.roofLeak = BuildRoofLeak(hut);
-        hud.director = director; fishing.director = director; root.director = director;
-
-        EditorSceneManager.SaveScene(scene, ScenePath);
-        // อบแสงฟ้า (ambient SH + reflection) จาก HDRI — ไม่อบ lightmap
-        Lightmapping.bakedGI = false; Lightmapping.realtimeGI = false;
-        if (!Lightmapping.Bake()) Debug.LogWarning("[SceneBuilder] environment bake failed");
-        EditorSceneManager.SaveScene(scene, ScenePath);
-        EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(ScenePath, true) };
-        AssetDatabase.SaveAssets();
-        Debug.Log("[SceneBuilder] saved " + ScenePath);
+        // ---------- ตัวละคร กล้อง แสง ระบบเกม (ใช้ร่วมทุกด่าน) ----------
+        var g = BuildGameplay(world, model, new Vector3(1.5f, 0, -7.6f), new Look(), null);
+        g.director.roofLeak = BuildRoofLeak(hut);
+        SaveStage(scene, ScenePath);
     }
 
     // ---------- ตัวช่วย ----------

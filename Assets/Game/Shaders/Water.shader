@@ -15,6 +15,7 @@ Shader "CozyFishing/Water"
         _Reflect ("Sky Reflection", Range(0,1)) = 0.9
         _FoamWidth ("Shore Foam Width", Float) = 0.08
         _Flow ("Flow (xy)", Vector) = (0.05,0.04,0,0)
+        _RapidZone ("Rapids Foam (xMin, xMax, strength)", Vector) = (0,0,0,0)
     }
     SubShader
     {
@@ -36,7 +37,7 @@ Shader "CozyFishing/Water"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareOpaqueTexture.hlsl"
 
             CBUFFER_START(UnityPerMaterial)
-                float4 _Shallow, _Deep, _Flow;
+                float4 _Shallow, _Deep, _Flow, _RapidZone;
                 float _DepthScale, _Clarity, _Waves, _Refraction, _Glint, _Reflect, _FoamWidth;
             CBUFFER_END
             float4 _CozyWind;
@@ -130,6 +131,16 @@ Shader "CozyFishing/Water"
                 float fz = _FoamWidth + 0.04 * sin(p.x * 3 + p.y * 2 + t * 1.5) + n2(p * 3 + t * 0.3) * 0.05;
                 float foam = smoothstep(fz, fz * 0.3, depth0) * (0.5 + 0.5 * n2(p * 9 + t * 0.5)) * step(0.001, _FoamWidth);   // _FoamWidth = 0 ปิดฟอง (น้ำในนาตื้นมาก)
                 foam = max(foam * 0.35, saturate(rip) * 0.55);
+                // แก่งน้ำเชี่ยว: ริ้วฟองขาวยืดตามทิศน้ำไหล ขยับตามกระแส · ฟองหนาขึ้นตรงน้ำตื้น
+                if (_RapidZone.z > 0)
+                {
+                    float zone = smoothstep(_RapidZone.x, _RapidZone.x + 1.5, p.x) * smoothstep(_RapidZone.y, _RapidZone.y - 1.5, p.x);
+                    float2 fp = float2(p.x * 0.7 - t * _Flow.x * 2.2, p.y * 3.2);
+                    float streak = n2(fp) * 0.65 + n2(fp * 2.3 + 7.1) * 0.35;
+                    float shallow = 1 - smoothstep(0.15, 0.9, depth0);
+                    float rf = smoothstep(0.56 - shallow * 0.2, 0.86, streak) * zone * _RapidZone.z * 0.8;
+                    foam = max(foam, rf);
+                }
                 float dim = _CozyDim > 0 ? _CozyDim : 1;
                 col = lerp(col, (half3)0.9 * lit, foam) * dim;
 

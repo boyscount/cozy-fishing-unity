@@ -28,12 +28,14 @@ namespace CozyFishing
         public string id, title, summary;
         public (string who, string say)[] intro, solved;
         public Clue[] clues;
+        public string stage = "paddy";
         public string question; public string[] options; public int answer;
         public string wrong;
         public int rewardMoney; public bool rewardBigBasket;
     }
 
-    public class FishSecret { public string species, text, hint; }
+    // ความลับของปลา: kind = catch (ตกได้ n ตัว) · rain (ตกในวันฝน) · grill (ปิ้ง n ตัว) · heavy (ตัวหนัก ≥ kg) · dawn (ก่อน 7 โมง) · dusk (หลัง 5 โมงเย็น)
+    public class FishSecret { public string species, text, hint, kind = "catch"; public int n = 1; public float kg; }
 
     [Serializable]
     public class MysteryState
@@ -101,12 +103,19 @@ namespace CozyFishing
         // ---------- ความลับของปลา (ด่านทุ่งนา) ----------
         public static readonly FishSecret[] Secrets =
         {
-            new FishSecret { species = "kradi", hint = "ตกปลากระดี่ให้ได้ 5 ตัว", text = "ฝูงกระดี่จะว่ายวนเป็นวงกลมก่อนฝนตกเสมอ ชาวนารุ่นก่อนดูปลากระดี่แทนพยากรณ์อากาศ" },
-            new FishSecret { species = "mo", hint = "ตกปลาหมอในวันฝนพรำ", text = "ปลาหมอปีนคันนาได้จริง! มันใช้แผ่นปิดเหงือกที่มีหนามยันพื้น เดินข้ามไปบ่ออื่นตอนฝนตก" },
-            new FishSecret { species = "salit", hint = "เอาปลาสลิดกลับไปปิ้ง 3 ตัว", text = "ตัวผู้ปลาสลิดก่อ \"หวอด\" ฟองน้ำลายลอยบนผิวน้ำ แล้วเฝ้าไข่เองจนลูกฟัก" },
-            new FishSecret { species = "lai", hint = "ตกปลาไหลนาตัวหนัก 1 กก. ขึ้นไป", text = "ปลาไหลนาหายใจทางผิวหนังได้ หน้าแล้งมันฝังตัวในโคลนลึก รอดได้เป็นเดือนจนฝนแรกมา" },
-            new FishSecret { species = "chado", hint = "ตกปลาชะโดก่อน 7 โมงเช้า", text = "พ่อแม่ชะโดช่วยกันเฝ้าฝูงลูกสีส้มแดง ใครว่ายเข้าใกล้ฝูงจะพุ่งชนทันที" },
-            new FishSecret { species = "butong", hint = "ตกปลาบู่ทองให้ได้สักครั้ง", text = "ลายบนหลังบู่ทองตัวนี้คล้ายตัวอักษรเก่า อ่านได้ว่า \"อิ่ม\"… ปลาในตำนานที่คอยเฝ้าความลับของบ่อ" },
+            new FishSecret { species = "kradi", kind = "catch", n = 5, hint = "ตกปลากระดี่ให้ได้ 5 ตัว", text = "ฝูงกระดี่จะว่ายวนเป็นวงกลมก่อนฝนตกเสมอ ชาวนารุ่นก่อนดูปลากระดี่แทนพยากรณ์อากาศ" },
+            new FishSecret { species = "mo", kind = "rain", hint = "ตกปลาหมอในวันฝนพรำ", text = "ปลาหมอปีนคันนาได้จริง! มันใช้แผ่นปิดเหงือกที่มีหนามยันพื้น เดินข้ามไปบ่ออื่นตอนฝนตก" },
+            new FishSecret { species = "salit", kind = "grill", n = 3, hint = "เอาปลาสลิดกลับไปปิ้ง 3 ตัว", text = "ตัวผู้ปลาสลิดก่อ \"หวอด\" ฟองน้ำลายลอยบนผิวน้ำ แล้วเฝ้าไข่เองจนลูกฟัก" },
+            new FishSecret { species = "lai", kind = "heavy", kg = 1f, hint = "ตกปลาไหลนาตัวหนัก 1 กก. ขึ้นไป", text = "ปลาไหลนาหายใจทางผิวหนังได้ หน้าแล้งมันฝังตัวในโคลนลึก รอดได้เป็นเดือนจนฝนแรกมา" },
+            new FishSecret { species = "chado", kind = "dawn", hint = "ตกปลาชะโดก่อน 7 โมงเช้า", text = "พ่อแม่ชะโดช่วยกันเฝ้าฝูงลูกสีส้มแดง ใครว่ายเข้าใกล้ฝูงจะพุ่งชนทันที" },
+            new FishSecret { species = "butong", kind = "catch", hint = "ตกปลาบู่ทองให้ได้สักครั้ง", text = "ลายบนหลังบู่ทองตัวนี้คล้ายตัวอักษรเก่า อ่านได้ว่า \"อิ่ม\"… ปลาในตำนานที่คอยเฝ้าความลับของบ่อ" },
+            // แก่งหินตาปลา
+            new FishSecret { species = "siw_rapid", kind = "catch", n = 8, hint = "ตกปลาซิวหางกรรไกรให้ได้ 8 ตัว", text = "ฝูงซิวหางกรรไกรกระพือหางพร้อมกันเป็นสัญญาณเตือนภัย แล้วหักเลี้ยวพร้อมกันทั้งฝูงในพริบตา" },
+            new FishSecret { species = "kho", kind = "grill", n = 2, hint = "เอาปลาค้อกลับไปปิ้ง 2 ตัว", text = "ใต้ท้องปลาค้อมีปากดูด ใช้เกาะหินกลางน้ำเชี่ยวไว้ไม่ให้ถูกกระแสพัดไป" },
+            new FishSecret { species = "kang", kind = "dusk", hint = "ตกปลาก้างหลัง 5 โมงเย็น", text = "พ่อปลาก้างอมไข่ไว้ในปากจนลูกฟักเป็นตัว ช่วงนั้นมันไม่กินอะไรเลยหลายวัน" },
+            new FishSecret { species = "wian_kaeng", kind = "heavy", kg = 2.5f, hint = "ตกปลาเวียนหนัก 2.5 กก. ขึ้นไป", text = "ทุกต้นฤดูฝน ปลาเวียนตัวใหญ่ว่ายทวนน้ำกระโดดข้ามแก่งขึ้นไปวางไข่ ชาวบ้านเรียกว่า \"ปลาขึ้นแก่ง\"" },
+            new FishSecret { species = "mangkong", kind = "rain", hint = "ตกปลามังกงในวันฝนพรำ", text = "ปลามังกงรับรสด้วยหนวดทั้งแปดเส้น หาอาหารเจอได้แม้น้ำขุ่นจนมองไม่เห็นอะไรเลย" },
+            new FishSecret { species = "wian_tong", kind = "catch", hint = "ตกปลาเวียนตาทองให้ได้สักครั้ง", text = "ดวงตาสีทองของปลาเวียนเผือกสะท้อนแสงเหมือนหินตาปลา… หรือว่าตาบนหินคือรูปสลักของมันเมื่อนานมาแล้ว?" },
         };
 
         public static MysteryState M { get; private set; } = Load();
@@ -138,9 +147,9 @@ namespace CozyFishing
             hour >= c.hourFrom && hour < c.hourTo && (!c.nearSpecial || nearSpecial) && (!c.nearDock || nearDock);
 
         /// ตอนสุ่มปลา: ระหว่างตามหาเบาะแส อาจบังคับให้เจอปลาที่พาเบาะแส (เพิ่มโอกาส) หรือขวดจดหมาย · คืน null = สุ่มตามปกติ
-        public static Catch? Override(float hour, bool nearSpecial, bool nearDock, Random rng)
+        public static Catch? Override(string stage, float hour, bool nearSpecial, bool nearDock, Random rng)
         {
-            if (!Hunting) return null;
+            if (!Hunting || stage != Current.stage) return null;
             foreach (var c in Current.clues)
             {
                 if (HasClue(c.id) || !Fits(c, hour, nearSpecial, nearDock)) continue;
@@ -157,9 +166,9 @@ namespace CozyFishing
         }
 
         /// ได้ปลาขึ้นมา: ปลาตัวนี้พาเบาะแสมาไหม · คืนเบาะแสที่เพิ่งพบ (หรือ null)
-        public static Clue OnCatch(string species, float hour, bool nearSpecial, bool nearDock, Random rng)
+        public static Clue OnCatch(string stage, string species, float hour, bool nearSpecial, bool nearDock, Random rng)
         {
-            if (!Hunting) return null;
+            if (!Hunting || stage != Current.stage) return null;
             // เบาะแสที่ผูกกับชนิดปลาก่อน (เช่น บู่ทองใกล้กอบัว ต้องได้เพลงกล่อม ไม่ใช่เกล็ดทองทั่วไป)
             foreach (var c in Current.clues.OrderBy(c => string.IsNullOrEmpty(c.species) ? 1 : 0))
             {
@@ -214,7 +223,9 @@ namespace CozyFishing
             Count("catch:" + species);
             if (luck == "bad") Count("rain:" + species);
             if (hour < 7) Count("dawn:" + species);
-            if (kg >= 1f) Count("heavy:" + species);
+            if (hour >= 17) Count("dusk:" + species);
+            var def = SecretOf(species);
+            if (def != null && def.kind == "heavy" && kg >= def.kg) Count("heavy:" + species);
             var s = TryUnlock(species);
             Save();
             return s;
@@ -232,14 +243,14 @@ namespace CozyFishing
         {
             var s = SecretOf(species);
             if (s == null || SecretKnown(species)) return null;
-            bool ok = species switch
+            bool ok = s.kind switch
             {
-                "kradi" => Counter("catch:kradi") >= 5,
-                "mo" => Counter("rain:mo") >= 1,
-                "salit" => Counter("grill:salit") >= 3,
-                "lai" => Counter("heavy:lai") >= 1,
-                "chado" => Counter("dawn:chado") >= 1,
-                "butong" => Counter("catch:butong") >= 1,
+                "catch" => Counter("catch:" + species) >= s.n,
+                "rain" => Counter("rain:" + species) >= s.n,
+                "grill" => Counter("grill:" + species) >= s.n,
+                "heavy" => Counter("heavy:" + species) >= 1,
+                "dawn" => Counter("dawn:" + species) >= 1,
+                "dusk" => Counter("dusk:" + species) >= 1,
                 _ => false,
             };
             if (!ok) return null;

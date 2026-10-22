@@ -8,5 +8,8 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Game/Scenes/Paddy.unity
     guid: 1e034fc693123664594a9927149fb04b
+  - enabled: 1
+    path: Assets/Game/Scenes/Rapids.unity
+    guid: fa909801f207fc642acd6fb1cb21f641
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}

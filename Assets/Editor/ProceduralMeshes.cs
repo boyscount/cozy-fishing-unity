@@ -183,4 +183,50 @@ public static class ProceduralMeshes
         }
         return bld.Build(bud ? "LotusBud" : "LotusFlower");
     }
+
+    // กอไผ่: ลำไผ่ 9–13 ลำ โค้งออกจากกอ มีข้อปล้อง (สีเข้มกว่า) · ใบเรียวแหลมห้อยเป็นพุ่มช่วงบน
+    // submesh 0 = ลำไผ่, 1 = ใบ
+    public static Mesh Bamboo(int seed, float height)
+    {
+        var rnd = new System.Random(seed);
+        float R(float a, float b) => a + (float)rnd.NextDouble() * (b - a);
+        var bld = new Builder(2);
+        int culms = rnd.Next(9, 14);
+        for (int c = 0; c < culms; c++)
+        {
+            float az = R(0, Mathf.PI * 2), r0 = R(0, 0.45f), h = height * R(0.7f, 1.05f), lean = R(0.12f, 0.4f), rad = R(0.035f, 0.06f);
+            var dir = new Vector3(Mathf.Cos(az), 0, Mathf.Sin(az));
+            var basePos = dir * r0;
+            Vector3 P(float t) => basePos + dir * (lean * h * t * t) + Vector3.up * (h * t - lean * h * t * t * 0.25f);
+            const int Seg = 14, Sides = 6;
+            var prev = new int[Sides + 1];
+            for (int sgi = 0; sgi <= Seg; sgi++)
+            {
+                float t = sgi / (float)Seg;
+                var p = P(t);
+                bool node = sgi % 2 == 0;                                  // ข้อปล้องทุก 2 ช่วง
+                float rr = rad * (1 - t * 0.45f) * (node ? 1.12f : 1f);
+                var col = Color.Lerp(new Color(0.42f, 0.5f, 0.2f), new Color(0.62f, 0.62f, 0.3f), t) * (node ? 0.72f : 1f);
+                var cur = new int[Sides + 1];
+                for (int k = 0; k <= Sides; k++) { float a = k / (float)Sides * Mathf.PI * 2; cur[k] = bld.Add(p + new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a)) * rr, col); }
+                if (sgi > 0) for (int k = 0; k < Sides; k++) bld.Quad(0, prev[k], cur[k], prev[k + 1], cur[k + 1]);
+                prev = cur;
+            }
+            // ใบ: กลุ่มใบตามข้อช่วงบน ห้อยลงเล็กน้อย
+            int leaves = rnd.Next(26, 40);
+            for (int l = 0; l < leaves; l++)
+            {
+                float t = R(0.45f, 1f);
+                var p = P(t);
+                float la = R(0, Mathf.PI * 2), len = R(0.22f, 0.38f), w = len * 0.13f;
+                var ld = new Vector3(Mathf.Cos(la), -R(0.15f, 0.7f), Mathf.Sin(la)).normalized;
+                var side = Vector3.Cross(ld, Vector3.up).normalized * w;
+                var colA = Color.Lerp(new Color(0.18f, 0.36f, 0.1f), new Color(0.35f, 0.52f, 0.16f), R(0, 1));
+                var colB = colA * 1.25f;
+                int a0 = bld.Add(p, colA), a1 = bld.Add(p + ld * len * 0.5f + side, colB), a2 = bld.Add(p + ld * len, colB), a3 = bld.Add(p + ld * len * 0.5f - side, colB);
+                bld.Tri(1, a0, a1, a2); bld.Tri(1, a0, a2, a3);
+            }
+        }
+        return bld.Build("Bamboo");
+    }
 }

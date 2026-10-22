@@ -1,5 +1,6 @@
 using System.Collections;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace CozyFishing
 {
@@ -27,6 +28,10 @@ namespace CozyFishing
             world = w;
             // ทดสอบ: ?bot&day2 ข้ามไปเช้าวันที่ 2 (เปิดคดี) ทันทีเมื่อเริ่มเซฟใหม่
             if (FishingController.Bot && Application.absoluteURL.Contains("day2") && Story.S.day == 1 && Story.Phase == StoryPhase.New) { Story.S.day = 2; Story.Phase = StoryPhase.Morning; }
+            // หลายด่าน: บ้านอยู่ในฉากบ่อทุ่งนา · ตกปลาด่านอื่นโหลดฉากของด่านนั้น
+            bool home = roofLeak != null;
+            if (Story.Phase == StoryPhase.Fishing && Story.S.stage != w.StageId) { SceneManager.LoadScene(Stages.Current.scene); return; }
+            if (Story.Phase != StoryPhase.Fishing && !home) { SceneManager.LoadScene("Paddy"); return; }
             switch (Story.Phase)
             {
                 case StoryPhase.Fishing: StartCoroutine(ResumeFishing()); break;
@@ -80,7 +85,8 @@ namespace CozyFishing
         IEnumerator ResumeFishing()
         {
             busy = true;
-            yield return hud.Fade("บ่อปลาทุ่งนา · " + Story.FmtTime(Story.S.time), () => SetupFishing(false));
+            yield return hud.Fade(Stages.Get(world.StageId).name + " · " + Story.FmtTime(Story.S.time), () => SetupFishing(false));
+            hud.Toast($"{Stages.Get(world.StageId).name}\n{Story.CurrentLuck.text}");
             busy = false;
         }
 
@@ -91,7 +97,7 @@ namespace CozyFishing
             if (reset) { player.Pos = world.Spawn; player.Pos.y = world.StandY(player.Pos.x, player.Pos.z); player.Yaw = world.SpawnYaw; }
             rig.ClearOverride();
             rig.Snap();
-            roofLeak.SetActive(!Story.RoofFixed);
+            if (roofLeak) roofLeak.SetActive(!Story.RoofFixed);
             sky.Apply(Story.S.time, Story.CurrentLuck.sun);
             Story.Phase = StoryPhase.Fishing;
         }
@@ -111,21 +117,31 @@ namespace CozyFishing
             }
             else if (Mystery.ReadyToSolve) yield return hud.Dialog(new[] { ("ลูก", "พ่อ เบาะแสครบแล้วนะ! เปิดสมุดคดีแล้วไขปริศนากันเถอะ") });
             Story.Phase = StoryPhase.Morning;
-            bool go = false;
-            hud.ShowMorning(() => go = true, PayGoal);
-            while (!go) yield return null;
+            string dest = null;
+            hud.ShowMorning(id => dest = id, PayGoal);
+            while (dest == null) yield return null;
             warned = false; fullAsked = false;
             Story.S.time = Story.DayStart;
-            yield return hud.Fade("เดินตามคันนาไปบ่อปลาหลังบ้าน…", () => SetupFishing(true));
-            hud.Toast($"บ่อปลาทุ่งนา\n{Story.CurrentLuck.text}");
-            busy = false;
+            Story.S.stage = dest;
+            var st = Stages.Get(dest);
+            if (dest == world.StageId)
+            {
+                yield return hud.Fade(st.go, () => SetupFishing(true));
+                hud.Toast($"{st.name}\n{Story.CurrentLuck.text}");
+                busy = false;
+            }
+            else
+            {
+                Story.Phase = StoryPhase.Fishing;
+                yield return hud.Fade(st.go, () => SceneManager.LoadScene(st.scene));
+            }
         }
 
         void PayGoal()
         {
             var g = Story.CurrentGoal;
             if (g == null || !Story.PayGoal()) return;
-            roofLeak.SetActive(!Story.RoofFixed);
+            if (roofLeak) roofLeak.SetActive(!Story.RoofFixed);
             StartCoroutine(PaidLines(g));
         }
         IEnumerator PaidLines(Goal g) { yield return hud.Dialog(new[] { ("แม่", g.done), ("ลูก", "เย้! ขอบคุณนะพ่อ") }); hud.RefreshMorning(); }
@@ -159,7 +175,14 @@ namespace CozyFishing
             fishing.ResetLine();
             fishing.Paused = true;
             Story.Phase = StoryPhase.Evening;
-            yield return hud.Fade(travel ? "เดินลัดทุ่งข้าวกลับบ้าน…" : "กลับถึงบ้านแล้ว…", () => ShowHome(Mathf.Max(Story.S.time, 17.6f)));
+            if (roofLeak == null)   // ตกปลาด่านอื่นอยู่ → เดินทางกลับฉากบ้าน (บ่อทุ่งนา)
+            {
+                Story.S.stage = "paddy";
+                yield return hud.Fade(Stages.Get(world.StageId).back, () => SceneManager.LoadScene("Paddy"));
+                yield break;
+            }
+            yield return hud.Fade(travel ? Stages.Get(Story.S.stage).back : "กลับถึงบ้านแล้ว…", () => ShowHome(Mathf.Max(Story.S.time, 17.6f)));
+            Story.S.stage = "paddy";
             bool[] choice = null;
             hud.ShowEvening(c => choice = c);
             while (choice == null) yield return null;
@@ -191,7 +214,7 @@ namespace CozyFishing
             player.Yaw = Quaternion.LookRotation(new Vector3(homeCam.x, 0, homeCam.z) - homeStand).eulerAngles.y + 35;   // หันมาทางกล้องเฉียง ๆ
             player.Pose = 0;
             rig.Override(homeCam, homeLook);
-            roofLeak.SetActive(!Story.RoofFixed);
+            if (roofLeak) roofLeak.SetActive(!Story.RoofFixed);
             Story.S.time = hour;
             sky.Apply(hour >= 12 ? Mathf.Max(hour, 18.55f) : hour, Story.CurrentLuck.sun);   // มื้อเย็น: แดดอัสดงส้มต่ำ
         }

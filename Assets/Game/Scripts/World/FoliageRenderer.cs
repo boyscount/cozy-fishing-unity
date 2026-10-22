@@ -11,6 +11,7 @@ namespace CozyFishing
         public Material material;        // CozyFishing/Grass + Enable GPU Instancing
         public int seed = 808;
         public int maxGrass = 7000;
+        public StageWorld stage;          // ด่านทั่วไป: ไม่มีนาข้าว · หญ้าขึ้นบนดินที่ไม่ชันและไม่จมน้ำ
         const int Variants = 3;
         readonly Mesh[] riceMeshes = new Mesh[Variants], grassMeshes = new Mesh[Variants];
         readonly List<Matrix4x4>[] rice = new List<Matrix4x4>[Variants], grass = new List<Matrix4x4>[Variants];
@@ -33,6 +34,8 @@ namespace CozyFishing
                 rice[i] = new List<Matrix4x4>(); grass[i] = new List<Matrix4x4>();
             }
             float step = mobile ? 0.62f : 0.48f;
+            bool generic = stage != null;
+            if (!generic)
             for (float x = -40; x < 40; x += step)
                 for (float z = -26; z < 40; z += step)
                 {
@@ -44,9 +47,15 @@ namespace CozyFishing
             int target = mobile ? maxGrass / 2 : maxGrass;
             for (int t = 0, n = 0; t < target * 3 && n < target; t++)
             {
-                float x = R(-26, 26), z = R(-18, 28);
-                float h = PaddyWorld.Ground(x, z);
-                if (h < PaddyWorld.Water + 0.08f || PaddyWorld.Paddy(x, z) > 0.3f) continue;
+                var area = generic ? new Rect(stage.walkBounds.x - 6, stage.walkBounds.y - 6, stage.walkBounds.width + 12, stage.walkBounds.height + 12) : new Rect(-26, -18, 52, 46);
+                float x = R(area.xMin, area.xMax), z = R(area.yMin, area.yMax);
+                float h = generic ? stage.GroundH(x, z) : PaddyWorld.Ground(x, z);
+                if (generic)
+                {
+                    float slope = Mathf.Abs(stage.GroundH(x + 0.6f, z) - h) + Mathf.Abs(stage.GroundH(x, z + 0.6f) - h);
+                    if (h < stage.waterY + 0.08f || slope > 0.45f || stage.OnSolid(x, z)) continue;
+                }
+                else if (h < PaddyWorld.Water + 0.08f || PaddyWorld.Paddy(x, z) > 0.3f) continue;
                 float s = R(0.7f, 1.3f);
                 grass[rnd.Next(Variants)].Add(Matrix4x4.TRS(new Vector3(x, h - 0.02f, z), Quaternion.Euler(0, R(0, 360), 0), new Vector3(s, s * R(0.8f, 1.3f), s)));
                 n++;

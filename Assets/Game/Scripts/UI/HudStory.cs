@@ -14,7 +14,7 @@ namespace CozyFishing
         public StoryDirector director;
         VisualElement statusBox, clockBox, homeBtn, ask, askBox, askBtns, fadeEl, dialogEl, morning, morningBody, evening, eveList, eveSum, bag, bagList;
         Label statusTxt, clockTxt, askTxt, fadeTxt, dialogWho, dialogSay, bagTitle;
-        Action onMorningGo, onMorningPay;
+        Action<string> onMorningGo; Action onMorningPay;
         Action<bool[]> onEveningDone;
         bool[] eveGrill;
         bool dialogNext;
@@ -97,8 +97,9 @@ namespace CozyFishing
             var bclose = new Button(() => Hide(bag)) { text = "ปิด" }; StyleButton(bclose, Gray); bclose.style.alignSelf = Align.Center; bclose.style.marginTop = 12; bagBox.Add(bclose);
 
             // เช้าที่บ้าน
-            morning = Overlay(out var mBox, 760);
-            morningBody = new VisualElement { pickingMode = PickingMode.Ignore }; morningBody.style.flexShrink = 0; mBox.Add(morningBody);
+            morning = Overlay(out var mBox, 820);
+            var ms = new ScrollView(ScrollViewMode.Vertical); ms.style.flexGrow = 1; ms.style.flexShrink = 1; mBox.Add(ms);
+            morningBody = new VisualElement(); ms.Add(morningBody);
 
             // มื้อเย็น
             evening = Overlay(out var eBox, 820);
@@ -184,6 +185,15 @@ namespace CozyFishing
             if (FishingController.Bot) StartCoroutine(BotClick(ask, 1.2f, () => { Hide(ask); buttons[0].act?.Invoke(); }));
         }
 
+        // โหมดทดสอบ: ?bot&stage=rapids เปิดทางและไปด่านนั้นทันที
+        static string BotStage()
+        {
+            var url = Application.absoluteURL;
+            foreach (var st in Stages.All)
+                if (url.Contains("stage=" + st.id)) { if (!Stages.Unlocked(st.id)) Story.S.unlocked.Add(st.id); return st.id; }
+            return "paddy";
+        }
+
         IEnumerator BotClick(VisualElement panel, float delay, Action click)
         {
             yield return new WaitForSeconds(delay);
@@ -228,12 +238,12 @@ namespace CozyFishing
         }
 
         // ---------- เช้าที่บ้าน ----------
-        public void ShowMorning(Action go, Action pay)
+        public void ShowMorning(Action<string> go, Action pay)
         {
             onMorningGo = go; onMorningPay = pay;
             RefreshMorning();
             Show(morning);
-            if (FishingController.Bot) StartCoroutine(BotClick(morning, 2.5f, () => { Hide(morning); onMorningGo?.Invoke(); }));
+            if (FishingController.Bot) StartCoroutine(BotClick(morning, 2.5f, () => { Hide(morning); onMorningGo?.Invoke(BotStage()); }));
         }
 
         public void RefreshMorning()
@@ -265,9 +275,28 @@ namespace CozyFishing
             }
             else L(gb, "ทำครบทุกเป้าหมายแล้ว! ตกปลาสบาย ๆ ได้ตลอดไป", 26, Ink);
             if (!Story.RoofFixed) L(morningBody, "หลังคาบ้านยังรั่วอยู่ เมื่อคืนต้องเอาถังรองน้ำฝน…", 22, Sub, false).style.marginTop = 8;
-            var go = new Button(() => { Hide(morning); onMorningGo?.Invoke(); }) { text = "ออกไปตกปลา" };
-            StyleButton(go, Green); go.style.fontSize = 34; go.style.alignSelf = Align.Center; go.style.marginTop = 16;
-            morningBody.Add(go);
+            // เลือกที่ตกปลาวันนี้: ด่านที่เปิดแล้วไปได้เลย · ด่านถัดไปซื้อทางด้วยเงินเก็บ
+            L(morningBody, "วันนี้จะไปตกปลาที่ไหน?", 28, Ink).style.marginTop = 16;
+            foreach (var st in Stages.All)
+            {
+                bool open = Stages.Unlocked(st.id);
+                var row = Box(morningBody, Glass2, 10, false); Pad(row, 8, 12); row.style.flexDirection = FlexDirection.Row; row.style.alignItems = Align.Center; row.style.marginTop = 8;
+                var info = new VisualElement { pickingMode = PickingMode.Ignore }; info.style.flexGrow = 1; info.style.flexShrink = 1; info.style.marginRight = 10; row.Add(info);
+                var nm = L(info, st.name, 28, open ? Ink : Sub); nm.style.unityTextAlign = TextAnchor.MiddleLeft;
+                var ds = L(info, open ? st.desc : $"{st.desc} · ค่าเดินทางครั้งแรก {Story.Baht(st.price)}", 18, Sub, false); ds.style.unityTextAlign = TextAnchor.MiddleLeft;
+                var id = st.id;
+                if (open)
+                {
+                    var b = new Button(() => { Hide(morning); onMorningGo?.Invoke(id); }) { text = "ไปตกที่นี่" };
+                    StyleButton(b, Gold); row.Add(b);
+                }
+                else
+                {
+                    bool can = s.money >= st.price;
+                    var b = new Button(() => { if (Stages.Buy(id)) { Toast($"เปิดทางไป{Stages.Get(id).name}แล้ว!"); RefreshMorning(); } }) { text = $"ซื้อทาง {Story.Baht(st.price)}" };
+                    StyleButton(b, can ? Green : Gray); b.SetEnabled(can); row.Add(b);
+                }
+            }
         }
 
         // ---------- มื้อเย็น ----------

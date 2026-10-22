@@ -68,7 +68,8 @@ public static class ProjectTools
     // ถ่ายภาพฉากจากมุมกล้องเกม (แนวนอน + แนวตั้ง) ด้วยคุณภาพระดับเดียวกับ WebGL — ใช้เทียบภาพโดยไม่ต้อง build
     public static void Snapshot()
     {
-        EditorSceneManager.OpenScene(EditorBuildSettings.scenes[0].path);
+        var sceneName = System.Environment.GetEnvironmentVariable("SNAP_SCENE");
+        EditorSceneManager.OpenScene(string.IsNullOrEmpty(sceneName) ? EditorBuildSettings.scenes[0].path : $"Assets/Game/Scenes/{sceneName}.unity");
         QualitySettings.SetQualityLevel(0, true);
         ShaderUtil.allowAsyncCompilation = false;
         var cam = Camera.main;
@@ -107,11 +108,16 @@ public static class ProjectTools
                 idx++;
             }
         }
-        var focus = new Vector3(1.5f * 0.75f, 0, -7.6f * 0.6f + 6 * 0.4f);
+        var gr = Object.FindAnyObjectByType<CozyFishing.GameRoot>();
+        var iw = gr != null ? gr.world as CozyFishing.IWorld : null;
+        var f2 = iw != null ? iw.CamFocus(iw.Spawn) : new Vector2(1.125f, -2.16f);
+        var focus = new Vector3(f2.x, 0, f2.y);
+        if (player != null && iw != null) { player.transform.position = new Vector3(iw.Spawn.x, iw.StandY(iw.Spawn.x, iw.Spawn.z), iw.Spawn.z); player.transform.rotation = Quaternion.Euler(0, iw.SpawnYaw, 0); }
         Directory.CreateDirectory("Builds");
         foreach (var (name, w, h, k) in new[] { ("land", 1600, 900, 1f), ("port", 900, 1600, 1.6f), ("close", 1600, 900, 0f) })
         {
             if (k > 0) { cam.transform.position = focus + new Vector3(0, 10.5f * k, -15f * k); cam.transform.LookAt(focus + Vector3.up * 1.4f); }
+            else if (iw != null && iw.StageId != "paddy") { var sp = iw.Spawn; cam.transform.position = sp + new Vector3(-7f, 3.2f, -4.5f); cam.transform.LookAt(sp + new Vector3(3f, 1.2f, 6f)); }   // มุมต่ำมองข้ามแม่น้ำ
             else if (System.Environment.GetEnvironmentVariable("SNAP_CLOSE") == "fisher") { cam.transform.position = new Vector3(5.5f, 2.6f, -12.2f); cam.transform.LookAt(new Vector3(1.5f, 1.2f, -7.4f)); }   // ซูมดูตัวละคร
             else { cam.transform.position = new Vector3(4f, 2.2f, -11f); cam.transform.LookAt(new Vector3(10f, 3.2f, -6f)); }   // มุมต่ำดูต้นตาล/ต้นไม้/ทุ่งข้าวใกล้ ๆ
             var rt = new RenderTexture(w, h, 24, RenderTextureFormat.ARGB32) { antiAliasing = 1 };

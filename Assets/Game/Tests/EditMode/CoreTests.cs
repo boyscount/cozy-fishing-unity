@@ -9,11 +9,11 @@ namespace CozyFishing.Tests
         [Test]
         public void Loads30SpeciesWithUniqueIds()
         {
-            Assert.AreEqual(30, FishDatabase.All.Count);
-            Assert.AreEqual(30, FishDatabase.All.Select(s => s.id).Distinct().Count());
+            Assert.GreaterOrEqual(FishDatabase.All.Count, 36);
+            Assert.AreEqual(FishDatabase.All.Count, FishDatabase.All.Select(s => s.id).Distinct().Count());
         }
 
-        [TestCase("paddy"), TestCase("falls"), TestCase("forest"), TestCase("beach"), TestCase("sea")]
+        [TestCase("paddy"), TestCase("rapids"), TestCase("falls"), TestCase("forest"), TestCase("beach"), TestCase("sea")]
         public void EachStageHasSixSpeciesAndOneRare(string stage)
         {
             var l = FishDatabase.ForStage(stage).ToList();
@@ -241,8 +241,8 @@ namespace CozyFishing.Tests
         public void NoCluesBeforeTheCaseStarts()
         {
             Fresh();
-            Assert.IsNull(Mystery.OnCatch("chado", 7f, false, false, new Random(1)));
-            Assert.IsNull(Mystery.Override(7f, true, true, new Random(1)));
+            Assert.IsNull(Mystery.OnCatch("paddy", "chado", 7f, false, false, new Random(1)));
+            Assert.IsNull(Mystery.Override("paddy", 7f, true, true, new Random(1)));
         }
 
         [Test]
@@ -250,12 +250,12 @@ namespace CozyFishing.Tests
         {
             Fresh(); Mystery.Start();
             var rng = new Random(2);
-            Assert.IsNull(Mystery.OnCatch("chado", 12f, false, false, rng), "ชะโดตอนเที่ยงไม่ใช่เบาะแส");
-            Assert.AreEqual("ribbon", Mystery.OnCatch("chado", 7f, false, false, rng)?.id);
-            Assert.AreEqual("song", Mystery.OnCatch("butong", 17f, true, false, rng)?.id);
+            Assert.IsNull(Mystery.OnCatch("paddy", "chado", 12f, false, false, rng), "ชะโดตอนเที่ยงไม่ใช่เบาะแส");
+            Assert.AreEqual("ribbon", Mystery.OnCatch("paddy", "chado", 7f, false, false, rng)?.id);
+            Assert.AreEqual("song", Mystery.OnCatch("paddy", "butong", 17f, true, false, rng)?.id);
             Assert.AreEqual("letter", Mystery.OnBottle()?.id);
             Assert.AreEqual("ring", Mystery.OnGrill(new[] { new BasketFish { id = "salit", kg = 0.2f } })?.id);
-            for (int i = 0; i < 50 && !Mystery.HasClue("scale"); i++) Mystery.OnCatch("mo", 10f, true, false, rng);
+            for (int i = 0; i < 50 && !Mystery.HasClue("scale"); i++) Mystery.OnCatch("paddy", "mo", 10f, true, false, rng);
             Assert.IsTrue(Mystery.HasClue("scale"));
             Assert.IsTrue(Mystery.ReadyToSolve);
         }
@@ -286,7 +286,8 @@ namespace CozyFishing.Tests
             Mystery.OnGrill(three);
             Assert.AreEqual(1, Mystery.CheckGrillSecrets(three).Count);
             Assert.IsTrue(Mystery.SecretKnown("salit"));
-            Assert.AreEqual(6, Mystery.Secrets.Length);
+            Assert.AreEqual(12, Mystery.Secrets.Length);
+            foreach (var st in Stages.All) foreach (var sp in FishDatabase.ForStage(st.id)) Assert.IsNotNull(Mystery.SecretOf(sp.id), "ทุกปลาในด่านที่เปิดต้องมีความลับ: " + sp.id);
         }
     }
 }

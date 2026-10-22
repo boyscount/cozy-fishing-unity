@@ -228,7 +228,7 @@ namespace CozyFishing
         void Roll()
         {
             // สืบคดี: ระหว่างตามหาเบาะแส ปลาที่พาเบาะแส/ขวดจดหมาย มีโอกาสโผล่มากขึ้นเมื่ออยู่ในเงื่อนไข
-            var o = Mystery.Override(Story.S.time, NearSpecial, NearDock, rng);
+            var o = Mystery.Override(world.StageId, Story.S.time, NearSpecial, NearDock, rng);
             if (o.HasValue) { fish = o.Value; return; }
             RollNormal();
         }
@@ -300,7 +300,7 @@ namespace CozyFishing
             caughtGo.transform.position = bob;
             from = bob;
             caughtIsNew = FishDex.Record(fish.species.id, fish.kg);
-            caughtClue = Mystery.OnCatch(fish.species.id, Story.S.time, NearSpecial, NearDock, rng);
+            caughtClue = Mystery.OnCatch(world.StageId, fish.species.id, Story.S.time, NearSpecial, NearDock, rng);
             caughtSecret = Mystery.CheckCatchSecret(fish.species.id, fish.kg, Story.S.time, Story.S.luck);
             // ข้องเต็ม → ยังไม่ใส่ รอให้ผู้เล่นเลือกแลกหรือปล่อยในการ์ด
             var f = new BasketFish { id = fish.species.id, kg = fish.kg, cm = fish.cm };
