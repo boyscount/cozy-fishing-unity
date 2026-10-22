@@ -13,7 +13,7 @@ namespace CozyFishing.Tests
             Assert.AreEqual(FishDatabase.All.Count, FishDatabase.All.Select(s => s.id).Distinct().Count());
         }
 
-        [TestCase("paddy"), TestCase("rapids"), TestCase("temple"), TestCase("marsh"), TestCase("falls"), TestCase("forest"), TestCase("beach"), TestCase("sea")]
+        [TestCase("paddy"), TestCase("rapids"), TestCase("temple"), TestCase("marsh"), TestCase("houseboat"), TestCase("falls"), TestCase("forest"), TestCase("beach"), TestCase("sea")]
         public void EachStageHasSixSpeciesAndOneRare(string stage)
         {
             var l = FishDatabase.ForStage(stage).ToList();
@@ -286,7 +286,7 @@ namespace CozyFishing.Tests
             Mystery.OnGrill(three);
             Assert.AreEqual(1, Mystery.CheckGrillSecrets(three).Count);
             Assert.IsTrue(Mystery.SecretKnown("salit"));
-            Assert.AreEqual(24, Mystery.Secrets.Length);
+            Assert.AreEqual(30, Mystery.Secrets.Length);
             foreach (var st in Stages.All) foreach (var sp in FishDatabase.ForStage(st.id)) Assert.IsNotNull(Mystery.SecretOf(sp.id), "ทุกปลาในด่านที่เปิดต้องมีความลับ: " + sp.id);
         }
     }

@@ -14,7 +14,7 @@ using UnityEngine.SceneManagement;
 public static partial class SceneBuilder
 {
     // ลำดับฉากใน build (ฉากแรก = บ้าน/บ่อทุ่งนา)
-    static readonly string[] StageScenes = { "Paddy", "Rapids", "Temple", "Marsh" };
+    static readonly string[] StageScenes = { "Paddy", "Rapids", "Temple", "Marsh", "Houseboat" };
 
     public static void CreateAll()
     {
@@ -22,6 +22,7 @@ public static partial class SceneBuilder
         CreateRapids();
         CreateTemple();
         CreateMarsh();
+        CreateHouseboat();
     }
 
     // บรรยากาศแสงของแต่ละด่าน

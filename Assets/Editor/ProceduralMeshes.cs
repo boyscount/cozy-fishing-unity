@@ -414,4 +414,27 @@ public static class ProceduralMeshes
         }
         return bld.Build("Garland");
     }
+
+    // เรือพายไม้: ลำตัวโค้งรูปตัว U หัวท้ายเรียวแหลม ขอบเรือสูงขึ้นที่หัวท้าย (ใช้วัสดุสองหน้า เห็นท้องเรือด้านใน) · ยาว length ตามแกน Z
+    public static Mesh Rowboat(float length, float width, float depth)
+    {
+        var bld = new Builder(1);
+        const int N = 18, M = 10;
+        var idx = new int[N + 1, M + 1];
+        for (int i = 0; i <= N; i++)
+        {
+            float t = i / (float)N, z = (t - 0.5f) * length;
+            float w = width * 0.5f * Mathf.Pow(Mathf.Sin(t * Mathf.PI), 0.55f) + 0.01f;
+            float d = depth * Mathf.Pow(Mathf.Sin(t * Mathf.PI), 0.35f);
+            float sheer = 0.12f * (2 * t - 1) * (2 * t - 1);                     // ขอบเรือแอ่นขึ้นที่หัวท้าย
+            for (int j = 0; j <= M; j++)
+            {
+                float a = (j / (float)M - 0.5f) * Mathf.PI;                       // ข้างซ้าย → กระดูกงู → ข้างขวา
+                var col = Color.white * (0.85f + 0.15f * Mathf.Cos(a));
+                idx[i, j] = bld.Add(new Vector3(Mathf.Sin(a) * w, sheer - Mathf.Cos(a) * d, z), col);
+            }
+        }
+        for (int i = 0; i < N; i++) for (int j = 0; j < M; j++) bld.Quad(0, idx[i, j], idx[i + 1, j], idx[i, j + 1], idx[i + 1, j + 1]);
+        return bld.Build("Rowboat");
+    }
 }

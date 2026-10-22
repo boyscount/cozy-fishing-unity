@@ -32,6 +32,12 @@ Each adapted image keeps the license of its source (CC BY-SA images stay CC BY-S
 | ปลาสลาด (Bronze featherback) | [Notopterus notopterus 186193326.jpg](https://commons.wikimedia.org/wiki/File:Notopterus_notopterus_186193326.jpg) | Ong Jyh Seng | CC BY-SA 4.0 |
 | ปลาแรด (Giant gourami) | [Osphronemus_Gourami_(better).png](https://commons.wikimedia.org/wiki/File:Osphronemus_Gourami_(better).png) | Joshua Sherurcij | Attribution |
 | ปลาช่อนเผือกเจ้าที่ (Albino guardian snakehead) | [Gabus_070909_0074_rwg.jpg](https://commons.wikimedia.org/wiki/File:Gabus_070909_0074_rwg.jpg) | Wie146 | CC BY-SA 3.0 |
+| ปลาซิวหนวดยาว (Striped flying barb) | [Esomus metallicus (10.3897-BDJ.11.e100337) Figure 12.jpg](https://commons.wikimedia.org/wiki/File:Esomus_metallicus_(10.3897-BDJ.11.e100337)_Figure_12.jpg) | Aqmal-Naser et al. (2023) | CC BY 4.0 |
+| ปลาสร้อยขาว (Siamese mud carp) | [ปลาสร้อยขาว.JPG](https://commons.wikimedia.org/wiki/File:%E0%B8%9B%E0%B8%A5%E0%B8%B2%E0%B8%AA%E0%B8%A3%E0%B9%89%E0%B8%AD%E0%B8%A2%E0%B8%82%E0%B8%B2%E0%B8%A7.JPG) | BigYoi | CC BY-SA 4.0 |
+| ปลาแขยงข้างลาย (Striped dwarf catfish) | [Macrones vittatus Day 99.jpg](https://commons.wikimedia.org/wiki/File:Macrones_vittatus_Day_99.jpg) | Francis Day | Public domain |
+| ปลากระทุงเหว (Freshwater garfish) | [Xenentodon cancila (Hamilton- Buchanan).jpg](https://commons.wikimedia.org/wiki/File:Xenentodon_cancila_(Hamilton-_Buchanan).jpg) | Nilesh Heda | Public domain |
+| ปลาเค้าขาว (Wallago catfish) | [Wallago attu illustration.jpg](https://commons.wikimedia.org/wiki/File:Wallago_attu_illustration.jpg) | The Great Mule of Eupatoria | CC BY-SA 4.0 |
+| ปลากระโห้ผีแพ (Ghost giant barb) | [Cyprinidae Catlocarpio siamensis 2.jpg](https://commons.wikimedia.org/wiki/File:Cyprinidae_Catlocarpio_siamensis_2.jpg) | NasserHalaweh | CC BY-SA 4.0 |
 
 ## Other assets
 
