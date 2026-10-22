@@ -30,8 +30,13 @@ namespace CozyFishing
             if (FishingController.Bot && Application.absoluteURL.Contains("day2") && Story.S.day == 1 && Story.Phase == StoryPhase.New) { Story.S.day = 2; Story.Phase = StoryPhase.Morning; }
             // หลายด่าน: บ้านอยู่ในฉากบ่อทุ่งนา · ตกปลาด่านอื่นโหลดฉากของด่านนั้น
             bool home = roofLeak != null;
-            if (Story.Phase == StoryPhase.Fishing && Story.S.stage != w.StageId) { SceneManager.LoadScene(Stages.Current.scene); return; }
-            if (Story.Phase != StoryPhase.Fishing && !home) { SceneManager.LoadScene("Paddy"); return; }
+            if (Story.Phase == StoryPhase.Fishing && Story.S.stage != w.StageId)
+            {
+                var st = Stages.Current;
+                StageLoader.Go(st.scene, p => hud.FadeProgress(st.name, p), _ => { Story.S.stage = w.StageId; Begin(w); });   // โหลดไม่ได้ → ตกปลาบ่อบ้านแทน
+                return;
+            }
+            if (Story.Phase != StoryPhase.Fishing && !home) { StageLoader.Go("Paddy"); return; }
             switch (Story.Phase)
             {
                 case StoryPhase.Fishing: StartCoroutine(ResumeFishing()); break;
@@ -133,8 +138,17 @@ namespace CozyFishing
             else
             {
                 Story.Phase = StoryPhase.Fishing;
-                yield return hud.Fade(st.go, () => SceneManager.LoadScene(st.scene), st.Art);
+                yield return hud.Fade(st.go, () => StageLoader.Go(st.scene, p => hud.FadeProgress(st.go, p), _ => TravelFailed()), st.Art);
             }
+        }
+
+        // ดาวน์โหลดด่านไม่สำเร็จ (เน็ตหลุด) → ตกปลาบ่อหลังบ้านไปก่อน
+        void TravelFailed()
+        {
+            Story.S.stage = world.StageId;
+            SetupFishing(true);
+            hud.Toast("ทางไปด่านนั้นขาด (โหลดไม่สำเร็จ) วันนี้ตกบ่อหลังบ้านไปก่อนนะ");
+            busy = false;
         }
 
         void PayGoal()
@@ -178,7 +192,7 @@ namespace CozyFishing
             if (roofLeak == null)   // ตกปลาด่านอื่นอยู่ → เดินทางกลับฉากบ้าน (บ่อทุ่งนา)
             {
                 Story.S.stage = "paddy";
-                yield return hud.Fade(Stages.Get(world.StageId).back, () => SceneManager.LoadScene("Paddy"), Stages.Get("paddy").Art);
+                yield return hud.Fade(Stages.Get(world.StageId).back, () => StageLoader.Go("Paddy"), Stages.Get("paddy").Art);
                 yield break;
             }
             yield return hud.Fade(travel ? Stages.Get(Story.S.stage).back : "กลับถึงบ้านแล้ว…", () => ShowHome(Mathf.Max(Story.S.time, 17.6f)), Stages.Get("paddy").Art, !travel);   // !travel = เพิ่งโหลดฉากบ้านมาจากด่านอื่น

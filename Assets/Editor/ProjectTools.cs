@@ -47,22 +47,79 @@ public static class ProjectTools
         PlayerSettings.WebGL.decompressionFallback = true;
         PlayerSettings.WebGL.dataCaching = true;
         PlayerSettings.WebGL.showDiagnostics = false;
+        PlayerSettings.SplashScreen.show = false;   // ไม่ใช้โลโก้ Unity ตอนเปิด (มีจอโหลดของเกมเองแล้ว · ลดไฟล์ ~2.7MB)
         PlayerSettings.WebGL.template = "PROJECT:Cozy";   // หน้าเว็บเต็มจอ รองรับมือถือ (Assets/WebGLTemplates/Cozy)
         PlayerSettings.SetManagedStrippingLevel(UnityEditor.Build.NamedBuildTarget.WebGL, ManagedStrippingLevel.High);
+        PlayerSettings.stripEngineCode = false;   // ฉากอยู่ใน AssetBundle → ตัวตัดโค้ดมองไม่เห็นคลาสที่ฉากใช้ (เช่น Avatar ID 90) ถ้าตัดจะ error รัว ๆ
 
-        var scenes = EditorBuildSettings.scenes.Where(s => s.enabled).Select(s => s.path).ToArray();
-        if (scenes.Length == 0) { Debug.LogError("[ProjectTools] no scenes in build settings"); EditorApplication.Exit(1); return; }
+        var all = EditorBuildSettings.scenes.Where(s => s.enabled).Select(s => s.path).ToArray();
+        if (all.Length == 0) { Debug.LogError("[ProjectTools] no scenes in build settings"); EditorApplication.Exit(1); return; }
+        // ไฟล์เกมหลักมีแค่ฉาก Boot เปล่า ๆ · ทุกฉากด่าน (รวมบ้าน) เป็น AssetBundle + bundle ของใช้ร่วม (CozyFishing.StageLoader)
+        var scenes = new[] { MakeBootScene() };
         var outDir = Path.GetFullPath(Path.Combine(Application.dataPath, "..", "Builds", "WebGL"));
+        var bundleDir = Path.Combine(outDir, "Bundles");
+        if (!BuildStageBundles(all, bundleDir)) { EditorApplication.Exit(1); return; }
         var report = BuildPipeline.BuildPlayer(new BuildPlayerOptions
         {
+            assetBundleManifestPath = Path.Combine(bundleDir, "Bundles.manifest"),   // อย่าตัดคลาส engine ที่ฉากใน bundle ใช้ (เช่น Avatar/Animator)
             scenes = scenes,
             locationPathName = outDir,
             target = BuildTarget.WebGL,
-            options = BuildOptions.None,
+            options = System.Environment.GetEnvironmentVariable("CLEAN_BUILD") == "1" ? BuildOptions.CleanBuildCache : BuildOptions.None,
         });
         var s = report.summary;
+        foreach (var f in Directory.GetFiles(bundleDir).Where(f => f.EndsWith(".manifest") || Path.GetFileName(f) == "Bundles")) File.Delete(f);
         Debug.Log($"[ProjectTools] build {s.result} size={s.totalSize / 1024 / 1024}MB time={s.totalTime} out={outDir}");
+        // ขนาดแยกตามไฟล์ต้นทาง (ไว้หาว่าอะไรกินที่ใน .data)
+        var top = report.packedAssets.SelectMany(p => p.contents).GroupBy(c => c.sourceAssetPath).Select(g => (path: g.Key, kb: g.Sum(c => (long)c.packedSize) / 1024)).OrderByDescending(t => t.kb).Take(60);
+        foreach (var t in top) Debug.Log($"[ProjectTools] size {t.kb,8} KB  {t.path}");
         EditorApplication.Exit(s.result == BuildResult.Succeeded ? 0 : 1);
+    }
+
+    // ด่านละหนึ่ง bundle (ชื่อ = ชื่อฉากตัวเล็ก) + index.json เก็บแฮชไว้ให้เบราว์เซอร์แคช/โหลดใหม่เมื่อด่านเปลี่ยน
+    static bool BuildStageBundles(string[] scenePaths, string dir)
+    {
+        if (Directory.Exists(dir)) Directory.Delete(dir, true);
+        Directory.CreateDirectory(dir);
+        // ของที่ใช้ตั้งแต่ 2 ฉากขึ้นไป → bundle "common" (โหลดครั้งเดียว) ไม่งั้นแต่ละด่านจะก๊อปตัวละคร/ฟ้า/พื้นผิวไปเองทั้งชุด
+        var uses = new System.Collections.Generic.Dictionary<string, int>();
+        foreach (var sp in scenePaths)
+            foreach (var d in AssetDatabase.GetDependencies(sp, true))
+            {
+                if (d == sp || d.EndsWith(".cs") || d.EndsWith(".unity") || d.Contains("/Resources/") || d.StartsWith("Packages/com.unity.render-pipelines")) continue;
+                uses[d] = uses.TryGetValue(d, out var n) ? n + 1 : 1;
+            }
+        var shared = uses.Where(kv => kv.Value >= 2).Select(kv => kv.Key).OrderBy(k => k).ToArray();
+        var builds = scenePaths.Select(p => new AssetBundleBuild { assetBundleName = Path.GetFileNameWithoutExtension(p).ToLowerInvariant(), assetNames = new[] { p } })
+            .Concat(shared.GroupBy(CommonGroup).Select(g => new AssetBundleBuild { assetBundleName = g.Key, assetNames = g.ToArray() })).ToArray();
+        Debug.Log($"[ProjectTools] common bundle: {shared.Length} shared assets");
+        var manifest = BuildPipeline.BuildAssetBundles(dir, builds, BuildAssetBundleOptions.None, BuildTarget.WebGL);   // LZMA: ไฟล์เล็กสุด (เบราว์เซอร์แคชเป็น LZ4 ให้เอง)
+        if (manifest == null) { Debug.LogError("[ProjectTools] bundle build failed"); return false; }
+        var entries = builds.Select(b => $"\"{b.assetBundleName}\":\"{manifest.GetAssetBundleHash(b.assetBundleName)}\"");
+        File.WriteAllText(Path.Combine(dir, "index.json"), "{" + string.Join(",", entries) + "}");
+        foreach (var b in builds) Debug.Log($"[ProjectTools] bundle {b.assetBundleName} {new FileInfo(Path.Combine(dir, b.assetBundleName)).Length / 1024 / 1024}MB");
+        return true;
+    }
+
+    // แบ่งของใช้ร่วมเป็นหลายไฟล์ (ไม่ให้ไฟล์ไหนเกิน 100MB ของ GitHub): โมเดล/ท่าทาง · พื้นผิว/ภาพ · ที่เหลือ (วัสดุ shader mesh)
+    static string CommonGroup(string path)
+    {
+        var ext = Path.GetExtension(path).ToLowerInvariant();
+        if (ext == ".glb" || ext == ".gltf" || ext == ".fbx" || ext == ".anim" || ext == ".controller") return "common-models";
+        if (ext == ".jpg" || ext == ".png" || ext == ".hdr" || ext == ".exr" || ext == ".tga") return "common-textures";
+        return "common";
+    }
+
+    // ฉาก Boot: กล้องจอดำ + CozyFishing.Boot (สร้างใหม่ทุกครั้งที่ build)
+    static string MakeBootScene()
+    {
+        const string path = "Assets/Game/Scenes/Boot.unity";
+        var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+        var cam = new GameObject("Camera").AddComponent<Camera>();
+        cam.clearFlags = CameraClearFlags.SolidColor; cam.backgroundColor = new Color(0.04f, 0.06f, 0.05f);
+        new GameObject("Boot").AddComponent<CozyFishing.Boot>();
+        EditorSceneManager.SaveScene(scene, path);
+        return path;
     }
 
     // ถ่ายภาพฉากจากมุมกล้องเกม (แนวนอน + แนวตั้ง) ด้วยคุณภาพระดับเดียวกับ WebGL — ใช้เทียบภาพโดยไม่ต้อง build

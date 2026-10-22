@@ -26,9 +26,7 @@ namespace CozyFishing
         // ---------- สมุดคดี ----------
         void BuildCase()
         {
-            caseBtn = Box(root, new Color(0.24f, 0.19f, 0.34f, 0.85f), 12); Abs(caseBtn, null, 24, 84); Pad(caseBtn, 8, 24); caseBtn.pickingMode = PickingMode.Position;
-            caseBtnTxt = L(caseBtn, "สมุดคดี", 26, Color.white); Shadow(caseBtnTxt);
-            caseBtn.RegisterCallback<PointerDownEvent>(e => OpenCase());
+            caseBtn = IconButton("casebook", new Color(0.62f, 0.5f, 0.85f), OpenCase, out caseBtnTxt);
             casePanel = Overlay(out var cb, 860);
             var cs = new ScrollView(ScrollViewMode.Vertical); cs.style.flexGrow = 1; cs.style.flexShrink = 1; cb.Add(cs);
             caseBody = new VisualElement(); cs.Add(caseBody);
@@ -81,9 +79,8 @@ namespace CozyFishing
             clockBox = Box(root, Paper, 12); Abs(clockBox, 24, null, 78); Pad(clockBox, 6, 18);
             clockTxt = L(clockBox, "06:00", 22, Ink); clockTxt.style.unityTextAlign = TextAnchor.MiddleLeft;
             BuildCase();
-            homeBtn = Box(root, new Color(0.45f, 0.3f, 0.16f, 0.85f), 12); Abs(homeBtn, null, 24, 144); Pad(homeBtn, 8, 24); homeBtn.pickingMode = PickingMode.Position;
-            var hl = L(homeBtn, "กลับบ้าน", 26, Color.white); Shadow(hl);
-            homeBtn.RegisterCallback<PointerDownEvent>(e => director?.RequestHome());
+            homeBtn = IconButton("home", new Color(0.85f, 0.55f, 0.3f), () => director?.RequestHome(), out var hl);
+            hl.text = "กลับบ้าน";
 
             // หน้าต่างถาม (ปุ่มตอบได้หลายปุ่ม)
             ask = Overlay(out askBox, 640);
@@ -158,7 +155,8 @@ namespace CozyFishing
         {
             homeBtn.style.display = homeFishing && !CardOpen && !ModalOpen && fightBox.style.display != DisplayStyle.Flex ? DisplayStyle.Flex : DisplayStyle.None;   // สู้ปลาอยู่: ซ่อนไม่ให้ทับเกจ
             caseBtn.style.display = Mystery.Started && !CardOpen && !ModalOpen ? DisplayStyle.Flex : DisplayStyle.None;
-            caseBtnTxt.text = Mystery.Solved ? "สมุดคดี (ปิดคดี)" : Mystery.ReadyToSolve ? "สมุดคดี · ไขคดีได้!" : $"สมุดคดี {Mystery.CluesFound}/{Mystery.Current.clues.Length}";
+            caseBtnTxt.text = Mystery.Solved ? "ปิดคดี" : Mystery.ReadyToSolve ? "ไขคดีได้!" : $"{Mystery.CluesFound}/{Mystery.Current.clues.Length}";
+            caseBtnTxt.style.color = Mystery.ReadyToSolve && !Mystery.Solved ? new Color(1f, 0.82f, 0.35f) : Color.white;
         }
         public void SetStatus(string clock, int day, int n, int cap, int money, bool fishingNow)
         {
@@ -218,9 +216,18 @@ namespace CozyFishing
             fadeEl.style.opacity = 1;
             during?.Invoke();
             yield return new WaitForSeconds(1.1f);
+            while (StageLoader.Loading) yield return null;   // ดาวน์โหลดด่าน: จอมืดค้างไว้จนฉากใหม่ขึ้น (ฮัดนี้จะถูกลบไปพร้อมฉากเก่า)
             for (float a = 1; a > 0; a -= Time.deltaTime / 0.6f) { fadeEl.style.opacity = a; yield return null; }
             fadeEl.style.display = DisplayStyle.None;
             GameInput.Blocked = ModalOpen || CardOpen;
+        }
+
+        /// ข้อความบนจอมืดระหว่างดาวน์โหลดด่าน
+        public void FadeProgress(string text, float p)
+        {
+            if (fadeTxt == null) return;
+            fadeEl.style.display = DisplayStyle.Flex; fadeEl.style.opacity = 1;
+            fadeTxt.text = p < 1 ? $"{text}\n<size=70%>กำลังโหลดด่าน {Mathf.RoundToInt(p * 100)}%</size>" : text;
         }
 
         // ---------- บทสนทนา ----------

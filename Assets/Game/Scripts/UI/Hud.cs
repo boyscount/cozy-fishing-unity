@@ -249,7 +249,7 @@ namespace CozyFishing
             actBtn.RegisterCallback<PointerUpEvent>(e => { actBtn.ReleasePointer(e.pointerId); GameInput.ButtonHeld = false; actBtn.style.scale = new Scale(Vector3.one); });
         }
 
-        // จอสัมผัส: ลากนิ้วบนที่ว่างของจอ = หมุนกล้อง (อยู่ชั้นล่างสุด ไม่บังปุ่ม) + ปุ่มกระโดดเหนือปุ่มหลัก
+        // จอสัมผัส: ลากนิ้วบนที่ว่างของจอ = หมุนกล้อง (อยู่ชั้นล่างสุด ไม่บังปุ่ม)
         void BuildTouchExtras()
         {
             var pad = new VisualElement { pickingMode = PickingMode.Position }; Abs(pad, 0, 0, 0, 0);
@@ -258,12 +258,7 @@ namespace CozyFishing
             pad.RegisterCallback<PointerDownEvent>(e => { pad.CapturePointer(e.pointerId); last = e.localPosition; });
             pad.RegisterCallback<PointerMoveEvent>(e => { if (!pad.HasPointerCapture(e.pointerId)) return; var p = (Vector2)e.localPosition; GameInput.TouchLook += new Vector2(p.x - last.x, last.y - p.y); last = p; });
             pad.RegisterCallback<PointerUpEvent>(e => pad.ReleasePointer(e.pointerId));
-            var jb = jumpBtn = Box(root, Paper, 65); Abs(jb, null, 290, null, 60);
-            jb.style.width = jb.style.height = 130; jb.pickingMode = PickingMode.Position; jb.style.justifyContent = Justify.Center;
-            jb.style.borderTopColor = jb.style.borderBottomColor = jb.style.borderLeftColor = jb.style.borderRightColor = new Color(1, 1, 1, 0.5f);
-            jb.style.borderTopWidth = jb.style.borderBottomWidth = jb.style.borderLeftWidth = jb.style.borderRightWidth = 5;
-            var jl = L(jb, "กระโดด", 28, Color.white); Shadow(jl);
-            jb.RegisterCallback<PointerDownEvent>(e => GameInput.JumpButton = true);
+            // (ปุ่มกระโดดบนจอเอาออกแล้ว — แทบไม่ได้ใช้ · คอมยังกด Space กระโดดได้)
         }
 
         void BuildJoystick()
@@ -290,11 +285,40 @@ namespace CozyFishing
         static (string id, string name)[] DexStages => System.Linq.Enumerable.ToArray(System.Linq.Enumerable.Select(CozyFishing.Stages.All, s => (s.id, s.name)));
         static int DexTotal => System.Linq.Enumerable.Count(FishDatabase.All, sp => System.Linq.Enumerable.Any(CozyFishing.Stages.All, st => st.id == sp.stage));
 
+        // แถบปุ่มไอคอนมุมขวาบน (สมุดปลา · สมุดคดี · กลับบ้าน) เรียงจากขวาไปซ้าย ปุ่มที่ซ่อนอยู่ไม่เว้นช่อง
+        VisualElement iconBar;
+        VisualElement IconBar
+        {
+            get
+            {
+                if (iconBar != null) return iconBar;
+                iconBar = new VisualElement { pickingMode = PickingMode.Ignore }; Abs(iconBar, null, 18, 18);
+                iconBar.style.flexDirection = FlexDirection.RowReverse; iconBar.style.alignItems = Align.FlexStart;
+                root.Add(iconBar);
+                return iconBar;
+            }
+        }
+        // ปุ่มกลม: ไอคอน (Resources/UI/Icons/<icon>.png) + ป้ายตัวเลขเล็ก ๆ ใต้ปุ่ม
+        VisualElement IconButton(string icon, Color ring, System.Action click, out Label badge)
+        {
+            var col = new VisualElement { pickingMode = PickingMode.Position };
+            col.style.alignItems = Align.Center; col.style.marginLeft = 14; col.style.width = 84;
+            var disc = Box(col, new Color(0.08f, 0.1f, 0.09f, 0.72f), 38, false);
+            disc.style.width = disc.style.height = 76; disc.style.alignItems = Align.Center; disc.style.justifyContent = Justify.Center;
+            Border(disc, 3, ring);
+            var img = new VisualElement { pickingMode = PickingMode.Ignore };
+            img.style.width = img.style.height = 46; img.style.backgroundImage = Resources.Load<Texture2D>("UI/Icons/" + icon);
+            disc.Add(img);
+            badge = L(col, "", 19, Color.white); Shadow(badge); badge.style.marginTop = 3; badge.style.whiteSpace = WhiteSpace.NoWrap;
+            col.RegisterCallback<PointerDownEvent>(e => click());
+            IconBar.Add(col);
+            return col;
+        }
+
         void BuildDex()
         {
-            dexBtn = Box(root, Paper, 12); Abs(dexBtn, null, 24, 24); Pad(dexBtn, 8, 24); dexBtn.pickingMode = PickingMode.Position;
-            dexCount = L(dexBtn, $"สมุดปลา {FishDex.Discovered}/{DexTotal}", 28, Ink);
-            dexBtn.RegisterCallback<PointerDownEvent>(e => OpenDex());
+            dexBtn = IconButton("fishbook", new Color(0.85f, 0.7f, 0.38f), OpenDex, out dexCount);
+            dexCount.text = $"{FishDex.Discovered}/{DexTotal}";
 
             dex = new VisualElement(); Abs(dex, 0, 0, 0, 0); dex.style.backgroundColor = new Color(0.1f, 0.16f, 0.13f, 0.6f);
             dex.style.justifyContent = Justify.Center; dex.style.alignItems = Align.Center; root.Add(dex);
@@ -380,7 +404,7 @@ namespace CozyFishing
                 }
             }
             dexTitle.text = $"สมุดสะสมปลา · {got}/{total}";
-            dexCount.text = $"สมุดปลา {FishDex.Discovered}/{DexTotal}";
+            dexCount.text = $"{FishDex.Discovered}/{DexTotal}";
         }
 
         // ---------- API ให้ระบบตกปลาเรียก ----------
@@ -453,7 +477,7 @@ namespace CozyFishing
             cardImg.style.backgroundImage = image is RenderTexture rt ? Background.FromRenderTexture(rt) : default;
             cardImg.style.display = image != null ? DisplayStyle.Flex : DisplayStyle.None;
             cardNew.style.display = isNew ? DisplayStyle.Flex : DisplayStyle.None;
-            if (dexCount != null) dexCount.text = $"สมุดปลา {FishDex.Discovered}/{DexTotal}";
+            if (dexCount != null) dexCount.text = $"{FishDex.Discovered}/{DexTotal}";
             cardName.text = sp.name;
             cardStars.text = $"{FishDatabase.Rarity[sp.stars]} · {sp.stars} ดาว";
             cardKg.text = $"{c.kg:0.00} กก.";

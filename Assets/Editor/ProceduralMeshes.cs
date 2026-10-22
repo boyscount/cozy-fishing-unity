@@ -327,4 +327,91 @@ public static class ProceduralMeshes
         }
         return bld.Build("Chofa");
     }
+
+    // กอกก/ธูปฤาษีริมหนอง: ใบเรียวยาวโค้งออกจากโคน หลายสิบใบ บางต้นมีฝักธูปฤาษีสีน้ำตาลบนก้านตรง
+    public static Mesh Reeds(int seed, float height)
+    {
+        var rnd = new System.Random(seed);
+        float R(float a, float b) => a + (float)rnd.NextDouble() * (b - a);
+        var bld = new Builder(1);
+        int blades = rnd.Next(26, 40);
+        for (int b = 0; b < blades; b++)
+        {
+            float az = R(0, Mathf.PI * 2), h = height * R(0.55f, 1.05f), bend = R(0.15f, 0.55f), w = R(0.018f, 0.035f);
+            var dir = new Vector3(Mathf.Cos(az), 0, Mathf.Sin(az)); var side = new Vector3(-dir.z, 0, dir.x);
+            var root = dir * R(0, 0.25f);
+            var c0 = Color.Lerp(new Color(0.3f, 0.36f, 0.16f), new Color(0.45f, 0.5f, 0.22f), R(0, 1));
+            var c1 = rnd.NextDouble() < 0.3 ? new Color(0.62f, 0.55f, 0.32f) : c0 * 1.35f;   // ปลายใบแห้งบ้าง
+            const int Seg = 5;
+            int pl = -1, pr = -1;
+            for (int i = 0; i <= Seg; i++)
+            {
+                float t = i / (float)Seg, ww = w * (1 - t * 0.9f);
+                var p = root + Vector3.up * h * t + dir * bend * h * t * t * 0.5f - Vector3.up * bend * h * t * t * 0.18f;
+                var col = Color.Lerp(c0 * 0.7f, c1, t);
+                int l = bld.Add(p - side * ww, col), r = bld.Add(p + side * ww, col);
+                if (i > 0) bld.Quad(0, pl, l, pr, r);
+                pl = l; pr = r;
+            }
+            if (b % 9 == 0)   // ฝักธูปฤาษี
+            {
+                var top = root + Vector3.up * h * 1.05f;
+                var brown = new Color(0.32f, 0.2f, 0.1f);
+                var stalk = new Color(0.4f, 0.45f, 0.22f);
+                for (int k = 0; k < 4; k++)   // ก้านตรงจากโคนถึงฝัก
+                {
+                    float a0 = k / 4f * Mathf.PI * 2, a1 = (k + 1) / 4f * Mathf.PI * 2;
+                    Vector3 o0 = new Vector3(Mathf.Cos(a0), 0, Mathf.Sin(a0)) * 0.01f, o1 = new Vector3(Mathf.Cos(a1), 0, Mathf.Sin(a1)) * 0.01f;
+                    bld.Quad(0, bld.Add(root + o0, stalk * 0.7f), bld.Add(top + o0 + Vector3.up * 0.3f, stalk), bld.Add(root + o1, stalk * 0.7f), bld.Add(top + o1 + Vector3.up * 0.3f, stalk));
+                }
+                for (int k = 0; k < 6; k++)
+                {
+                    float a0 = k / 6f * Mathf.PI * 2, a1 = (k + 1) / 6f * Mathf.PI * 2;
+                    Vector3 o0 = new Vector3(Mathf.Cos(a0), 0, Mathf.Sin(a0)) * 0.03f, o1 = new Vector3(Mathf.Cos(a1), 0, Mathf.Sin(a1)) * 0.03f;
+                    bld.Quad(0, bld.Add(top + o0, brown), bld.Add(top + o0 + Vector3.up * 0.22f, brown), bld.Add(top + o1, brown), bld.Add(top + o1 + Vector3.up * 0.22f, brown));
+                }
+            }
+        }
+        return bld.Build("Reeds");
+    }
+
+    // ผ้าแพรผูกศาล: แถบผ้ายาวจากจุดผูก (y = 0) ไปถึงปลาย (y = length) — วางวัตถุกลับหัวให้ห้อยลง ไหวลมมากขึ้นตามความยาว
+    public static Mesh Ribbon(int seed, Color col, float length)
+    {
+        var rnd = new System.Random(seed);
+        var bld = new Builder(1);
+        const int Seg = 10;
+        float w = 0.035f, ph = (float)rnd.NextDouble() * 6;
+        int pl = -1, pr = -1;
+        for (int i = 0; i <= Seg; i++)
+        {
+            float t = i / (float)Seg;
+            var p = new Vector3(Mathf.Sin(t * 5 + ph) * 0.04f * t, length * t, Mathf.Cos(t * 3 + ph) * 0.05f * t);
+            var c = col * (0.85f + 0.15f * Mathf.Sin(t * 9));
+            int l = bld.Add(p + new Vector3(-w, 0, 0), c), r = bld.Add(p + new Vector3(w, 0, 0), c);
+            if (i > 0) bld.Quad(0, pl, l, pr, r);
+            pl = l; pr = r;
+        }
+        return bld.Build("Ribbon");
+    }
+
+    // พวงมาลัยดาวเรือง: ดอกกลม ๆ เรียงเป็นวง (รัศมี radius) สีส้มเหลือง
+    public static Mesh Garland(int seed, float radius, int flowers)
+    {
+        var rnd = new System.Random(seed);
+        var bld = new Builder(1);
+        for (int f = 0; f < flowers; f++)
+        {
+            float a = f / (float)flowers * Mathf.PI * 2, r = radius * 0.11f;
+            var c = new Vector3(Mathf.Cos(a) * radius, Mathf.Sin(a * 2) * radius * 0.04f, Mathf.Sin(a) * radius);
+            var col = rnd.NextDouble() < 0.7 ? new Color(0.98f, 0.55f, 0.08f) : new Color(1f, 0.82f, 0.15f);
+            var d = new[] { Vector3.up, Vector3.down, Vector3.left, Vector3.right, Vector3.forward, Vector3.back };
+            int[] ix = new int[6];
+            for (int k = 0; k < 6; k++) ix[k] = bld.Add(c + d[k] * r, col * (k == 1 ? 0.6f : 1f));
+            // ทรงแปดหน้า
+            int[,] faces = { { 0, 4, 3 }, { 0, 3, 5 }, { 0, 5, 2 }, { 0, 2, 4 }, { 1, 3, 4 }, { 1, 5, 3 }, { 1, 2, 5 }, { 1, 4, 2 } };
+            for (int k = 0; k < 8; k++) bld.Tri(0, ix[faces[k, 0]], ix[faces[k, 1]], ix[faces[k, 2]]);
+        }
+        return bld.Build("Garland");
+    }
 }
