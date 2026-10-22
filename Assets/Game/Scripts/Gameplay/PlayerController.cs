@@ -2,10 +2,14 @@ using UnityEngine;
 
 namespace CozyFishing
 {
-    // ตัวละครชาวประมงหมวกงอบ: เดินบนพื้นตามฟังก์ชันความสูงของด่าน + ท่าทางแบบขยับแขนขา (เทียบ updatePlayer ของเวอร์ชันเว็บ)
+    // ตัวละครชาวประมงหมวกงอบ: เดินบนพื้นตามฟังก์ชันความสูงของด่าน (เทียบ updatePlayer ของเวอร์ชันเว็บ)
+    // มี animator (ตัวละคร Mixamo) → ใช้ท่าจริงตาม Speed/Pose · ไม่มี → ขยับแขนขาโมเดล low-poly แบบเดิม
     public class PlayerController : MonoBehaviour
     {
         public Transform legL, legR, armL, armR, head, rodTip;
+        public Animator animator;
+        public int Pose;                         // FishingController ตั้ง: 0 เดิน/ยืน, 1 ง้าง, 2 เหวี่ยง, 3 รอปลา, 4 สู้ปลา, 5 ได้ปลา
+        static readonly int SpeedId = Animator.StringToHash("Speed"), PoseId = Animator.StringToHash("Pose");
         public float speed = 3.6f;
         public float Yaw;
         public Vector3 Pos;
@@ -45,6 +49,16 @@ namespace CozyFishing
                 else vel = 0;
             }
             Pos.y += (world.StandY(Pos.x, Pos.z) - Pos.y) * Mathf.Min(1, dt * 15);
+
+            if (animator != null)
+            {
+                animator.SetFloat(SpeedId, vel * 0.6f, 0.1f, dt);   // ท่าเดิน Mixamo ก้าวช้ากว่าความเร็วเกม เล่นเร็วขึ้นตาม blend
+                animator.SetInteger(PoseId, Pose);
+                animator.speed = Pose == 0 ? Mathf.Lerp(1f, 1.5f, Mathf.InverseLerp(1.5f, speed, vel)) : 1f;
+                transform.position = Pos;
+                transform.rotation = Quaternion.Euler(0, Yaw, 0);
+                return;
+            }
 
             float walk = Mathf.Min(1, vel / 3);
             phase += dt * vel * 2.8f;

@@ -280,6 +280,15 @@ namespace CozyFishing
                 _ => 0,
             };
             player.ArmRTarget = a * armSign;
+            player.Pose = State switch
+            {
+                FishState.Charging => 1,
+                FishState.Casting => 2,
+                FishState.Landed or FishState.Waiting or FishState.Bite or FishState.Retrieve => 3,
+                FishState.Strike or FishState.Fight => 4,
+                FishState.Caught => 5,
+                _ => 0,
+            };
             player.ArmLTarget = State == FishState.Caught ? -150 * armSign : State == FishState.Fight ? (GameInput.ActionHeld ? -52 + Mathf.Sin(now * 18) * 20 : -34) * armSign : float.NaN;
         }
 

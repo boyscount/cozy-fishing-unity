@@ -241,6 +241,8 @@ public static class SceneBuilder
         player.legL = FindDeep(fisher.transform, "LegL"); player.legR = FindDeep(fisher.transform, "LegR");
         player.armL = FindDeep(fisher.transform, "ArmL"); player.armR = FindDeep(fisher.transform, "ArmR");
         player.head = FindDeep(fisher.transform, "Head"); player.rodTip = FindDeep(fisher.transform, "RodTip");
+        // ตัวละครคนจริงจาก Mixamo (ถ้ามีไฟล์) — คันเบ็ด/หมวกงอบของโมเดลเดิมย้ายไปติดมือ/หัว
+        if (File.Exists(CharacterSetup.ModelPath)) { CharacterSetup.Configure(); player.animator = CharacterSetup.Attach(fisher); }
         var fishTpl = Place("Fish", 0, 0, 1, 0, -50);
         fishTpl.SetActive(false);
 

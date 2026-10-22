@@ -77,12 +77,22 @@ public static class ProjectTools
         var flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
         if (fol != null) typeof(CozyFishing.FoliageRenderer).GetMethod("Start", flags)?.Invoke(fol, null);
         Shader.SetGlobalVector("_CozyWind", new Vector4(3, 0.9f, 0, 0));
+        // ตัวละคร Mixamo: เล่นท่า "ถือคันรอปลา" ไปครึ่งวินาทีให้เห็นท่าจริงในภาพ
+        var player = Object.FindAnyObjectByType<CozyFishing.PlayerController>();
+        if (player != null && player.animator != null)
+        {
+            player.animator.Rebind();
+            player.animator.SetInteger("Pose", System.Environment.GetEnvironmentVariable("SNAP_POSE") == "walk" ? 0 : 3);
+            player.animator.SetFloat("Speed", System.Environment.GetEnvironmentVariable("SNAP_POSE") == "walk" ? 2.2f : 0);
+            for (int i = 0; i < 30; i++) player.animator.Update(1 / 30f);
+        }
         Shader.SetGlobalFloat("_CozyDim", 1);
         var focus = new Vector3(1.5f * 0.75f, 0, -7.6f * 0.6f + 6 * 0.4f);
         Directory.CreateDirectory("Builds");
         foreach (var (name, w, h, k) in new[] { ("land", 1600, 900, 1f), ("port", 900, 1600, 1.6f), ("close", 1600, 900, 0f) })
         {
             if (k > 0) { cam.transform.position = focus + new Vector3(0, 10.5f * k, -15f * k); cam.transform.LookAt(focus + Vector3.up * 1.4f); }
+            else if (System.Environment.GetEnvironmentVariable("SNAP_CLOSE") == "fisher") { cam.transform.position = new Vector3(5.5f, 2.6f, -12.2f); cam.transform.LookAt(new Vector3(1.5f, 1.2f, -7.4f)); }   // ซูมดูตัวละคร
             else { cam.transform.position = new Vector3(4f, 2.2f, -11f); cam.transform.LookAt(new Vector3(10f, 3.2f, -6f)); }   // มุมต่ำดูต้นตาล/ต้นไม้/ทุ่งข้าวใกล้ ๆ
             var rt = new RenderTexture(w, h, 24, RenderTextureFormat.ARGB32) { antiAliasing = 1 };
             cam.targetTexture = rt;
