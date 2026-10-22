@@ -14,12 +14,13 @@ using UnityEngine.SceneManagement;
 public static partial class SceneBuilder
 {
     // ลำดับฉากใน build (ฉากแรก = บ้าน/บ่อทุ่งนา)
-    static readonly string[] StageScenes = { "Paddy", "Rapids" };
+    static readonly string[] StageScenes = { "Paddy", "Rapids", "Temple" };
 
     public static void CreateAll()
     {
         CreatePaddy();
         CreateRapids();
+        CreateTemple();
     }
 
     // บรรยากาศแสงของแต่ละด่าน
@@ -126,7 +127,9 @@ public static partial class SceneBuilder
     {
         EditorSceneManager.SaveScene(scene, path);
         Lightmapping.bakedGI = false; Lightmapping.realtimeGI = false;
+        Lightmapping.Clear(); Lightmapping.ClearDiskCache();   // แคชจากการอบที่ไม่มี GPU (-nographics) ทำให้แสงรอบทิศเป็น NaN → ฉากดำทั้งฉาก
         if (!Lightmapping.Bake()) Debug.LogWarning("[SceneBuilder] environment bake failed");
+        if (float.IsNaN(RenderSettings.ambientProbe[0, 0])) Debug.LogError("[SceneBuilder] ambient probe is NaN (bake without GPU?)");
         EditorSceneManager.SaveScene(scene, path);
         EditorBuildSettings.scenes = StageScenes.Select(n => $"Assets/Game/Scenes/{n}.unity").Where(File.Exists).Select(p => new EditorBuildSettingsScene(p, true)).ToArray();
         AssetDatabase.SaveAssets();

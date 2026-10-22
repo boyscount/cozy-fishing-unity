@@ -297,13 +297,13 @@ public static partial class SceneBuilder
     // ค่าไหว (เมตรในโลก) ตามขนาดต้น: ต้นไม้ใหญ่ไหวมาก พืชเล็กไหวน้อย
     static readonly Dictionary<string, (float sway, float height, float flutter)> LeafWind = new Dictionary<string, (float, float, float)>
     {
-        { "jacaranda_tree", (0.22f, 6f, 0.025f) }, { "shrub_02", (0.05f, 1.2f, 0.015f) }, { "shrub_03", (0.03f, 0.5f, 0.01f) }, { "shrub_04", (0.03f, 0.4f, 0.01f) },
+        { "jacaranda_tree", (0.22f, 6f, 0.025f) }, { "island_tree_01", (0.2f, 7f, 0.02f) }, { "shrub_02", (0.05f, 1.2f, 0.015f) }, { "shrub_03", (0.03f, 0.5f, 0.01f) }, { "shrub_04", (0.03f, 0.4f, 0.01f) },
         { "fern_02", (0.04f, 0.6f, 0.012f) }, { "weed_plant_02", (0.04f, 0.5f, 0.01f) }, { "flower_empodium", (0.03f, 0.3f, 0.008f) },
     };
     static Material LeafMat(string file, Material src)
     {
         if (src == null || !LeafWind.TryGetValue(file, out var wind)) return null;
-        if (file == "jacaranda_tree" && !src.name.ToLower().Contains("leaves")) return null;
+        if ((file == "jacaranda_tree" || file == "island_tree_01") && !src.name.ToLower().Contains("leaves")) return null;
         Texture tex = null;
         foreach (var n in src.GetTexturePropertyNames())
             if (n.ToLower().Contains("basecolor") || n == "_BaseMap" || n == "_MainTex") { tex = src.GetTexture(n); if (tex != null) break; }
@@ -313,7 +313,7 @@ public static partial class SceneBuilder
         float cutoff = src.HasProperty("alphaCutoff") ? src.GetFloat("alphaCutoff") : 0.5f;
         m.SetFloat("_Cutoff", Mathf.Clamp(cutoff, 0.3f, 0.6f));
         m.SetFloat("_Sway", wind.sway); m.SetFloat("_SwayHeight", wind.height); m.SetFloat("_Flutter", wind.flutter);
-        m.SetColor("_BaseColor", file == "jacaranda_tree" ? Color.white : new Color(1.3f, 1.3f, 1.15f));   // พุ่มไม้เล็กลายใบมืด ยกให้สว่างขึ้น
+        m.SetColor("_BaseColor", file.EndsWith("_tree") || file.StartsWith("island_tree") ? Color.white : new Color(1.3f, 1.3f, 1.15f));   // พุ่มไม้เล็กลายใบมืด ยกให้สว่างขึ้น
         m.enableInstancing = true;
         return m;
     }

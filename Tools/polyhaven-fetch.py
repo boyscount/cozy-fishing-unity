@@ -5,9 +5,9 @@ import json, os, sys, urllib.request
 OUT = sys.argv[1] if len(sys.argv) > 1 else 'Raw/PolyHaven'
 UA = {'User-Agent': 'cozy-fishing-unity/1.0'}
 HDRIS = {'kloofendal_48d_partly_cloudy_puresky': '2k'}
-TEXTURES = ['leafy_grass', 'brown_mud_02', 'grass_path_3', 'weathered_brown_planks', 'bark_brown_02', 'thatch_roof_angled', 'rough_linen', 'denim_fabric', 'reed_roof_04', 'rock_face_04', 'rocky_gravel', 'forest_ground_05']
+TEXTURES = ['leafy_grass', 'brown_mud_02', 'grass_path_3', 'weathered_brown_planks', 'bark_brown_02', 'thatch_roof_angled', 'rough_linen', 'denim_fabric', 'reed_roof_04', 'rock_face_04', 'rocky_gravel', 'forest_ground_05', 'worn_mossy_plasterwall', 'clay_roof_tiles', 'mossy_brick', 'mud_forest']
 TEX_MAPS = ['Diffuse', 'nor_gl', 'Rough', 'AO']
-MODELS = ['jacaranda_tree', 'rock_moss_set_01', 'boulder_01', 'namaqualand_boulder_02', 'stone_01', 'fern_02', 'shrub_02', 'shrub_03', 'shrub_04', 'flower_empodium', 'weed_plant_02']
+MODELS = ['jacaranda_tree', 'rock_moss_set_01', 'boulder_01', 'namaqualand_boulder_02', 'stone_01', 'fern_02', 'shrub_02', 'shrub_03', 'shrub_04', 'flower_empodium', 'weed_plant_02', 'dead_tree_trunk', 'root_cluster_01', 'island_tree_01', 'brass_diya_lantern']
 
 def get(url):
     with urllib.request.urlopen(urllib.request.Request(url, headers=UA)) as r:

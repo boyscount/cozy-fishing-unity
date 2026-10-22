@@ -13,6 +13,7 @@ namespace CozyFishing
     {
         public StoryDirector director;
         VisualElement statusBox, clockBox, homeBtn, ask, askBox, askBtns, fadeEl, dialogEl, morning, morningBody, evening, eveList, eveSum, bag, bagList;
+        VisualElement fadeArt;
         Label statusTxt, clockTxt, askTxt, fadeTxt, dialogWho, dialogSay, bagTitle;
         Action<string> onMorningGo; Action onMorningPay;
         Action<bool[]> onEveningDone;
@@ -124,8 +125,14 @@ namespace CozyFishing
             // จอมืดระหว่างเดินทาง (อยู่บนสุด)
             fadeEl = new VisualElement { pickingMode = PickingMode.Position }; Abs(fadeEl, 0, 0, 0, 0); fadeEl.style.backgroundColor = new Color(0.04f, 0.06f, 0.05f, 1);
             fadeEl.style.justifyContent = Justify.Center; fadeEl.style.alignItems = Align.Center; root.Add(fadeEl);
+            fadeArt = new VisualElement { pickingMode = PickingMode.Ignore };
+            fadeArt.style.width = 600; fadeArt.style.height = 400; fadeArt.style.maxWidth = Length.Percent(88); fadeArt.style.marginBottom = 28;
+            fadeArt.style.backgroundSize = new BackgroundSize(BackgroundSizeType.Cover);
+            Radius(fadeArt, 18); Border(fadeArt, 3, new Color(0.85f, 0.7f, 0.38f, 0.85f));
+            fadeEl.Add(fadeArt);
             fadeTxt = L(fadeEl, "", 40, new Color(0.96f, 0.93f, 0.85f)); fadeTxt.style.maxWidth = 900;
-            fadeEl.style.display = DisplayStyle.None;
+            // เริ่มฉากด้วยจอมืดเสมอ (ทุกฉากเรียก Fade(fromBlack) ตอนเริ่ม) — ไม่ให้เห็นฉากแวบก่อนจอเดินทาง
+            fadeEl.style.display = DisplayStyle.Flex; fadeEl.style.opacity = 1;
         }
 
         VisualElement Overlay(out VisualElement box, float maxW)
@@ -201,12 +208,13 @@ namespace CozyFishing
         }
 
         // ---------- จอมืด: มืดลง → ทำงานระหว่างมืด → สว่างขึ้น ----------
-        public IEnumerator Fade(string text, Action during)
+        public IEnumerator Fade(string text, Action during, Texture2D art = null, bool fromBlack = false)
         {
             fadeTxt.text = text;
+            fadeArt.style.backgroundImage = art; fadeArt.style.display = art != null ? DisplayStyle.Flex : DisplayStyle.None;
             fadeEl.style.display = DisplayStyle.Flex; fadeEl.BringToFront();
             GameInput.Blocked = true;
-            for (float a = 0; a < 1; a += Time.deltaTime / 0.5f) { fadeEl.style.opacity = a; yield return null; }
+            if (!fromBlack) for (float a = 0; a < 1; a += Time.deltaTime / 0.5f) { fadeEl.style.opacity = a; yield return null; }   // fromBlack: เพิ่งโหลดฉากใหม่ ห้ามโชว์ฉากก่อนจอมืด
             fadeEl.style.opacity = 1;
             during?.Invoke();
             yield return new WaitForSeconds(1.1f);
@@ -281,6 +289,11 @@ namespace CozyFishing
             {
                 bool open = Stages.Unlocked(st.id);
                 var row = Box(morningBody, Glass2, 10, false); Pad(row, 8, 12); row.style.flexDirection = FlexDirection.Row; row.style.alignItems = Align.Center; row.style.marginTop = 8;
+                var art = new VisualElement { pickingMode = PickingMode.Ignore };
+                art.style.width = 150; art.style.height = 100; art.style.flexShrink = 0; art.style.marginRight = 12;
+                art.style.backgroundImage = st.Art; art.style.backgroundSize = new BackgroundSize(BackgroundSizeType.Cover);
+                art.style.unityBackgroundImageTintColor = open ? Color.white : new Color(0.45f, 0.45f, 0.45f);
+                Radius(art, 8); row.Add(art);
                 var info = new VisualElement { pickingMode = PickingMode.Ignore }; info.style.flexGrow = 1; info.style.flexShrink = 1; info.style.marginRight = 10; row.Add(info);
                 var nm = L(info, st.name, 28, open ? Ink : Sub); nm.style.unityTextAlign = TextAnchor.MiddleLeft;
                 var ds = L(info, open ? st.desc : $"{st.desc} · ค่าเดินทางครั้งแรก {Story.Baht(st.price)}", 18, Sub, false); ds.style.unityTextAlign = TextAnchor.MiddleLeft;

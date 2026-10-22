@@ -1,4 +1,5 @@
 using System.Linq;
+using UnityEngine;
 
 namespace CozyFishing
 {
@@ -7,6 +8,8 @@ namespace CozyFishing
     {
         public string id, name, en, scene, desc, go, back;
         public int price;
+        // ภาพประกอบด่าน (Resources/UI/Stages/<id>.jpg) — ใช้บนการ์ดเลือกด่านตอนเช้าและจอเดินทาง
+        public Texture2D Art => Resources.Load<Texture2D>("UI/Stages/" + id);
     }
 
     public static class Stages
@@ -19,6 +22,9 @@ namespace CozyFishing
             new StageDef { id = "rapids", name = "แก่งหินตาปลา", en = "Fish-Eye Rock Rapids", scene = "Rapids", price = 300,
                 desc = "แก่งน้ำเชี่ยวกลางหุบเขา โขดหินยักษ์มีรอยเหมือนดวงตาปลาจ้องมองสายน้ำ",
                 go = "เดินขึ้นเขาตามเสียงน้ำเชี่ยว ละอองน้ำเย็นปะทะหน้า…", back = "เดินลงเขากลับบ้าน เสียงแก่งค่อย ๆ เงียบหายไป…" },
+            new StageDef { id = "temple", name = "วังปลาโบสถ์ร้าง", en = "Sunken Temple Pool", scene = "Temple", price = 600,
+                desc = "วังน้ำลึกที่ท่วมโบสถ์เก่าไปครึ่งหลัง ช่อฟ้ายังโผล่พ้นน้ำ ปลาตัวโตว่ายผ่านหน้าต่างโบสถ์",
+                go = "เดินลัดป่าไปตามทางอิฐเก่า เสียงระฆังลมดังแผ่ว ๆ มาจากที่ไหนสักแห่ง…", back = "เดินออกจากวัดร้าง หันกลับไปเห็นช่อฟ้าลับหายในม่านหมอก…" },
         };
 
         public static StageDef Get(string id) => All.FirstOrDefault(s => s.id == id) ?? All[0];

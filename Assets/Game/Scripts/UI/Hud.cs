@@ -69,6 +69,12 @@ namespace CozyFishing
             parent?.Add(l);
             return l;
         }
+        static void Radius(VisualElement e, float r) { e.style.borderTopLeftRadius = e.style.borderTopRightRadius = e.style.borderBottomLeftRadius = e.style.borderBottomRightRadius = r; }
+        static void Border(VisualElement e, float w, Color c)
+        {
+            e.style.borderTopWidth = e.style.borderBottomWidth = e.style.borderLeftWidth = e.style.borderRightWidth = w;
+            e.style.borderTopColor = e.style.borderBottomColor = e.style.borderLeftColor = e.style.borderRightColor = c;
+        }
         static VisualElement Box(VisualElement parent, Color bg, float radius = 12, bool border = true)
         {
             var e = new VisualElement { pickingMode = PickingMode.Ignore };

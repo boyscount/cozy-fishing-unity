@@ -15,6 +15,12 @@ public static class ProceduralMeshes
         public int Add(Vector3 p, Color col) { v.Add(p); c.Add(col.linear); return v.Count - 1; }
         public void Tri(int sub, int a, int b, int d) { subs[sub].AddRange(new[] { a, b, d }); }
         public void Quad(int sub, int a, int b, int d, int e) { Tri(sub, a, b, d); Tri(sub, b, e, d); }
+        // สามเหลี่ยมสองหน้า: แยกจุดยอดแต่ละหน้า ไม่งั้น normal หักล้างกันเป็นศูนย์ (ดำสนิท)
+        public void TwoSided(int sub, Vector3 a, Vector3 b, Vector3 d, Color col)
+        {
+            Tri(sub, Add(a, col), Add(b, col), Add(d, col));
+            Tri(sub, Add(a, col), Add(d, col), Add(b, col));
+        }
         public Mesh Build(string name)
         {
             var m = new Mesh { name = name, indexFormat = IndexFormat.UInt32 };
@@ -228,5 +234,97 @@ public static class ProceduralMeshes
             }
         }
         return bld.Build("Bamboo");
+    }
+
+    // ทรงกลึง (เจดีย์ บัวหัวเสา): หมุนเส้นโปรไฟล์ (รัศมี, สูง) จากล่างขึ้นบนรอบแกน Y · segs = 4 ได้ฐานสี่เหลี่ยม
+    public static Mesh Lathe(Vector2[] profile, int segs, Color col, float twist = 0)
+    {
+        var bld = new Builder(1);
+        for (int j = 0; j < profile.Length; j++)
+            for (int i = 0; i <= segs; i++)
+            {
+                float a = i / (float)segs * Mathf.PI * 2 + twist;
+                bld.Add(new Vector3(Mathf.Cos(a) * profile[j].x, profile[j].y, Mathf.Sin(a) * profile[j].x), col);
+            }
+        for (int j = 0; j < profile.Length - 1; j++)
+            for (int i = 0; i < segs; i++)
+            {
+                int a0 = j * (segs + 1) + i, b0 = a0 + segs + 1;
+                bld.Quad(0, a0, b0, a0 + 1, b0 + 1);
+            }
+        return bld.Build("Lathe");
+    }
+
+    // หลังคาจั่วทรงไทย 1 ตับ: สันตามแกน X ยาว length · ลาดลงสองข้างถึงชายคา ±halfW · สูงจากชายคาถึงสัน rise
+    // ลาดแอ่นเว้าแบบหลังคาโบสถ์ + ปลายชายคางอนขึ้น · มีแผ่นใต้หลังคา · submesh 0 = กระเบื้อง, 1 = ใบระกาไม้ปิดทอง (ฟันเลื่อยตามขอบจั่ว)
+    // pediment = true ใส่หน้าบันสามเหลี่ยมปิดหัวท้าย (submesh 1)
+    public static Mesh ThaiRoof(float length, float halfW, float rise, bool pediment)
+    {
+        var bld = new Builder(2);
+        const int N = 10;
+        float L = length * 0.5f;
+        float Y(float t) => rise * (1 - t) - rise * 0.16f * Mathf.Sin(t * Mathf.PI) + (t > 0.85f ? (t - 0.85f) * rise * 0.5f : 0);   // เว้า + งอนชายคา
+        Color tile = Color.white, wood = Color.white;
+        for (int side = -1; side <= 1; side += 2)
+        {
+            int[] top = new int[(N + 1) * 2], bot = new int[(N + 1) * 2];
+            for (int k = 0; k <= N; k++)
+            {
+                float t = k / (float)N, z = side * halfW * t, y = Y(t);
+                top[k * 2] = bld.Add(new Vector3(-L, y, z), tile); top[k * 2 + 1] = bld.Add(new Vector3(L, y, z), tile);
+                bot[k * 2] = bld.Add(new Vector3(-L, y - 0.09f, z), tile); bot[k * 2 + 1] = bld.Add(new Vector3(L, y - 0.09f, z), tile);
+            }
+            for (int k = 0; k < N; k++)
+            {
+                int a = k * 2, b = (k + 1) * 2;
+                if (side > 0) { bld.Quad(0, top[a], top[b], top[a + 1], top[b + 1]); bld.Quad(0, bot[a + 1], bot[b + 1], bot[a], bot[b]); }
+                else { bld.Quad(0, top[a + 1], top[b + 1], top[a], top[b]); bld.Quad(0, bot[a], bot[b], bot[a + 1], bot[b + 1]); }
+            }
+            // ใบระกา: แผ่นฟันเลื่อยตั้งบนขอบจั่วทั้งสองปลาย (สองหน้า)
+            for (int e = -1; e <= 1; e += 2)
+            {
+                float x = e * (L + 0.04f);
+                for (int k = 0; k < N; k++)
+                {
+                    float t0 = k / (float)N, t1 = (k + 1) / (float)N, z0 = side * halfW * t0, z1 = side * halfW * t1;
+                    float y0 = Y(t0), y1 = Y(t1), zm = (z0 + z1) * 0.5f, ym = (y0 + y1) * 0.5f + 0.32f;
+                    Vector3 p0 = new Vector3(x, y0 - 0.06f, z0), p1 = new Vector3(x, y1 - 0.06f, z1), q0 = new Vector3(x, y0 + 0.1f, z0), q1 = new Vector3(x, y1 + 0.1f, z1), tip = new Vector3(x, ym, zm);
+                    bld.TwoSided(1, p0, q0, p1, wood); bld.TwoSided(1, p1, q0, q1, wood); bld.TwoSided(1, q0, tip, q1, wood);
+                }
+            }
+        }
+        if (pediment)
+            for (int e = -1; e <= 1; e += 2)
+            {
+                float x = e * (L - 0.05f);
+                var c = new Vector3(x, Y(0.82f) - 0.1f, 0);
+                for (int k = 0; k < N; k++)
+                {
+                    float t0 = k / (float)N, t1 = (k + 1) / (float)N;
+                    for (int sd = -1; sd <= 1; sd += 2)
+                        bld.TwoSided(1, c, new Vector3(x, Y(t0) - 0.1f, sd * halfW * t0 * 0.82f), new Vector3(x, Y(t1) - 0.1f, sd * halfW * t1 * 0.82f), wood);
+                }
+            }
+        return bld.Build("ThaiRoof");
+    }
+
+    // ช่อฟ้า / หางหงส์: ท่อเรียวโค้งขึ้นแล้วงอปลายออกด้านนอก (+X) เหมือนจะงอยปากนก
+    public static Mesh Chofa(float size)
+    {
+        var bld = new Builder(1);
+        const int Seg = 16, Sides = 6;
+        Vector3 P(float s) => new Vector3(0.18f * s + 0.32f * Mathf.Sin(s * Mathf.PI * 0.75f) * s, 0.95f * s - 0.3f * s * s * s, 0) * size;
+        var prev = new int[Sides + 1];
+        for (int i = 0; i <= Seg; i++)
+        {
+            float s = i / (float)Seg, r = size * 0.075f * (1 - s * 0.85f);
+            var p = P(s); var tng = (P(Mathf.Min(1, s + 0.02f)) - P(Mathf.Max(0, s - 0.02f))).normalized;
+            var n1 = Vector3.Cross(tng, Vector3.forward).normalized;
+            var cur = new int[Sides + 1];
+            for (int k = 0; k <= Sides; k++) { float a = k / (float)Sides * Mathf.PI * 2; cur[k] = bld.Add(p + (n1 * Mathf.Cos(a) + Vector3.forward * Mathf.Sin(a)) * r, Color.white); }
+            if (i > 0) for (int k = 0; k < Sides; k++) bld.Quad(0, prev[k], cur[k], prev[k + 1], cur[k + 1]);
+            prev = cur;
+        }
+        return bld.Build("Chofa");
     }
 }

@@ -36,8 +36,8 @@ namespace CozyFishing
             {
                 case StoryPhase.Fishing: StartCoroutine(ResumeFishing()); break;
                 case StoryPhase.Evening: StartCoroutine(Evening(false)); break;
-                case StoryPhase.Morning: StartCoroutine(Morning("เช้าวันที่ " + Story.S.day, false)); break;
-                default: StartCoroutine(Morning("บ้านไม้หลังเล็ก ริมทุ่งนา…", true)); break;
+                case StoryPhase.Morning: StartCoroutine(Morning("เช้าวันที่ " + Story.S.day, false, true)); break;
+                default: StartCoroutine(Morning("บ้านไม้หลังเล็ก ริมทุ่งนา…", true, true)); break;
             }
         }
 
@@ -85,7 +85,7 @@ namespace CozyFishing
         IEnumerator ResumeFishing()
         {
             busy = true;
-            yield return hud.Fade(Stages.Get(world.StageId).name + " · " + Story.FmtTime(Story.S.time), () => SetupFishing(false));
+            yield return hud.Fade(Stages.Get(world.StageId).name + " · " + Story.FmtTime(Story.S.time), () => SetupFishing(false), Stages.Get(world.StageId).Art, true);
             hud.Toast($"{Stages.Get(world.StageId).name}\n{Story.CurrentLuck.text}");
             busy = false;
         }
@@ -103,10 +103,10 @@ namespace CozyFishing
         }
 
         // ---------- เช้า ----------
-        IEnumerator Morning(string title, bool intro)
+        IEnumerator Morning(string title, bool intro, bool fromBlack = false)
         {
             busy = true;
-            yield return hud.Fade(title, () => ShowHome(6.2f));
+            yield return hud.Fade(title, () => ShowHome(6.2f), null, fromBlack);
             if (intro) yield return hud.Dialog(Story.Intro);
             // สืบคดี: เช้าวันที่ 2 ลุงเปี๊ยกมาเล่าเรื่องแสงทองใต้กอบัว
             if (!Mystery.Started && Story.S.day >= 2)
@@ -126,14 +126,14 @@ namespace CozyFishing
             var st = Stages.Get(dest);
             if (dest == world.StageId)
             {
-                yield return hud.Fade(st.go, () => SetupFishing(true));
+                yield return hud.Fade(st.go, () => SetupFishing(true), st.Art);
                 hud.Toast($"{st.name}\n{Story.CurrentLuck.text}");
                 busy = false;
             }
             else
             {
                 Story.Phase = StoryPhase.Fishing;
-                yield return hud.Fade(st.go, () => SceneManager.LoadScene(st.scene));
+                yield return hud.Fade(st.go, () => SceneManager.LoadScene(st.scene), st.Art);
             }
         }
 
@@ -178,10 +178,10 @@ namespace CozyFishing
             if (roofLeak == null)   // ตกปลาด่านอื่นอยู่ → เดินทางกลับฉากบ้าน (บ่อทุ่งนา)
             {
                 Story.S.stage = "paddy";
-                yield return hud.Fade(Stages.Get(world.StageId).back, () => SceneManager.LoadScene("Paddy"));
+                yield return hud.Fade(Stages.Get(world.StageId).back, () => SceneManager.LoadScene("Paddy"), Stages.Get("paddy").Art);
                 yield break;
             }
-            yield return hud.Fade(travel ? Stages.Get(Story.S.stage).back : "กลับถึงบ้านแล้ว…", () => ShowHome(Mathf.Max(Story.S.time, 17.6f)));
+            yield return hud.Fade(travel ? Stages.Get(Story.S.stage).back : "กลับถึงบ้านแล้ว…", () => ShowHome(Mathf.Max(Story.S.time, 17.6f)), Stages.Get("paddy").Art, !travel);   // !travel = เพิ่งโหลดฉากบ้านมาจากด่านอื่น
             Story.S.stage = "paddy";
             bool[] choice = null;
             hud.ShowEvening(c => choice = c);
