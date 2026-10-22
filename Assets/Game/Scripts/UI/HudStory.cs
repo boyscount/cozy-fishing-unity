@@ -18,7 +18,57 @@ namespace CozyFishing
         Action<bool[]> onEveningDone;
         bool[] eveGrill;
         bool dialogNext;
-        public bool ModalOpen => Shown(ask) || Shown(fadeEl) || Shown(dialogEl) || Shown(morning) || Shown(evening) || Shown(bag);
+        public bool ModalOpen => Shown(ask) || Shown(fadeEl) || Shown(dialogEl) || Shown(morning) || Shown(evening) || Shown(bag) || Shown(casePanel) || Shown(cluePop);
+        VisualElement caseBtn, casePanel, caseBody, cluePop, clueBody;
+        Label caseBtnTxt;
+
+        // ---------- สมุดคดี ----------
+        void BuildCase()
+        {
+            caseBtn = Box(root, new Color(0.24f, 0.19f, 0.34f, 0.85f), 12); Abs(caseBtn, null, 24, 84); Pad(caseBtn, 8, 24); caseBtn.pickingMode = PickingMode.Position;
+            caseBtnTxt = L(caseBtn, "สมุดคดี", 26, Color.white); Shadow(caseBtnTxt);
+            caseBtn.RegisterCallback<PointerDownEvent>(e => OpenCase());
+            casePanel = Overlay(out var cb, 860);
+            var cs = new ScrollView(ScrollViewMode.Vertical); cs.style.flexGrow = 1; cs.style.flexShrink = 1; cb.Add(cs);
+            caseBody = new VisualElement(); cs.Add(caseBody);
+            var row = Row(cb); row.style.marginTop = 12;
+            var solve = new Button(() => { Hide(casePanel); director?.TrySolve(); }) { text = "ไขคดี!", name = "solve" }; StyleButton(solve, new Color(0.85f, 0.45f, 0.2f)); row.Add(solve);
+            var close = new Button(() => Hide(casePanel)) { text = "ปิด" }; StyleButton(close, Gray); close.style.marginLeft = 10; row.Add(close);
+            cluePop = Overlay(out var pb, 680);
+            clueBody = new VisualElement { pickingMode = PickingMode.Ignore }; clueBody.style.flexShrink = 0; pb.Add(clueBody);
+            var ok = new Button(() => Hide(cluePop)) { text = "จดลงสมุดคดี" }; StyleButton(ok, new Color(0.32f, 0.26f, 0.42f)); ok.style.alignSelf = Align.Center; ok.style.marginTop = 14; pb.Add(ok);
+        }
+
+        void OpenCase()
+        {
+            if (CardOpen || ModalOpen) return;
+            var c = Mystery.Current;
+            caseBody.Clear();
+            L(caseBody, c.title, 38, new Color(0.78f, 0.7f, 1f));
+            var sum = L(caseBody, Mystery.Solved ? "คดีปิดแล้ว · ตะกร้าแห่งวันพรุ่งนี้อยู่กับครอบครัวเรา" : c.summary, 24, Ink, false); sum.style.marginTop = 6; sum.style.unityTextAlign = TextAnchor.MiddleLeft;
+            L(caseBody, $"เบาะแส {Mystery.CluesFound}/{c.clues.Length}", 28, Ink).style.marginTop = 12;
+            foreach (var clue in c.clues)
+            {
+                bool has = Mystery.HasClue(clue.id);
+                var box = Box(caseBody, has ? Glass2 : Glass3, 20, false); Pad(box, 10, 16); box.style.marginTop = 8;
+                var n = L(box, has ? clue.name : "??? เบาะแสที่ยังไม่พบ", 26, has ? Ink : Sub); n.style.unityTextAlign = TextAnchor.MiddleLeft;
+                var d = L(box, has ? clue.found : "คำใบ้: " + clue.hint, 22, Sub, false); d.style.unityTextAlign = TextAnchor.MiddleLeft; d.style.marginTop = 2;
+            }
+            casePanel.Q<Button>("solve").style.display = Mystery.ReadyToSolve ? DisplayStyle.Flex : DisplayStyle.None;
+            Show(casePanel);
+        }
+
+        /// ป๊อปอัป "พบเบาะแส!" (เช่น เก็บขวดจดหมายขึ้นมาได้)
+        public void ShowClue(Clue c)
+        {
+            clueBody.Clear();
+            L(clueBody, "พบเบาะแส!", 40, new Color(0.78f, 0.7f, 1f));
+            L(clueBody, c.name, 30, Ink).style.marginTop = 6;
+            var d = L(clueBody, c.found, 26, Ink, false); d.style.marginTop = 10;
+            L(clueBody, $"เบาะแส {Mystery.CluesFound}/{Mystery.Current.clues.Length}", 22, Sub).style.marginTop = 10;
+            Show(cluePop);
+            if (FishingController.Bot) StartCoroutine(BotClick(cluePop, 2.5f, () => Hide(cluePop)));
+        }
         static bool Shown(VisualElement e) => e != null && e.style.display == DisplayStyle.Flex;
 
         void BuildStory()
@@ -27,9 +77,10 @@ namespace CozyFishing
             statusBox = countBoxRef; statusTxt = count;
             statusBox.pickingMode = PickingMode.Position;
             statusBox.RegisterCallback<PointerDownEvent>(e => OpenBag());
-            clockBox = Box(root, Paper, 999); Abs(clockBox, 24, null, 84); Pad(clockBox, 6, 22);
-            clockTxt = L(clockBox, "06:00", 24, Ink);
-            homeBtn = Box(root, new Color(0.62f, 0.43f, 0.26f, 0.95f), 999); Abs(homeBtn, null, 24, 84); Pad(homeBtn, 8, 24); homeBtn.pickingMode = PickingMode.Position;
+            clockBox = Box(root, Paper, 12); Abs(clockBox, 24, null, 78); Pad(clockBox, 6, 18);
+            clockTxt = L(clockBox, "06:00", 22, Ink); clockTxt.style.unityTextAlign = TextAnchor.MiddleLeft;
+            BuildCase();
+            homeBtn = Box(root, new Color(0.45f, 0.3f, 0.16f, 0.85f), 12); Abs(homeBtn, null, 24, 144); Pad(homeBtn, 8, 24); homeBtn.pickingMode = PickingMode.Position;
             var hl = L(homeBtn, "กลับบ้าน", 26, Color.white); Shadow(hl);
             homeBtn.RegisterCallback<PointerDownEvent>(e => director?.RequestHome());
 
@@ -43,7 +94,7 @@ namespace CozyFishing
             bagTitle = L(bagBox, "", 32, Ink);
             var bs = new ScrollView(ScrollViewMode.Vertical); bs.style.flexGrow = 1; bs.style.flexShrink = 1; bs.style.marginTop = 10; bagBox.Add(bs);
             bagList = new VisualElement(); bs.Add(bagList);
-            var bclose = new Button(() => Hide(bag)) { text = "ปิด" }; StyleButton(bclose, new Color(0.55f, 0.42f, 0.25f)); bclose.style.alignSelf = Align.Center; bclose.style.marginTop = 12; bagBox.Add(bclose);
+            var bclose = new Button(() => Hide(bag)) { text = "ปิด" }; StyleButton(bclose, Gray); bclose.style.alignSelf = Align.Center; bclose.style.marginTop = 12; bagBox.Add(bclose);
 
             // เช้าที่บ้าน
             morning = Overlay(out var mBox, 760);
@@ -63,9 +114,9 @@ namespace CozyFishing
             // กล่องบทสนทนา (ล่างจอ แตะ/กด Space ไปต่อ)
             dialogEl = new VisualElement { pickingMode = PickingMode.Position }; Abs(dialogEl, 0, 0, 0, 0); dialogEl.style.justifyContent = Justify.FlexEnd; dialogEl.style.alignItems = Align.Center; root.Add(dialogEl);
             var db = Box(dialogEl, Paper, 30); Pad(db, 16, 28); MaxW(db, 900); db.style.marginBottom = 30;
-            dialogWho = L(db, "", 26, new Color(0.62f, 0.43f, 0.26f)); dialogWho.style.unityTextAlign = TextAnchor.MiddleLeft;
+            dialogWho = L(db, "", 26, Gold); dialogWho.style.unityTextAlign = TextAnchor.MiddleLeft;
             dialogSay = L(db, "", 30, Ink); dialogSay.style.unityTextAlign = TextAnchor.MiddleLeft; dialogSay.style.marginTop = 4;
-            var nx = L(db, "แตะเพื่อไปต่อ ▶", 20, new Color(0.45f, 0.4f, 0.35f), false); nx.style.unityTextAlign = TextAnchor.MiddleRight;
+            var nx = L(db, "แตะเพื่อไปต่อ ▶", 20, Sub, false); nx.style.unityTextAlign = TextAnchor.MiddleRight;
             dialogEl.RegisterCallback<PointerDownEvent>(e => dialogNext = true);
             dialogEl.style.display = DisplayStyle.None;
 
@@ -95,15 +146,24 @@ namespace CozyFishing
         // ---------- แถบสถานะ ----------
         string lastStatus;
         bool homeFishing;
-        void UpdateStoryUi() => homeBtn.style.display = homeFishing && !CardOpen && !ModalOpen ? DisplayStyle.Flex : DisplayStyle.None;
+        void UpdateStoryUi()
+        {
+            homeBtn.style.display = homeFishing && !CardOpen && !ModalOpen && fightBox.style.display != DisplayStyle.Flex ? DisplayStyle.Flex : DisplayStyle.None;   // สู้ปลาอยู่: ซ่อนไม่ให้ทับเกจ
+            caseBtn.style.display = Mystery.Started && !CardOpen && !ModalOpen ? DisplayStyle.Flex : DisplayStyle.None;
+            caseBtnTxt.text = Mystery.Solved ? "สมุดคดี (ปิดคดี)" : Mystery.ReadyToSolve ? "สมุดคดี · ไขคดีได้!" : $"สมุดคดี {Mystery.CluesFound}/{Mystery.Current.clues.Length}";
+        }
         public void SetStatus(string clock, int day, int n, int cap, int money, bool fishingNow)
         {
             var s = $"{clock}|{day}|{n}|{cap}|{money}|{fishingNow}";
             if (s == lastStatus) return;
             lastStatus = s;
             statusTxt.text = $"ข้อง {n}/{cap} · {Story.Baht(money)}";
-            clockTxt.text = $"{clock} · วันที่ {day}";
-            clockTxt.style.color = Story.S.time >= 17 ? new Color(0.75f, 0.3f, 0.15f) : Ink;
+            var lk = Story.CurrentLuck;
+            float temp = Mathf.Round(26 + 7 * Mathf.Sin(Mathf.InverseLerp(6, 18, Story.S.time) * Mathf.PI) - (lk.rain ? 4 : lk.sun < 0.6f ? 2 : 0));
+            float wind = 1.2f + (1 - lk.sun) * 4.5f;
+            string sky = lk.id == "great" ? "ฟ้าใส" : lk.id == "normal" ? "มีเมฆบางส่วน" : lk.id == "slow" ? "ฟ้าครึ้ม" : "ฝนพรำ";
+            clockTxt.text = $"{clock} น. · วันที่ {day}\n{sky} · {temp:0}°C · ลม {wind:0.0} ม./วิ";
+            clockTxt.style.color = Story.S.time >= 17 ? Gold : Ink;
             homeFishing = fishingNow;
         }
 
@@ -116,7 +176,7 @@ namespace CozyFishing
             {
                 var (label, act) = buttons[i];
                 var b = new Button(() => { Hide(ask); act?.Invoke(); }) { text = label };
-                StyleButton(b, i == 0 ? Green : new Color(0.55f, 0.48f, 0.38f));
+                StyleButton(b, i == 0 ? Green : Gray);
                 b.style.marginTop = 8; b.style.alignSelf = Align.Stretch;
                 askBtns.Add(b);
             }
@@ -181,30 +241,30 @@ namespace CozyFishing
             var s = Story.S;
             morningBody.Clear();
             L(morningBody, $"เช้าวันที่ {s.day}", 44, Ink);
-            L(morningBody, Story.CurrentLuck.text, 28, new Color(0.3f, 0.45f, 0.6f)).style.marginTop = 4;
+            L(morningBody, Story.CurrentLuck.text, 28, new Color(0.55f, 0.8f, 1f)).style.marginTop = 4;
             var stats = Row(morningBody); stats.style.marginTop = 12;
-            L(Stat(stats), $"เงินเก็บ {Story.Baht(s.money)}", 28, new Color(0.42f, 0.31f, 0.07f));
+            L(Stat(stats), $"เงินเก็บ {Story.Baht(s.money)}", 28, Money);
             L(Stat(stats), $"ครอบครัว {(s.happy >= 75 ? "มีความสุข" : s.happy >= 40 ? "สบายดี" : "หิวโหย")} {s.happy}%", 28, Ink);
             var hot = s.hot != null ? FishDatabase.Get(s.hot) : null;
             if (hot != null)
             {
-                var hb = Box(morningBody, new Color(1f, 0.93f, 0.8f), 22, false); Pad(hb, 10, 18); hb.style.marginTop = 12;
-                L(hb, $"วันนี้แม่ค้ารับซื้อ{(FishDex.Has(hot.id) ? hot.name : "ปลาลึกลับ")}ราคาพิเศษ {Story.Baht(Story.PriceOf(hot.id))}/กก.", 26, new Color(0.62f, 0.3f, 0.1f));
+                var hb = Box(morningBody, new Color(0.32f, 0.2f, 0.08f, 0.9f), 22, false); Pad(hb, 10, 18); hb.style.marginTop = 12;
+                L(hb, $"วันนี้แม่ค้ารับซื้อ{(FishDex.Has(hot.id) ? hot.name : "ปลาลึกลับ")}ราคาพิเศษ {Story.Baht(Story.PriceOf(hot.id))}/กก.", 26, Money);
             }
             var g = Story.CurrentGoal;
-            var gb = Box(morningBody, new Color(0.95f, 0.97f, 0.92f), 22, false); Pad(gb, 12, 18); gb.style.marginTop = 12;
+            var gb = Box(morningBody, Glass2, 22, false); Pad(gb, 12, 18); gb.style.marginTop = 12;
             if (g != null)
             {
                 var gl = L(gb, $"เป้าหมาย: {g.text}", 28, Ink); gl.style.unityTextAlign = TextAnchor.MiddleLeft;
-                var bar = Bar(gb, 24, new Color(0.88f, 0.86f, 0.8f)); var fill = Box(bar, Gold, 12, false); fill.style.height = Length.Percent(100);
+                var bar = Bar(gb, 24, Track); var fill = Box(bar, Gold, 12, false); fill.style.height = Length.Percent(100);
                 fill.style.width = Length.Percent(Mathf.Clamp01((float)s.money / g.cost) * 100);
                 var gr = Row(gb); gr.style.justifyContent = Justify.SpaceBetween; gr.style.marginTop = 8; gr.style.alignItems = Align.Center;
                 L(gr, $"{Story.Baht(s.money)} / {Story.Baht(g.cost)}", 24, Ink);
                 if (Story.CanPayGoal) { var pb = new Button(() => onMorningPay?.Invoke()) { text = s.goal == 0 ? "จ่ายค่าซ่อมหลังคา" : "จ่ายเลย" }; StyleButton(pb, new Color(0.85f, 0.45f, 0.2f)); gr.Add(pb); }
-                else if (s.goal >= 2) L(gr, "(ต้องปลดล็อกที่ตกปลาครบทุกด่านก่อน)", 20, new Color(0.5f, 0.45f, 0.4f), false);
+                else if (s.goal >= 2) L(gr, "(ต้องปลดล็อกที่ตกปลาครบทุกด่านก่อน)", 20, Sub, false);
             }
             else L(gb, "ทำครบทุกเป้าหมายแล้ว! ตกปลาสบาย ๆ ได้ตลอดไป", 26, Ink);
-            if (!Story.RoofFixed) L(morningBody, "หลังคาบ้านยังรั่วอยู่ เมื่อคืนต้องเอาถังรองน้ำฝน…", 22, new Color(0.45f, 0.4f, 0.35f), false).style.marginTop = 8;
+            if (!Story.RoofFixed) L(morningBody, "หลังคาบ้านยังรั่วอยู่ เมื่อคืนต้องเอาถังรองน้ำฝน…", 22, Sub, false).style.marginTop = 8;
             var go = new Button(() => { Hide(morning); onMorningGo?.Invoke(); }) { text = "ออกไปตกปลา" };
             StyleButton(go, Green); go.style.fontSize = 34; go.style.alignSelf = Align.Center; go.style.marginTop = 16;
             morningBody.Add(go);
@@ -224,28 +284,28 @@ namespace CozyFishing
         {
             eveList.Clear();
             var b = Story.S.basket;
-            if (b.Count == 0) L(eveList, "วันนี้ข้องว่างเปล่า…", 28, new Color(0.45f, 0.4f, 0.35f));
+            if (b.Count == 0) L(eveList, "วันนี้ข้องว่างเปล่า…", 28, Sub);
             float fed = 0; int earn = 0;
             for (int i = 0; i < b.Count; i++)
             {
                 int idx = i;
                 var f = b[i]; var sp = FishDatabase.Get(f.id);
                 if (eveGrill[i]) fed += f.kg; else earn += Story.Value(f);
-                var row = Box(eveList, new Color(1f, 0.99f, 0.95f), 20, false); Pad(row, 6, 12); row.style.flexDirection = FlexDirection.Row; row.style.alignItems = Align.Center; row.style.marginBottom = 8;
+                var row = Box(eveList, Glass2, 20, false); Pad(row, 6, 12); row.style.flexDirection = FlexDirection.Row; row.style.alignItems = Align.Center; row.style.marginBottom = 8;
                 FishThumb(row, sp, 120, 70);
                 var info = new VisualElement { pickingMode = PickingMode.Ignore }; info.style.flexGrow = 1; info.style.marginLeft = 8; row.Add(info);
                 var n = L(info, sp?.name ?? f.id, 26, Ink); n.style.unityTextAlign = TextAnchor.MiddleLeft;
-                var d = L(info, $"{f.kg:0.00} กก. · ขายได้ {Story.Baht(Story.Value(f))}{(Story.S.hot == f.id ? " (ราคาพิเศษ)" : "")}", 20, new Color(0.4f, 0.35f, 0.3f), false); d.style.unityTextAlign = TextAnchor.MiddleLeft;
-                var g = new Button(() => { eveGrill[idx] = true; FillEvening(); }) { text = "ปิ้ง" }; StyleButton(g, eveGrill[i] ? new Color(0.85f, 0.45f, 0.2f) : new Color(0.8f, 0.76f, 0.7f)); g.style.fontSize = 24; row.Add(g);
-                var s = new Button(() => { eveGrill[idx] = false; FillEvening(); }) { text = "ขาย" }; StyleButton(s, !eveGrill[i] ? new Color(0.62f, 0.5f, 0.15f) : new Color(0.8f, 0.76f, 0.7f)); s.style.fontSize = 24; s.style.marginLeft = 6; row.Add(s);
+                var d = L(info, $"{f.kg:0.00} กก. · ขายได้ {Story.Baht(Story.Value(f))}{(Story.S.hot == f.id ? " (ราคาพิเศษ)" : "")}", 20, Sub, false); d.style.unityTextAlign = TextAnchor.MiddleLeft;
+                var g = new Button(() => { eveGrill[idx] = true; FillEvening(); }) { text = "ปิ้ง" }; StyleButton(g, eveGrill[i] ? new Color(0.85f, 0.45f, 0.2f) : Gray); g.style.fontSize = 24; row.Add(g);
+                var s = new Button(() => { eveGrill[idx] = false; FillEvening(); }) { text = "ขาย" }; StyleButton(s, !eveGrill[i] ? new Color(0.62f, 0.5f, 0.15f) : Gray); s.style.fontSize = 24; s.style.marginLeft = 6; row.Add(s);
             }
             eveSum.Clear();
             var r1 = Row(eveSum); r1.style.justifyContent = Justify.SpaceBetween;
             L(r1, "ความอิ่มของครอบครัว", 24, Ink); L(r1, $"{fed:0.00} / {Story.NeedKg} กก.", 24, Ink);
-            var bar = Bar(eveSum, 20, new Color(0.88f, 0.86f, 0.8f)); var fill = Box(bar, new Color(0.85f, 0.45f, 0.2f), 10, false); fill.style.height = Length.Percent(100);
+            var bar = Bar(eveSum, 20, Track); var fill = Box(bar, new Color(0.85f, 0.45f, 0.2f), 10, false); fill.style.height = Length.Percent(100);
             fill.style.width = Length.Percent(Mathf.Clamp01(fed / Story.NeedKg) * 100);
             var r2 = Row(eveSum); r2.style.justifyContent = Justify.SpaceBetween; r2.style.marginTop = 6;
-            L(r2, "ขายตลาดได้", 24, Ink); L(r2, Story.Baht(earn), 24, new Color(0.42f, 0.31f, 0.07f));
+            L(r2, "ขายตลาดได้", 24, Ink); L(r2, Story.Baht(earn), 24, Money);
         }
 
         void FishThumb(VisualElement parent, FishSpecies sp, float w, float h)
@@ -268,15 +328,15 @@ namespace CozyFishing
             bagList.Clear();
             var b = Story.S.basket;
             bagTitle.text = $"ข้องปลา {b.Count}/{Story.Capacity} · ขายได้ราว {Story.Baht(Story.BasketValue)}";
-            if (b.Count == 0) L(bagList, "ข้องยังว่างอยู่ ไปตกปลากันเถอะ!", 26, new Color(0.45f, 0.4f, 0.35f));
+            if (b.Count == 0) L(bagList, "ข้องยังว่างอยู่ ไปตกปลากันเถอะ!", 26, Sub);
             for (int i = 0; i < b.Count; i++)
             {
                 int idx = i; var f = b[i]; var sp = FishDatabase.Get(f.id);
-                var row = Box(bagList, new Color(1f, 0.99f, 0.95f), 20, false); Pad(row, 6, 12); row.style.flexDirection = FlexDirection.Row; row.style.alignItems = Align.Center; row.style.marginBottom = 8;
+                var row = Box(bagList, Glass2, 20, false); Pad(row, 6, 12); row.style.flexDirection = FlexDirection.Row; row.style.alignItems = Align.Center; row.style.marginBottom = 8;
                 FishThumb(row, sp, 110, 64);
                 var info = new VisualElement { pickingMode = PickingMode.Ignore }; info.style.flexGrow = 1; info.style.marginLeft = 8; row.Add(info);
                 var n = L(info, sp?.name ?? f.id, 26, Ink); n.style.unityTextAlign = TextAnchor.MiddleLeft;
-                var d = L(info, $"{f.kg:0.00} กก. · {f.cm} ซม. · {Story.Baht(Story.Value(f))}", 20, new Color(0.4f, 0.35f, 0.3f), false); d.style.unityTextAlign = TextAnchor.MiddleLeft;
+                var d = L(info, $"{f.kg:0.00} กก. · {f.cm} ซม. · {Story.Baht(Story.Value(f))}", 20, Sub, false); d.style.unityTextAlign = TextAnchor.MiddleLeft;
                 var rel = new Button(() => { var old = Story.Release(idx); Toast($"ปล่อย{FishDatabase.Get(old.id)?.name}คืนน้ำแล้ว"); FillBag(); }) { text = "ปล่อยคืนน้ำ" };
                 StyleButton(rel, new Color(0.3f, 0.55f, 0.7f)); rel.style.fontSize = 22; row.Add(rel);
             }

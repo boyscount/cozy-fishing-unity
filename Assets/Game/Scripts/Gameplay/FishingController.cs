@@ -76,7 +76,7 @@ namespace CozyFishing
                     if (inZone && Time.time > botNext) { botNext = Time.time + 0.35f; return true; }
                     return false;
                 case FishState.Fight: return fight.Tension < Mathf.Min(0.8f, fight.ZoneCenter + fight.ZoneWidth * 0.3f);
-                case FishState.Caught: if (hud.CatchCardOpen && t > 3.5f) hud.CloseCard(false); return false;
+                case FishState.Caught: if (hud.CatchCardOpen && t > 6f) hud.CloseCard(false); return false;
                 default: return false;
             }
         }
@@ -224,7 +224,15 @@ namespace CozyFishing
 
         bool NearSpecial => new Vector2(bob.x - world.Special.x, bob.z - world.Special.z).magnitude < world.SpecialRadius;
         // ดวงประจำวัน: ฟ้าครึ้ม/ฝน = ขยะบ่อยขึ้น · วันฝนหนักบางวันปลาแทบไม่กินเหยื่อ
-        void Roll() => fish = Story.S.dead && rng.NextDouble() < 0.85
+        bool NearDock => world.OnSolid(player.Pos.x, player.Pos.z);   // ยืนบนท่าน้ำ
+        void Roll()
+        {
+            // สืบคดี: ระหว่างตามหาเบาะแส ปลาที่พาเบาะแส/ขวดจดหมาย มีโอกาสโผล่มากขึ้นเมื่ออยู่ในเงื่อนไข
+            var o = Mystery.Override(Story.S.time, NearSpecial, NearDock, rng);
+            if (o.HasValue) { fish = o.Value; return; }
+            RollNormal();
+        }
+        void RollNormal() => fish = Story.S.dead && rng.NextDouble() < 0.85
             ? FishRoller.Roll(world.StageId, false, 0, 1f, Story.S.time, rng)
             : FishRoller.Roll(world.StageId, NearSpecial, world.DepthAt(bob.x, bob.z), Story.JunkChance, Story.S.time, rng);
 
@@ -251,7 +259,13 @@ namespace CozyFishing
 
         void StartFight()
         {
-            if (fish.IsJunk) { hud.Toast($"ได้{fish.junk} …เก็บไปทิ้งให้น้ำสะอาด"); Roll(); StartRetrieve(); return; }
+            if (fish.IsJunk)
+            {
+                var bottle = fish.junk == Mystery.BottleJunk ? Mystery.OnBottle() : null;
+                if (bottle != null) hud.ShowClue(bottle);
+                else hud.Toast($"ได้{fish.junk} …เก็บไปทิ้งให้น้ำสะอาด");
+                Roll(); StartRetrieve(); return;
+            }
             fight = new FightModel(fish.species, false, rng);
             fight.OnDash += () => WaterFx.AddRipple(bob.x, bob.z, 1.2f);
             from = bob;
@@ -286,30 +300,40 @@ namespace CozyFishing
             caughtGo.transform.position = bob;
             from = bob;
             caughtIsNew = FishDex.Record(fish.species.id, fish.kg);
+            caughtClue = Mystery.OnCatch(fish.species.id, Story.S.time, NearSpecial, NearDock, rng);
+            caughtSecret = Mystery.CheckCatchSecret(fish.species.id, fish.kg, Story.S.time, Story.S.luck);
             // ข้องเต็ม → ยังไม่ใส่ รอให้ผู้เล่นเลือกแลกหรือปล่อยในการ์ด
             var f = new BasketFish { id = fish.species.id, kg = fish.kg, cm = fish.cm };
-            if (Story.BasketFull) pending = f; else { pending = null; Story.AddFish(f); }
+            pending = f;   // ยังไม่ใส่ข้อง รอผู้เล่นกด "เก็บ" หรือ "ปล่อย" ในการ์ด
             Set(FishState.Caught);
         }
 
         BasketFish pending;
+        Clue caughtClue;
+        FishSecret caughtSecret;
 
         void ShowCard()
         {
             var img = preview != null ? preview.Live(fish.species) : null;
-            if (pending != null)
+            string clueNote = caughtClue != null ? $"พบเบาะแส! {caughtClue.name} — {caughtClue.found}" : null;
+            if (caughtClue != null) hud.Toast($"เบาะแส {Mystery.CluesFound}/{Mystery.Current.clues.Length} · บันทึกลงสมุดคดีแล้ว");
+            if (caughtSecret != null) hud.Toast($"ค้นพบความลับของ{fish.species.name}! ดูในสมุดปลา");
+            if (Story.BasketFull)
             {
                 int ci = Story.CheapestIndex(); var c = Story.S.basket[ci];
                 bool better = Story.Value(pending) > Story.Value(c);
-                hud.ShowCatch(fish, img, caughtIsNew, $"เก็บตัวนี้ · ปล่อย{FishDatabase.Get(c.id)?.name}ตัวที่ถูกสุด ({Story.Baht(Story.Value(c))})", () => KeepPending(true),
-                    "ปล่อยตัวนี้คืนน้ำ", () => KeepPending(false), better ? "ตัวนี้ราคาดีกว่าตัวที่ถูกสุดในข้อง ควรแลก!" : "ตัวนี้ราคาน้อยกว่าทุกตัวในข้อง ปล่อยคืนน้ำดีกว่า");
+                hud.ShowCatch(fish, img, caughtIsNew, $"เก็บ (แลกกับ{FishDatabase.Get(c.id)?.name} {Story.Baht(Story.Value(c))})", () => KeepPending(true),
+                    "ปล่อย", () => KeepPending(false), clueNote ?? (better ? "ตัวนี้ราคาดีกว่าตัวที่ถูกสุดในข้อง ควรแลก!" : "ตัวนี้ราคาน้อยกว่าทุกตัวในข้อง ปล่อยคืนน้ำดีกว่า"));
             }
-            else hud.ShowCatch(fish, img, caughtIsNew, $"เก็บใส่ข้องปลา ({Story.S.basket.Count}/{Story.Capacity})", () => { EndCatch(); director?.OnFishKept(); });
+            else hud.ShowCatch(fish, img, caughtIsNew, $"เก็บใส่ข้อง ({Story.S.basket.Count + 1}/{Story.Capacity})",
+                () => { Story.AddFish(pending); pending = null; EndCatch(); director?.OnFishKept(); },
+                "ปล่อย", () => { pending = null; hud.Toast("ปล่อยคืนน้ำ ขอให้โตไว ๆ นะ"); EndCatch(); }, clueNote);
         }
 
         void KeepPending(bool keep)
         {
-            if (keep && pending != null) { var old = Story.SwapCheapest(pending); hud.Toast($"เก็บ{FishDatabase.Get(pending.id)?.name} · ปล่อย{FishDatabase.Get(old.id)?.name}คืนน้ำ"); }
+            if (keep && pending != null && !Story.BasketFull) { Story.AddFish(pending); hud.Toast($"เก็บ{FishDatabase.Get(pending.id)?.name}ใส่ข้องแล้ว"); }
+            else if (keep && pending != null) { var old = Story.SwapCheapest(pending); hud.Toast($"เก็บ{FishDatabase.Get(pending.id)?.name} · ปล่อย{FishDatabase.Get(old.id)?.name}คืนน้ำ"); }
             else hud.Toast("ปล่อยคืนน้ำ ขอให้โตไว ๆ นะ");
             pending = null;
             EndCatch();
@@ -388,6 +412,7 @@ namespace CozyFishing
                 default: hud.Hint(""); break;
             }
             hud.Power(State == FishState.Charging ? charge : -1);
+            hud.LineDistance(LineOut || State == FishState.Bite ? Vector2.Distance(new Vector2(player.Pos.x, player.Pos.z), new Vector2(bob.x, bob.z)) : -1);
             hud.Tension(State == FishState.Fight, fight?.Tension ?? 0, fight?.Progress ?? 0, fight?.ZoneCenter ?? 0.5f, fight?.ZoneWidth ?? 0.6f, State == FishState.Fight && fight.Tension > 0.85f);
             hud.Strike(State == FishState.Strike, strike?.Pos ?? 0, strike?.Center ?? 0, strike?.Width ?? 0, strike?.Hits ?? 0, strike?.Need ?? 0, strike?.Misses ?? 0);
             hud.Alert(State == FishState.Bite, player.Pos + Vector3.up * 2.3f, !fish.IsJunk && fish.species != null && fish.species.stars >= 3);

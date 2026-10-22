@@ -232,4 +232,61 @@ namespace CozyFishing.Tests
             Assert.IsTrue(Story.Lucks.Any(l => l.id == s.luck));
         }
     }
+
+    public class MysteryTests
+    {
+        static void Fresh() { var st = new StoryState(); Story.RollMarket(st, new Random(1)); Story.UseForTests(st); Mystery.UseForTests(new MysteryState()); }
+
+        [Test]
+        public void NoCluesBeforeTheCaseStarts()
+        {
+            Fresh();
+            Assert.IsNull(Mystery.OnCatch("chado", 7f, false, false, new Random(1)));
+            Assert.IsNull(Mystery.Override(7f, true, true, new Random(1)));
+        }
+
+        [Test]
+        public void EachClueComesFromItsOwnCondition()
+        {
+            Fresh(); Mystery.Start();
+            var rng = new Random(2);
+            Assert.IsNull(Mystery.OnCatch("chado", 12f, false, false, rng), "ชะโดตอนเที่ยงไม่ใช่เบาะแส");
+            Assert.AreEqual("ribbon", Mystery.OnCatch("chado", 7f, false, false, rng)?.id);
+            Assert.AreEqual("song", Mystery.OnCatch("butong", 17f, true, false, rng)?.id);
+            Assert.AreEqual("letter", Mystery.OnBottle()?.id);
+            Assert.AreEqual("ring", Mystery.OnGrill(new[] { new BasketFish { id = "salit", kg = 0.2f } })?.id);
+            for (int i = 0; i < 50 && !Mystery.HasClue("scale"); i++) Mystery.OnCatch("mo", 10f, true, false, rng);
+            Assert.IsTrue(Mystery.HasClue("scale"));
+            Assert.IsTrue(Mystery.ReadyToSolve);
+        }
+
+        [Test]
+        public void WrongAnswerKeepsCaseOpen_RightAnswerGivesBigBasketAndMoney()
+        {
+            Fresh(); Mystery.Start();
+            foreach (var c in Mystery.Current.clues) Mystery.M.clues.Add(c.id);
+            Assert.IsFalse(Mystery.Answer(0));
+            Assert.IsFalse(Mystery.Solved);
+            Assert.IsTrue(Mystery.Answer(Mystery.Current.answer));
+            Assert.IsTrue(Mystery.Solved);
+            Assert.AreEqual(14, Story.Capacity);
+            Assert.AreEqual(Mystery.Current.rewardMoney, Story.S.money);
+        }
+
+        [Test]
+        public void FishSecretsUnlockFromTheirConditions()
+        {
+            Fresh();
+            for (int i = 0; i < 4; i++) Assert.IsNull(Mystery.CheckCatchSecret("kradi", 0.1f, 10, "normal"));
+            Assert.AreEqual("kradi", Mystery.CheckCatchSecret("kradi", 0.1f, 10, "normal")?.species);
+            Assert.IsNull(Mystery.CheckCatchSecret("mo", 0.2f, 10, "normal"));
+            Assert.AreEqual("mo", Mystery.CheckCatchSecret("mo", 0.2f, 10, "bad")?.species);
+            Assert.AreEqual("chado", Mystery.CheckCatchSecret("chado", 3f, 6.5f, "normal")?.species);
+            var three = new[] { new BasketFish { id = "salit" }, new BasketFish { id = "salit" }, new BasketFish { id = "salit" } };
+            Mystery.OnGrill(three);
+            Assert.AreEqual(1, Mystery.CheckGrillSecrets(three).Count);
+            Assert.IsTrue(Mystery.SecretKnown("salit"));
+            Assert.AreEqual(6, Mystery.Secrets.Length);
+        }
+    }
 }

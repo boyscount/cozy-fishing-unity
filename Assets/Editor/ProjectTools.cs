@@ -42,7 +42,7 @@ public static class ProjectTools
     public static void BuildWebGL()
     {
         PlayerSettings.companyName = "boyscount";
-        PlayerSettings.productName = "ตกปลาสบายใจ";
+        PlayerSettings.productName = "A Basket of Tomorrows";
         PlayerSettings.WebGL.compressionFormat = WebGLCompressionFormat.Gzip;   // Brotli ใช้แรมตอน build มากเกิน (เครื่องเหลือแรมน้อยแล้ว build ล้ม)
         PlayerSettings.WebGL.decompressionFallback = true;
         PlayerSettings.WebGL.dataCaching = true;

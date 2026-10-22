@@ -15,8 +15,11 @@ namespace CozyFishing
         public bool TouchUi { get; private set; }
         public bool CardOpen => card.style.display == DisplayStyle.Flex || (dex != null && dex.style.display == DisplayStyle.Flex);
 
-        static readonly Color Paper = new Color(1f, 0.973f, 0.918f, 0.96f), Ink = new Color(0.2f, 0.15f, 0.11f), Green = new Color(0.36f, 0.6f, 0.27f),
-            Gold = new Color(0.93f, 0.66f, 0.15f), Edge = new Color(0.55f, 0.42f, 0.25f, 0.55f);
+        // โทนเกมตกปลาแบบซิม: แผงกระจกสีเข้มโปร่งแสง · ตัวหนังสือขาว · สีส้มเน้นปุ่มสำคัญ · เขียวสำหรับค่าที่ดี
+        static readonly Color Paper = new Color(0.06f, 0.08f, 0.1f, 0.72f), Ink = new Color(0.95f, 0.96f, 0.97f), Green = new Color(0.24f, 0.7f, 0.42f),
+            Gold = new Color(0.96f, 0.55f, 0.16f), Edge = new Color(1f, 1f, 1f, 0.14f),
+            Glass2 = new Color(0.13f, 0.16f, 0.19f, 0.92f), Glass3 = new Color(0.2f, 0.23f, 0.27f, 0.92f), Sub = new Color(0.72f, 0.76f, 0.8f),
+            Money = new Color(1f, 0.82f, 0.38f), Track = new Color(1f, 1f, 1f, 0.12f), Gray = new Color(0.33f, 0.36f, 0.4f, 0.95f);
         UIDocument doc;
         VisualElement root, hintRow, toastRow, fightRow, strikeRow, jumpBtn, hintBox, toastBox, powerBox, powerFill, fightBox, needle, zone, progFill, strikeBox, sMark, sZone, card, joy, knob, actBtn, alertBg;
         VisualElement cardImg, cardNew, dex, dexGrid, dexBtn; Label dexCount, dexTitle; string dexStage = "paddy";
@@ -66,14 +69,14 @@ namespace CozyFishing
             parent?.Add(l);
             return l;
         }
-        static VisualElement Box(VisualElement parent, Color bg, float radius = 28, bool border = true)
+        static VisualElement Box(VisualElement parent, Color bg, float radius = 12, bool border = true)
         {
             var e = new VisualElement { pickingMode = PickingMode.Ignore };
             e.style.backgroundColor = bg;
             e.style.borderTopLeftRadius = e.style.borderTopRightRadius = e.style.borderBottomLeftRadius = e.style.borderBottomRightRadius = radius;
             if (border)
             {
-                e.style.borderTopWidth = e.style.borderBottomWidth = e.style.borderLeftWidth = e.style.borderRightWidth = 3;
+                e.style.borderTopWidth = e.style.borderBottomWidth = e.style.borderLeftWidth = e.style.borderRightWidth = 1.5f;
                 e.style.borderTopColor = e.style.borderBottomColor = e.style.borderLeftColor = e.style.borderRightColor = Edge;
             }
             e.style.flexShrink = 0;
@@ -107,24 +110,19 @@ namespace CozyFishing
 
         void Build()
         {
-            var countBox = countBoxRef = Box(root, Paper, 999); Abs(countBox, 24, null, 24); Pad(countBox, 8, 26);
-            count = L(countBox, "ปลา 0 ตัว · ฿0", 30, Ink);
+            var countBox = countBoxRef = Box(root, Paper, 12); Abs(countBox, 24, null, 24); Pad(countBox, 6, 18);
+            count = L(countBox, "ปลา 0 ตัว · ฿0", 26, Ink);
 
             // ข้อความแจ้งสั้น ๆ: กลางจอด้านบน
             toastRow = CenterRow(96, null);
             toastBox = Box(toastRow, Paper, 28); Pad(toastBox, 12, 28); toastBox.style.maxWidth = 820;
             toast = L(toastBox, "", 32, Ink);
 
-            // แถบแรงตึงสาย + ระยะปลา (ด้านบน ใต้ข้อความแจ้ง)
-            fightRow = CenterRow(170, null);
-            fightBox = Box(fightRow, Paper, 28); Pad(fightBox, 16, 26); MaxW(fightBox, 760);
-            var fr = L(fightBox, "แรงตึงสาย (อย่าให้เข็มเข้าแดง)", 26, Ink); fr.style.unityTextAlign = TextAnchor.MiddleLeft;
-            var tb = Bar(fightBox, 40, new Color(0.81f, 0.89f, 0.94f));
-            zone = Box(tb, new Color(0.36f, 0.62f, 0.27f, 0.65f), 0, false); Abs(zone, null, null, 0, 0);
-            var red = Box(tb, new Color(0.86f, 0.32f, 0.24f, 0.9f), 0, false); Abs(red, null, 0, 0, 0); red.style.width = Length.Percent(12);
-            needle = Box(tb, Ink, 5, false); Abs(needle, null, null, -2, -2); needle.style.width = 12;
-            var pr = L(fightBox, "ดึงปลาเข้าฝั่ง", 24, Ink); pr.style.unityTextAlign = TextAnchor.MiddleLeft; pr.style.marginTop = 10;
-            var pb = Bar(fightBox, 22, new Color(0.91f, 0.86f, 0.75f)); progFill = Box(pb, Green, 11, false); progFill.style.height = Length.Percent(100);
+            // เกจแนวตั้งด้านขวา (แบบเกมตกปลาซิม): แรงตึงสาย (แท่งไล่สีเขียว→เหลือง→แดง มีกรอบโซนปลอดภัย) + ระยะดึงปลาเข้าฝั่ง
+            fightRow = new VisualElement { pickingMode = PickingMode.Ignore }; Abs(fightRow, null, 30, 150, null); root.Add(fightRow);
+            fightBox = Box(fightRow, Paper, 12); Pad(fightBox, 10, 12); fightBox.style.flexDirection = FlexDirection.Row;
+            tensionSegs = Meter(fightBox, "สาย"); progSegs = Meter(fightBox, "ดึงเข้า");
+            zone = new VisualElement(); needle = new VisualElement(); progFill = new VisualElement();
 
             // แถบตีเบ็ดปลาหายาก
             strikeRow = CenterRow(170, null);
@@ -133,7 +131,7 @@ namespace CozyFishing
             strikeBox.style.borderTopColor = strikeBox.style.borderBottomColor = strikeBox.style.borderLeftColor = strikeBox.style.borderRightColor = Gold;
             L(strikeBox, "ตีเบ็ดตอนเข็มอยู่ในโซนทอง!", 28, Ink);
             sHits = L(strikeBox, "", 24, Ink);
-            var sb = Bar(strikeBox, 46, new Color(0.91f, 0.86f, 0.75f));
+            var sb = Bar(strikeBox, 46, Track);
             sZone = Box(sb, Gold, 0, false); Abs(sZone, null, null, 0, 0);
             sMark = Box(sb, Ink, 5, false); Abs(sMark, null, null, -2, -2); sMark.style.width = 14;
 
@@ -160,45 +158,69 @@ namespace CozyFishing
             if (TouchUi) { BuildJoystick(); BuildTouchExtras(); }
         }
 
+        VisualElement[] tensionSegs, progSegs;
+        Label lineNum, lineUnit;
+        // เกจแท่งแนวตั้ง 18 ช่อง (ช่องล่างสุด = ค่าน้อย)
+        VisualElement[] Meter(VisualElement parent, string label)
+        {
+            var col = new VisualElement { pickingMode = PickingMode.Ignore }; col.style.alignItems = Align.Center; col.style.marginLeft = col.style.marginRight = 6; parent.Add(col);
+            var stack = new VisualElement { pickingMode = PickingMode.Ignore }; stack.style.flexDirection = FlexDirection.ColumnReverse; col.Add(stack);
+            var segs = new VisualElement[18];
+            for (int i = 0; i < segs.Length; i++)
+            {
+                var s = new VisualElement { pickingMode = PickingMode.Ignore };
+                s.style.width = 40; s.style.height = 13; s.style.marginTop = 3;
+                s.style.borderLeftWidth = s.style.borderRightWidth = 3;
+                stack.Add(s); segs[i] = s;
+            }
+            var l = L(col, label, 18, Sub); l.style.marginTop = 6;
+            return segs;
+        }
+
+        /// ระยะสาย (เมตร) มุมขวาล่างเหนือปุ่มหลัก · ค่าติดลบ = ซ่อน
+        public void LineDistance(float m)
+        {
+            if (lineNum == null) return;
+            bool show = m >= 0 && !CardOpen && !ModalOpen;
+            lineNum.parent.style.display = show ? DisplayStyle.Flex : DisplayStyle.None;
+            if (show) lineNum.text = Mathf.RoundToInt(m).ToString();
+        }
+
         static void Shadow(Label l) { l.style.textShadow = new TextShadow { offset = new Vector2(0, 2), blurRadius = 6, color = new Color(0, 0, 0, 0.75f) }; }
 
         void BuildCard()
         {
             card = new VisualElement(); Abs(card, 0, 0, 0, 0); card.style.width = Length.Percent(100); card.style.height = Length.Percent(100);
-            card.style.backgroundColor = new Color(0.1f, 0.16f, 0.13f, 0.55f);
+            card.style.backgroundColor = new Color(0.02f, 0.03f, 0.04f, 0.55f);
             card.style.justifyContent = Justify.Center; card.style.alignItems = Align.Center; root.Add(card);
-            var cb = Box(card, Paper, 44); Pad(cb, 30, 40); MaxW(cb, 720); cb.pickingMode = PickingMode.Position;
+            var cb = Box(card, Paper, 16); Pad(cb, 20, 26); MaxW(cb, 980); cb.pickingMode = PickingMode.Position;
             cb.style.alignItems = Align.Stretch;
-            L(cb, "ได้ปลาแล้ว!", 26, new Color(0.42f, 0.31f, 0.07f));
-            // รูปปลา 3D หมุนช้า ๆ (จาก FishPreview) + ป้าย "ใหม่!" เมื่อเป็นชนิดแรกในสมุด
-            cardImg = new VisualElement { pickingMode = PickingMode.Ignore }; cardImg.style.height = 220; cardImg.style.flexShrink = 0; cardImg.style.marginTop = 4;
-            cardImg.style.backgroundColor = new Color(0.86f, 0.93f, 0.95f); cardImg.style.borderTopLeftRadius = cardImg.style.borderTopRightRadius = cardImg.style.borderBottomLeftRadius = cardImg.style.borderBottomRightRadius = 24;
+            // ภาพปลา 3D หมุนช้า ๆ เต็มแถบ + ป้าย "ใหม่!" มุมขวา
+            cardImg = new VisualElement { pickingMode = PickingMode.Ignore }; cardImg.style.height = 300; cardImg.style.flexShrink = 0;
+            cardImg.style.backgroundColor = new Color(0.1f, 0.18f, 0.22f, 0.9f);
+            cardImg.style.borderTopLeftRadius = cardImg.style.borderTopRightRadius = cardImg.style.borderBottomLeftRadius = cardImg.style.borderBottomRightRadius = 10;
             cardImg.style.unityBackgroundScaleMode = ScaleMode.ScaleToFit;
             cb.Add(cardImg);
-            cardNew = Box(cardImg, new Color(0.86f, 0.27f, 0.2f), 999, false); Abs(cardNew, null, 12, 12); Pad(cardNew, 4, 18);
-            L(cardNew, "ใหม่! บันทึกลงสมุด", 22, Color.white);
-            cardName = L(cb, "", 52, Ink); cardName.style.marginTop = 6;
-            cardStars = L(cb, "", 30, Gold);
-            var stats = new VisualElement { pickingMode = PickingMode.Ignore }; stats.style.flexDirection = FlexDirection.Row; stats.style.justifyContent = Justify.Center; stats.style.marginTop = 14; stats.style.flexShrink = 0; cb.Add(stats);
-            cardKg = L(Stat(stats), "", 34, Ink); cardPrice = L(Stat(stats), "", 34, new Color(0.42f, 0.31f, 0.07f));
-            cardDesc = L(cb, "", 26, Ink, false); cardDesc.style.marginTop = 16; cardDesc.style.marginBottom = 22;
-            var ok = cardOk = new Button(() => CloseCard(false)) { text = "เก็บใส่ข้องปลา" };
-            ok.style.unityFontDefinition = fontBold; ok.style.unityTextGenerator = TextGeneratorType.Advanced;
-            ok.style.fontSize = 32; ok.style.color = Color.white; ok.style.backgroundColor = Green; Pad(ok, 14, 40);
-            ok.style.borderTopLeftRadius = ok.style.borderTopRightRadius = ok.style.borderBottomLeftRadius = ok.style.borderBottomRightRadius = 999;
-            ok.style.borderTopWidth = ok.style.borderBottomWidth = ok.style.borderLeftWidth = ok.style.borderRightWidth = 0;
-            ok.style.alignSelf = Align.Center; ok.style.flexShrink = 0;
-            cb.Add(ok);
-            // ข้องเต็ม: ปุ่มที่สอง "ปล่อยคืนน้ำ"
-            cardAlt = new Button(() => CloseCard(true)) { text = "ปล่อยคืนน้ำ" };
-            StyleButton(cardAlt, new Color(0.3f, 0.55f, 0.7f)); cardAlt.style.alignSelf = Align.Center; cardAlt.style.marginTop = 8;
-            cb.Add(cardAlt);
+            cardNew = Box(cardImg, Gold, 6, false); Abs(cardNew, null, 12, 12); Pad(cardNew, 4, 14);
+            L(cardNew, "ใหม่! บันทึกลงสมุด", 20, Color.white);
+            var head = new VisualElement { pickingMode = PickingMode.Ignore }; head.style.flexDirection = FlexDirection.Row; head.style.alignItems = Align.FlexEnd; head.style.marginTop = 12; head.style.flexShrink = 0; cb.Add(head);
+            var names = new VisualElement { pickingMode = PickingMode.Ignore }; names.style.flexGrow = 1; head.Add(names);
+            cardStars = L(names, "", 22, Gold); cardStars.style.unityTextAlign = TextAnchor.MiddleLeft;
+            cardName = L(names, "", 56, Ink); cardName.style.unityTextAlign = TextAnchor.MiddleLeft;
+            var stats = new VisualElement { pickingMode = PickingMode.Ignore }; stats.style.flexDirection = FlexDirection.Row; stats.style.flexShrink = 0; head.Add(stats);
+            cardKg = L(Stat(stats), "", 30, Ink); cardPrice = L(Stat(stats), "", 30, Money);
+            cardDesc = L(cb, "", 22, Sub, false); cardDesc.style.marginTop = 10; cardDesc.style.unityTextAlign = TextAnchor.MiddleLeft;
+            var btns = new VisualElement { pickingMode = PickingMode.Ignore }; btns.style.flexDirection = FlexDirection.Row; btns.style.justifyContent = Justify.Center; btns.style.marginTop = 16; btns.style.flexShrink = 0; cb.Add(btns);
+            cardAlt = new Button(() => CloseCard(true)) { text = "ปล่อย" };
+            StyleButton(cardAlt, Gray); cardAlt.style.minWidth = 240; cardAlt.style.fontSize = 30; btns.Add(cardAlt);
+            cardOk = new Button(() => CloseCard(false)) { text = "เก็บ" };
+            StyleButton(cardOk, Gold); cardOk.style.minWidth = 300; cardOk.style.fontSize = 30; cardOk.style.marginLeft = 14; btns.Add(cardOk);
             card.style.display = DisplayStyle.None;
         }
 
         VisualElement Stat(VisualElement parent)
         {
-            var b = Box(parent, new Color(0.96f, 0.91f, 0.8f), 24, false); Pad(b, 10, 24); b.style.marginLeft = b.style.marginRight = 8;
+            var b = Box(parent, Glass3, 10, false); Pad(b, 8, 18); b.style.marginLeft = 10;
             return b;
         }
 
@@ -206,11 +228,15 @@ namespace CozyFishing
         void BuildButton()
         {
             float size = TouchUi ? 230 : 170;
-            actBtn = Box(root, Green, size / 2); Abs(actBtn, null, 40, null, 40);
+            var lineBox = new VisualElement { pickingMode = PickingMode.Ignore }; Abs(lineBox, null, 40, null, 40 + size + 10); lineBox.style.alignItems = Align.FlexEnd; root.Add(lineBox);
+            lineNum = L(lineBox, "0", 64, Ink); Shadow(lineNum);
+            lineUnit = L(lineBox, "ระยะสาย (ม.)", 18, Sub); Shadow(lineUnit);
+            lineBox.style.display = DisplayStyle.None;
+            actBtn = Box(root, Paper, size / 2); Abs(actBtn, null, 40, null, 40);
             actBtn.style.width = actBtn.style.height = size; actBtn.pickingMode = PickingMode.Position;
             actBtn.style.justifyContent = Justify.Center; actBtn.style.alignItems = Align.Center;
-            actBtn.style.borderTopColor = actBtn.style.borderBottomColor = actBtn.style.borderLeftColor = actBtn.style.borderRightColor = new Color(1, 1, 1, 0.85f);
-            actBtn.style.borderTopWidth = actBtn.style.borderBottomWidth = actBtn.style.borderLeftWidth = actBtn.style.borderRightWidth = 6;
+            actBtn.style.borderTopColor = actBtn.style.borderBottomColor = actBtn.style.borderLeftColor = actBtn.style.borderRightColor = Gold;
+            actBtn.style.borderTopWidth = actBtn.style.borderBottomWidth = actBtn.style.borderLeftWidth = actBtn.style.borderRightWidth = 7;
             actTxt = L(actBtn, "เหวี่ยง", TouchUi ? 44 : 36, Color.white); Shadow(actTxt);
             if (!TouchUi) { actKey = L(actBtn, "Space", 20, new Color(1, 1, 1, 0.85f)); actKey.style.marginTop = 2; }
             actBtn.RegisterCallback<PointerDownEvent>(e => { actBtn.CapturePointer(e.pointerId); GameInput.ButtonHeld = true; actBtn.style.scale = new Scale(new Vector3(0.94f, 0.94f, 1)); });
@@ -226,9 +252,9 @@ namespace CozyFishing
             pad.RegisterCallback<PointerDownEvent>(e => { pad.CapturePointer(e.pointerId); last = e.localPosition; });
             pad.RegisterCallback<PointerMoveEvent>(e => { if (!pad.HasPointerCapture(e.pointerId)) return; var p = (Vector2)e.localPosition; GameInput.TouchLook += new Vector2(p.x - last.x, last.y - p.y); last = p; });
             pad.RegisterCallback<PointerUpEvent>(e => pad.ReleasePointer(e.pointerId));
-            var jb = jumpBtn = Box(root, new Color(0.25f, 0.45f, 0.62f, 0.92f), 65); Abs(jb, null, 290, null, 60);
+            var jb = jumpBtn = Box(root, Paper, 65); Abs(jb, null, 290, null, 60);
             jb.style.width = jb.style.height = 130; jb.pickingMode = PickingMode.Position; jb.style.justifyContent = Justify.Center;
-            jb.style.borderTopColor = jb.style.borderBottomColor = jb.style.borderLeftColor = jb.style.borderRightColor = new Color(1, 1, 1, 0.85f);
+            jb.style.borderTopColor = jb.style.borderBottomColor = jb.style.borderLeftColor = jb.style.borderRightColor = new Color(1, 1, 1, 0.5f);
             jb.style.borderTopWidth = jb.style.borderBottomWidth = jb.style.borderLeftWidth = jb.style.borderRightWidth = 5;
             var jl = L(jb, "กระโดด", 28, Color.white); Shadow(jl);
             jb.RegisterCallback<PointerDownEvent>(e => GameInput.JumpButton = true);
@@ -259,7 +285,7 @@ namespace CozyFishing
 
         void BuildDex()
         {
-            dexBtn = Box(root, Paper, 999); Abs(dexBtn, null, 24, 24); Pad(dexBtn, 8, 24); dexBtn.pickingMode = PickingMode.Position;
+            dexBtn = Box(root, Paper, 12); Abs(dexBtn, null, 24, 24); Pad(dexBtn, 8, 24); dexBtn.pickingMode = PickingMode.Position;
             dexCount = L(dexBtn, $"สมุดปลา {FishDex.Discovered}/{FishDatabase.All.Count}", 28, Ink);
             dexBtn.RegisterCallback<PointerDownEvent>(e => OpenDex());
 
@@ -269,7 +295,7 @@ namespace CozyFishing
             var head = new VisualElement { pickingMode = PickingMode.Ignore }; head.style.flexDirection = FlexDirection.Row; head.style.alignItems = Align.Center; head.style.flexShrink = 0; book.Add(head);
             dexTitle = L(head, "สมุดสะสมปลา", 36, Ink); dexTitle.style.flexGrow = 1; dexTitle.style.unityTextAlign = TextAnchor.MiddleLeft;
             var close = new Button(() => { dex.style.display = DisplayStyle.None; GameInput.Blocked = false; }) { text = "ปิด" };
-            StyleButton(close, new Color(0.55f, 0.42f, 0.25f)); head.Add(close);
+            StyleButton(close, Gray); head.Add(close);
             var tabs = new VisualElement { pickingMode = PickingMode.Ignore }; tabs.style.flexDirection = FlexDirection.Row; tabs.style.flexWrap = Wrap.Wrap; tabs.style.marginTop = 10; tabs.style.flexShrink = 0; book.Add(tabs);
             foreach (var (id, name) in Stages)
             {
@@ -287,9 +313,24 @@ namespace CozyFishing
         {
             b.style.unityFontDefinition = fontBold; b.style.unityTextGenerator = TextGeneratorType.Advanced;
             b.style.fontSize = 28; b.style.color = Color.white; b.style.backgroundColor = bg; Pad(b, 8, 26);
-            b.style.borderTopLeftRadius = b.style.borderTopRightRadius = b.style.borderBottomLeftRadius = b.style.borderBottomRightRadius = 999;
+            b.style.borderTopLeftRadius = b.style.borderTopRightRadius = b.style.borderBottomLeftRadius = b.style.borderBottomRightRadius = 10;
             b.style.borderTopWidth = b.style.borderBottomWidth = b.style.borderLeftWidth = b.style.borderRightWidth = 0;
             b.style.flexShrink = 0;
+            // นิ้วแตะ: กดแล้วยกนิ้วบนปุ่ม = กด (Clickable ของ Button บางครั้งไม่รับแตะบนเว็บมือถือ) · เมาส์ใช้ระบบเดิม
+            b.RegisterCallback<PointerDownEvent>(e =>
+            {
+                if (e.pointerType == UnityEngine.UIElements.PointerType.mouse) return;
+                b.CapturePointer(e.pointerId);
+                e.StopImmediatePropagation();
+            }, TrickleDown.TrickleDown);
+            b.RegisterCallback<PointerUpEvent>(e =>
+            {
+                if (e.pointerType == UnityEngine.UIElements.PointerType.mouse || !b.HasPointerCapture(e.pointerId)) return;
+                b.ReleasePointer(e.pointerId);
+                e.StopImmediatePropagation();
+                if (!b.enabledInHierarchy || !b.worldBound.Contains(e.position)) return;
+                using (var ev = NavigationSubmitEvent.GetPooled()) { ev.target = b; b.SendEvent(ev); }
+            }, TrickleDown.TrickleDown);
         }
 
         void OpenDex()
@@ -313,7 +354,7 @@ namespace CozyFishing
             {
                 total++;
                 bool has = FishDex.Has(sp.id); if (has) got++;
-                var cell = Box(dexGrid, has ? new Color(1f, 0.99f, 0.95f) : new Color(0.9f, 0.88f, 0.83f), 24); Pad(cell, 10, 10);
+                var cell = Box(dexGrid, has ? Glass2 : Glass3, 24); Pad(cell, 10, 10);
                 cell.style.width = 280; cell.style.marginLeft = cell.style.marginRight = 8; cell.style.marginBottom = 14;
                 var img = new VisualElement { pickingMode = PickingMode.Ignore }; img.style.height = 130; img.style.flexShrink = 0;
                 img.style.unityBackgroundScaleMode = ScaleMode.ScaleToFit;
@@ -321,7 +362,15 @@ namespace CozyFishing
                 cell.Add(img);
                 L(cell, has ? sp.name : "???", 28, Ink);
                 L(cell, new string('*', 0) + $"{FishDatabase.Rarity[sp.stars]} · {sp.stars} ดาว", 20, Gold);
-                L(cell, has ? $"ได้ {FishDex.Count(sp.id)} ตัว · หนักสุด {FishDex.BestKg(sp.id):0.00} กก." : (sp.stage == "paddy" ? "ยังไม่เคยตกได้" : "ด่านนี้ยังไม่เปิด"), 20, new Color(0.35f, 0.3f, 0.25f), false);
+                L(cell, has ? $"ได้ {FishDex.Count(sp.id)} ตัว · หนักสุด {FishDex.BestKg(sp.id):0.00} กก." : (sp.stage == "paddy" ? "ยังไม่เคยตกได้" : "ด่านนี้ยังไม่เปิด"), 20, Sub, false);
+                // ความลับของปลา: ปลดล็อกแล้วเห็นข้อความ · ยังไม่ปลดล็อกเห็นเงื่อนไข
+                var sec = Mystery.SecretOf(sp.id);
+                if (sec != null)
+                {
+                    bool known = Mystery.SecretKnown(sp.id);
+                    var sb = Box(cell, known ? new Color(0.24f, 0.2f, 0.34f, 0.92f) : Glass3, 14, false); Pad(sb, 6, 8); sb.style.marginTop = 6;
+                    L(sb, known ? "ความลับ: " + sec.text : "ความลับ: ??? (" + sec.hint + ")", 18, known ? new Color(0.82f, 0.75f, 1f) : Sub, false);
+                }
             }
             dexTitle.text = $"สมุดสะสมปลา · {got}/{total}";
             dexCount.text = $"สมุดปลา {FishDex.Discovered}/{FishDatabase.All.Count}";
@@ -348,7 +397,7 @@ namespace CozyFishing
         public void ActionLabel(string txt, bool hot)
         {
             actTxt.text = txt;
-            actBtn.style.backgroundColor = hot ? Gold : Green;
+            actBtn.style.backgroundColor = hot ? Gold : Paper;   // จังหวะสำคัญ (ปลากินเบ็ด/ตีเบ็ด) ปุ่มเป็นสีส้มเต็ม
         }
         public void Power(float v)
         {
@@ -359,9 +408,18 @@ namespace CozyFishing
         {
             fightBox.style.display = show ? DisplayStyle.Flex : DisplayStyle.None;
             if (!show) return;
-            needle.style.left = Length.Percent(Mathf.Clamp01(tension) * 100);
-            zone.style.left = Length.Percent((zc - zw / 2) * 100); zone.style.width = Length.Percent(zw * 100);
-            progFill.style.width = Length.Percent(Mathf.Clamp01(prog) * 100);
+            int n = tensionSegs.Length;
+            for (int i = 0; i < n; i++)
+            {
+                float v = (i + 0.5f) / n;
+                bool lit = v <= Mathf.Clamp01(tension);
+                var c = v > 0.88f ? new Color(0.92f, 0.26f, 0.2f) : v > 0.65f ? new Color(0.98f, 0.8f, 0.2f) : new Color(0.3f, 0.85f, 0.45f);
+                tensionSegs[i].style.backgroundColor = lit ? c : new Color(c.r, c.g, c.b, 0.16f);
+                bool inZone = Mathf.Abs(v - zc) < zw / 2;   // กรอบขาว = โซนที่ควรรักษาเข็มไว้
+                var bc = inZone ? new Color(1, 1, 1, 0.75f) : new Color(0, 0, 0, 0);
+                tensionSegs[i].style.borderLeftColor = tensionSegs[i].style.borderRightColor = bc;
+                progSegs[i].style.backgroundColor = v <= Mathf.Clamp01(prog) ? new Color(0.35f, 0.75f, 1f) : new Color(0.35f, 0.75f, 1f, 0.14f);
+            }
             fightBox.style.translate = new Translate(danger ? Mathf.Sin(Time.time * 60) * 5 : 0, 0);
         }
         public void Strike(bool show, float pos, float center, float width, int hits, int need, int misses)
@@ -397,6 +455,7 @@ namespace CozyFishing
             cardOk.text = okText; onCardOk = onOk;
             cardAlt.text = altText ?? ""; onCardAlt = onAlt;
             cardAlt.style.display = altText != null ? DisplayStyle.Flex : DisplayStyle.None;
+            cardAlt.SetEnabled(altText != null);
             GameInput.Blocked = true;
             card.style.display = DisplayStyle.Flex;
             actBtn.style.display = DisplayStyle.None;
@@ -409,12 +468,14 @@ namespace CozyFishing
             // จอแนวนอนบนมือถือ: คำแนะนำอยู่ล่างสุดระหว่างจอยกับปุ่ม (ไม่บังตัวละคร) · จอแนวตั้ง: อยู่เหนือปุ่ม
             bool portrait = Screen.height > Screen.width;
             // จอเตี้ย (มือถือแนวนอน): ลดความสูงรูปปลาบนการ์ดไม่ให้การ์ดล้นจอ
-            if (!float.IsNaN(root.layout.height)) cardImg.style.height = root.layout.height < 820 ? 130 : 220;
+            if (!float.IsNaN(root.layout.height)) cardImg.style.height = root.layout.height < 820 ? 150 : 300;
             hintRow.style.bottom = TouchUi && portrait ? 300 : 26;
             // จอแนวนอนเตี้ย: แถบสู้ปลา/ตีเบ็ดชิดขอบบนให้เห็นทุ่น · ข้อความแจ้งเลื่อนลงใต้แถบเมื่อแถบเปิดอยู่
-            fightRow.style.top = strikeRow.style.top = portrait ? 170 : 16;
-            bool panelUp = fightBox.style.display == DisplayStyle.Flex || strikeBox.style.display == DisplayStyle.Flex;
-            toastRow.style.top = panelUp ? (portrait ? 420 : 250) : 96;
+            strikeRow.style.top = portrait ? 170 : 16;
+            fightRow.style.top = portrait ? 260 : 150;   // เกจแนวตั้งด้านขวา ใต้ปุ่มสมุด
+            bool panelUp = strikeBox.style.display == DisplayStyle.Flex;
+            bool narrow = !float.IsNaN(root.layout.width) && root.layout.width < 1500;   // จอแคบ: ข้อความแจ้งเลื่อนลงใต้แผงเวลา/อากาศ
+            toastRow.style.top = panelUp ? (portrait ? 420 : 250) : narrow ? 170 : 96;
             // ตกปลาอยู่และไม่มีหน้าต่างเปิด → แสดงปุ่มควบคุม · อยู่บ้าน/มีการ์ด/หน้าต่าง → ซ่อน
             bool play = !CardOpen && !ModalOpen && Story.Phase == StoryPhase.Fishing;
             var hide = play ? DisplayStyle.Flex : DisplayStyle.None;

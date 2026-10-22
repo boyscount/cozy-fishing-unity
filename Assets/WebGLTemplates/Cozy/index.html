@@ -3,27 +3,94 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-  <meta name="theme-color" content="#1d3a2c">
-  <title>{{{ PRODUCT_NAME }}}</title>
+  <meta name="theme-color" content="#120d0a">
+  <title>{{{ PRODUCT_NAME }}} · ตะกร้าแห่งวันพรุ่งนี้</title>
+  <meta property="og:title" content="A Basket of Tomorrows · ตะกร้าแห่งวันพรุ่งนี้">
+  <meta property="og:description" content="เกมตกปลาเลี้ยงครอบครัว สืบคดีลึกลับ และไขความลับของปลาในทุ่งนาไทย">
+  <meta property="og:image" content="TemplateData/keyart-boat.jpg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Charm:wght@700&family=Sarabun:wght@400;600&display=swap" rel="stylesheet">
   <style>
-    html, body { margin: 0; height: 100%; background: #1d3a2c; overflow: hidden; touch-action: none; }
-    #unity-canvas { position: fixed; inset: 0; width: 100vw; height: 100vh; height: 100dvh; display: block; background: #1d3a2c; }
-    #loading { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px;
-      color: #f4efe1; font-family: system-ui, "Leelawadee UI", "Noto Sans Thai", sans-serif; background: radial-gradient(circle at 50% 40%, #2f5a43, #142a1f); }
-    #loading h1 { margin: 0; font-size: clamp(26px, 6vw, 44px); font-weight: 700; letter-spacing: .5px; }
-    #loading p { margin: 0; opacity: .8; font-size: 15px; }
-    #bar { width: min(320px, 70vw); height: 10px; border-radius: 6px; background: rgba(255,255,255,.15); overflow: hidden; }
-    #fill { width: 0; height: 100%; background: linear-gradient(90deg, #f2c94c, #7ed39b); transition: width .2s; }
+    html, body { margin: 0; height: 100%; background: #120d0a; overflow: hidden; touch-action: none; }
+    #unity-canvas { position: fixed; inset: 0; width: 100vw; height: 100vh; height: 100dvh; display: block; background: #120d0a; }
+
+    /* ---------- หน้าโหลด: ภาพประกอบ 2 ภาพ (เรือกลางแสงอาทิตย์ตก · ปลากับหีบปริศนาใต้น้ำ) + โลโก้ ---------- */
+    #loading { position: fixed; inset: 0; overflow: hidden; color: #f4ead6; font-family: "Sarabun", "Leelawadee UI", system-ui, sans-serif; }
+    #loading .bg { position: absolute; inset: -40px; background: url(TemplateData/keyart-blur.jpg) center / cover; filter: blur(18px) saturate(1.2) brightness(.55); transform: scale(1.1); }
+    #loading .shade { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 40%, rgba(0,0,0,0) 30%, rgba(0,0,0,.65) 100%); }
+    #loading .stage { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.6vh; padding: 3vh 16px; box-sizing: border-box; }
+    .panels { display: flex; gap: 14px; align-items: stretch; height: min(44vh, 500px); flex-shrink: 0; }
+    .panel { position: relative; height: 100%; aspect-ratio: 512 / 600; border-radius: 10px; overflow: hidden; box-shadow: 0 18px 50px rgba(0,0,0,.6), 0 0 0 1px rgba(255,210,150,.25); }
+    .panel img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .panel.secret { aspect-ratio: 512 / 640; }
+    .panel .cap { position: absolute; left: 0; right: 0; bottom: 0; padding: 26px 14px 10px; font: 600 14px "Sarabun", sans-serif; letter-spacing: .3px;
+      background: linear-gradient(transparent, rgba(0,0,0,.75)); color: #f2dcb4; text-align: center; }
+    .panel.boat img { animation: drift 18s ease-in-out infinite alternate; }
+    .panel.secret img { animation: drift 22s ease-in-out infinite alternate-reverse; }
+    @keyframes drift { from { transform: scale(1.04) translateY(0); } to { transform: scale(1.1) translateY(-1.5%); } }
+
+    .logo { position: relative; text-align: center; line-height: 1; margin-top: -6vh; z-index: 2; filter: drop-shadow(0 6px 18px rgba(0,0,0,.85)); }
+    .logo svg { width: min(190px, 40vw); height: auto; display: block; margin: 0 auto -8px; }
+    .logo .t1 { font: 500 clamp(15px, min(2.2vw, 3.2vh), 26px) "Cinzel", serif; letter-spacing: .32em; color: #f2d79a; }
+    .logo .t2 { font: 700 clamp(32px, min(5.6vw, 8vh), 70px) "Cinzel", serif; letter-spacing: .06em;
+      background: linear-gradient(180deg, #fff6df 0%, #f5c87a 55%, #c9873d 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    .logo .th { margin-top: 4px; font: 700 clamp(20px, min(3vw, 4.6vh), 36px) "Charm", "Sarabun", serif; color: #f6e2bd; }
+    .logo .th::before, .logo .th::after { content: ""; display: inline-block; width: 2.2em; height: 1px; margin: 0 .6em; vertical-align: middle; background: linear-gradient(90deg, transparent, #e7b46a); }
+    .logo .th::after { background: linear-gradient(90deg, #e7b46a, transparent); }
+    .tag { font-size: 15px; color: #d9c6a4; opacity: .9; text-align: center; max-width: 560px; }
+    #bar { width: min(420px, 78vw); height: 6px; border-radius: 3px; background: rgba(255,255,255,.14); overflow: hidden; }
+    #fill { width: 0; height: 100%; background: linear-gradient(90deg, #c9873d, #f5c87a, #fff1cf); transition: width .25s; box-shadow: 0 0 12px #f5c87a; }
+    #msg { margin: 0; font-size: 13px; opacity: .75; }
     #error { display: none; max-width: 80vw; text-align: center; color: #ffb4a8; }
+
+    /* จอแนวตั้ง (มือถือ): ภาพเรือภาพเดียวด้านบน โลโก้ซ้อนขอบล่างภาพ */
+    @media (max-aspect-ratio: 1/1) {
+      .panels { height: auto; width: min(92vw, 520px); }
+      .panel.secret { display: none; }
+      .panel.boat { width: 100%; height: auto; max-height: 52vh; }
+      .panel .cap { display: none; }
+      .logo { margin-top: -10vh; }
+    }
+    @media (max-height: 460px) { .panels { height: 52vh; } .tag { display: none; } .logo { margin-top: -7vh; } }
   </style>
 </head>
 <body>
   <canvas id="unity-canvas" tabindex="-1"></canvas>
   <div id="loading">
-    <h1>ตกปลาสบายใจ</h1>
-    <div id="bar"><div id="fill"></div></div>
-    <p id="msg">กำลังโหลดทุ่งนา… (ครั้งแรกประมาณ 50MB)</p>
-    <p id="error"></p>
+    <div class="bg"></div><div class="shade"></div>
+    <div class="stage">
+      <div class="panels">
+        <div class="panel boat"><img src="TemplateData/keyart-boat.jpg" alt=""><div class="cap">ทุกเย็นพ่อพายเรือกลับบ้าน พร้อมปลาเต็มข้อง</div></div>
+        <div class="panel secret"><img src="TemplateData/keyart-secret.jpg" alt=""><div class="cap">แต่ใต้ผิวน้ำ… มีบางอย่างรอให้เราค้นพบ</div></div>
+      </div>
+      <div class="logo">
+        <!-- ปลากระโดดเป็นเส้นโค้งเหนือตะกร้าสาน -->
+        <svg viewBox="0 0 260 120" aria-hidden="true">
+          <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff3d6"/><stop offset="1" stop-color="#d89a4e"/></linearGradient></defs>
+          <path d="M40 92 Q130 -8 220 70" fill="none" stroke="#e7b46a" stroke-width="2" stroke-dasharray="3 6" opacity=".7"/>
+          <g transform="translate(118 18) rotate(18)" fill="url(#g)">
+            <path d="M0 14 C14 0 44 0 58 12 C44 24 14 26 0 14 Z"/>
+            <path d="M56 12 L72 2 L68 12 L72 22 Z"/>
+            <circle cx="12" cy="11" r="2.2" fill="#3a2414"/>
+            <path d="M24 6 Q30 0 38 4" fill="none" stroke="#3a2414" stroke-width="1.4" opacity=".6"/>
+          </g>
+          <g transform="translate(96 80)" fill="none" stroke="url(#g)" stroke-width="3" stroke-linecap="round">
+            <path d="M0 0 H68 L60 34 H8 Z" fill="rgba(40,24,12,.55)"/>
+            <path d="M3 10 H65 M5 19 H63 M7 27 H61"/>
+            <path d="M14 0 L18 34 M28 0 L30 34 M41 0 L40 34 M54 0 L50 34"/>
+            <path d="M-4 0 Q34 -14 72 0" stroke-width="2.4"/>
+          </g>
+        </svg>
+        <div class="t1">A BASKET OF</div>
+        <div class="t2">TOMORROWS</div>
+        <div class="th">ตะกร้าแห่งวันพรุ่งนี้</div>
+      </div>
+      <div class="tag">ตกปลาเลี้ยงครอบครัว · สืบคดีลึกลับ · ไขความลับของปลาในทุ่งนาไทย</div>
+      <div id="bar"><div id="fill"></div></div>
+      <p id="msg">กำลังเตรียมบ่อปลา… (ครั้งแรกประมาณ 60MB)</p>
+      <p id="error"></p>
+    </div>
   </div>
   <script>
     var canvas = document.getElementById("unity-canvas");
@@ -44,8 +111,11 @@
     script.onload = function () {
       createUnityInstance(canvas, config, function (p) {
         document.getElementById("fill").style.width = Math.round(p * 100) + "%";
+        if (p > 0.92) document.getElementById("msg").textContent = "กำลังพายเรือเข้าฝั่ง…";
       }).then(function () {
-        document.getElementById("loading").style.display = "none";
+        var l = document.getElementById("loading");
+        l.style.transition = "opacity .8s"; l.style.opacity = 0;
+        setTimeout(function () { l.style.display = "none"; }, 850);
       }).catch(function (err) {
         var e = document.getElementById("error"); e.textContent = "เปิดเกมไม่ได้: " + err; e.style.display = "block";
       });

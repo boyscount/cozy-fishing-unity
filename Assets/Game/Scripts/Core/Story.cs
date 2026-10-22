@@ -32,6 +32,8 @@ namespace CozyFishing
         public List<string> marketIds = new List<string>();
         public List<float> marketMul = new List<float>();
         public bool bigBasket;
+        public string stage = "paddy";                     // ด่านที่กำลังตกปลาอยู่
+        public List<string> unlocked = new List<string>();  // ด่านที่ซื้อทางไปแล้ว (บ่อทุ่งนาเปิดเสมอ)
         public int caught, junk, sold, grilled, empty, earned;
     }
 
