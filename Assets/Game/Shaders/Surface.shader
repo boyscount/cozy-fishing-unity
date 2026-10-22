@@ -16,16 +16,18 @@ Shader "CozyFishing/Surface"
         _Sway ("Wind Sway", Range(0,0.5)) = 0
         _SwayStart ("Sway Start Height", Float) = 1.5
         _EmissionColor ("Emission", Color) = (0,0,0,0)
+        [Enum(UnityEngine.Rendering.CullMode)] _Cull ("Cull", Float) = 2
     }
     SubShader
     {
         Tags { "RenderType"="Opaque" "RenderPipeline"="UniversalPipeline" "Queue"="Geometry" }
+        Cull [_Cull]
 
         HLSLINCLUDE
         #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
         CBUFFER_START(UnityPerMaterial)
             float4 _BaseColor, _TriMap_ST, _MossColor, _EmissionColor;
-            float _TriScale, _Smoothness, _MossAmount, _Sway, _SwayStart, _UseVertexColor, _UseTriplanar;
+            float _TriScale, _Smoothness, _MossAmount, _Sway, _SwayStart, _UseVertexColor, _UseTriplanar, _Cull;
         CBUFFER_END
         float4 _CozyWind;   // x = เวลา, y = แรงลม (ตั้งจาก WaterFx)
 
@@ -73,10 +75,10 @@ Shader "CozyFishing/Surface"
                 return o;
             }
 
-            half4 frag(Varyings i) : SV_Target
+            half4 frag(Varyings i, bool front : SV_IsFrontFace) : SV_Target
             {
                 UNITY_SETUP_INSTANCE_ID(i);
-                float3 n = normalize(i.normalWS);
+                float3 n = normalize(i.normalWS) * (front ? 1 : -1);   // ใบไม้สองหน้า (Cull Off)
                 half3 albedo = _BaseColor.rgb;
                 #if _VERTEX_COLOR
                     albedo *= i.color.rgb;

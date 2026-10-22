@@ -79,10 +79,10 @@ public static class ProjectTools
         Shader.SetGlobalFloat("_CozyDim", 1);
         var focus = new Vector3(1.5f * 0.75f, 0, -7.6f * 0.6f + 6 * 0.4f);
         Directory.CreateDirectory("Builds");
-        foreach (var (name, w, h, k) in new[] { ("land", 1600, 900, 1f), ("port", 900, 1600, 1.6f) })
+        foreach (var (name, w, h, k) in new[] { ("land", 1600, 900, 1f), ("port", 900, 1600, 1.6f), ("close", 1600, 900, 0f) })
         {
-            cam.transform.position = focus + new Vector3(0, 10.5f * k, -15f * k);
-            cam.transform.LookAt(focus + Vector3.up * 1.4f);
+            if (k > 0) { cam.transform.position = focus + new Vector3(0, 10.5f * k, -15f * k); cam.transform.LookAt(focus + Vector3.up * 1.4f); }
+            else { cam.transform.position = new Vector3(4f, 2.2f, -11f); cam.transform.LookAt(new Vector3(10f, 3.2f, -6f)); }   // มุมต่ำดูต้นตาล/ต้นไม้/ทุ่งข้าวใกล้ ๆ
             var rt = new RenderTexture(w, h, 24, RenderTextureFormat.ARGB32) { antiAliasing = 1 };
             cam.targetTexture = rt;
             cam.aspect = (float)w / h;

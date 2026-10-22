@@ -26,7 +26,7 @@ public static class SceneBuilder
     {
         { "Cliff", ("#8a7f70", 0.7f, 0) }, { "Rock", ("#86817a", 0.6f, 0) }, { "Stone", ("#8c8780", 0.28f, 0) }, { "Bark", ("#ffffff", 0, 0) },
         { "Pine", ("#2f5e3c", 0, 0.05f) }, { "Leaf", ("#4f7f35", 0, 0.07f) }, { "Leaf2", ("#5d8a3b", 0, 0) }, { "Skin", ("#d9a47e", 0, 0) },
-        { "Shirt", ("#33507f", 0, 0) }, { "Pants", ("#34303a", 0, 0) }, { "Hat", ("#d8bb82", 0, 0) }, { "HatBand", ("#a54a36", 0, 0) },
+        { "Shirt", ("#5f86c4", 0, 0) }, { "Pants", ("#8a8c9c", 0, 0) }, { "Hat", ("#f0e2c0", 0, 0) }, { "HatBand", ("#a54a36", 0, 0) },
         { "Rod", ("#c49f5c", 0, 0) }, { "Eye", ("#1a1a1a", 0, 0) }, { "Hair", ("#231c18", 0, 0) }, { "Wood", ("#ffffff", 0, 0) },
         { "WoodDark", ("#a08870", 0, 0) }, { "Fish", ("#ffffff", 0, 0) }, { "FishFin", ("#dddddd", 0, 0) }, { "BoatPaint", ("#2a7d93", 0, 0) },
         { "BoatRed", ("#a83d33", 0, 0) }, { "Ribbon", ("#e07fa8", 0, 0) }, { "Ribbon2", ("#e3c142", 0, 0) }, { "Metal", ("#55585e", 0, 0) },
@@ -39,10 +39,11 @@ public static class SceneBuilder
         { "Wood", ("weathered_brown_planks", 0.55f) }, { "WoodDark", ("weathered_brown_planks", 0.55f) },
         { "Thatch", ("thatch_roof_angled", 0.45f) }, { "Roof", ("thatch_roof_angled", 0.45f) },
         { "Bark", ("bark_brown_02", 0.8f) }, { "PalmTrunk", ("bark_brown_02", 0.7f) },
+        { "Shirt", ("rough_linen", 3f) }, { "Pants", ("denim_fabric", 3f) }, { "Hat", ("reed_roof_04", 2.2f) },
     };
 
     static Shader surfShader;
-    static Material SurfMat(string name, Color c, float moss = 0, float sway = 0, bool vertexColor = false, bool instancing = false, float smooth = 0.15f, string tex = null, float tiles = 0.5f)
+    static Material SurfMat(string name, Color c, float moss = 0, float sway = 0, bool vertexColor = false, bool instancing = false, float smooth = 0.15f, string tex = null, float tiles = 0.5f, float swayStart = 1.5f, CullMode cull = CullMode.Back)
     {
         var path = $"{MatDir}/Surf_{name}.mat";
         var m = AssetDatabase.LoadAssetAtPath<Material>(path);
@@ -50,7 +51,7 @@ public static class SceneBuilder
         m.shader = surfShader;
         m.SetColor("_BaseColor", c);
         m.SetFloat("_MossAmount", moss);
-        m.SetFloat("_Sway", sway);
+        m.SetFloat("_Sway", sway); m.SetFloat("_SwayStart", swayStart); m.SetFloat("_Cull", (float)cull);
         m.SetFloat("_Smoothness", smooth);
         m.SetFloat("_UseVertexColor", vertexColor ? 1 : 0);
         if (vertexColor) m.EnableKeyword("_VERTEX_COLOR"); else m.DisableKeyword("_VERTEX_COLOR");
@@ -136,7 +137,13 @@ public static class SceneBuilder
             go.name = file;
             go.transform.SetPositionAndRotation(new Vector3(x, PaddyWorld.Ground(x, z) - sink, z), Quaternion.Euler(0, yaw, 0));
             go.transform.localScale = Vector3.one * scale;
-            foreach (var r in go.GetComponentsInChildren<Renderer>()) r.shadowCastingMode = shadows ? ShadowCastingMode.On : ShadowCastingMode.Off;
+            foreach (var r in go.GetComponentsInChildren<Renderer>())
+            {
+                r.shadowCastingMode = shadows ? ShadowCastingMode.On : ShadowCastingMode.Off;
+                var mats = r.sharedMaterials;
+                for (int i = 0; i < mats.Length; i++) mats[i] = LeafMat(file, mats[i]) ?? mats[i];
+                r.sharedMaterials = mats;
+            }
             if (collide > 0) colliders.Add(new Vector3(x, z, collide));
             return go;
         }
@@ -147,8 +154,18 @@ public static class SceneBuilder
         // ต้นไม้ใหญ่ (Jacaranda) · ตาลโตนดยังใช้โมเดลเดิม (Poly Haven ไม่มีต้นตาล)
         foreach (var (x, z, s) in new[] { (-7.5f, -9.5f, 0.3f), (11f, -6.5f, 0.27f), (14.5f, 6f, 0.25f), (-15f, 4f, 0.28f) })
             Nature("jacaranda_tree", x, z, s, Rf(0, 360), 0.7f, sink: 0.1f);
-        foreach (var (x, z, s) in new[] { (8.5f, -9.5f, 1f), (-13.5f, -10.5f, 0.9f), (16f, -3f, 1.05f) })
-            Place("Palm", x, z, s, Rf(0, 360), null, 0.5f);
+        // ตาลโตนดสร้างด้วยโค้ด (ProceduralMeshes.SugarPalm): ลำต้นลายเปลือกไม้จริง + ใบพัดจีบไหวตามลม
+        var palmTrunk = SurfMat("SugarPalmTrunk", Hex("#b8a890"), tex: "bark_brown_02", tiles: 0.9f, cull: CullMode.Off);
+        var palmLeaf = SurfMat("SugarPalmLeaf", Color.white, sway: 0.05f, swayStart: 6f, vertexColor: true, smooth: 0.35f, cull: CullMode.Off);
+        int pi = 0;
+        foreach (var (x, z, h) in new[] { (8.5f, -9.5f, 7.5f), (-13.5f, -10.5f, 8.2f), (16f, -3f, 7f), (-17f, -6f, 8.8f), (18.5f, 9f, 7.8f) })
+        {
+            var go = new GameObject("SugarPalm");
+            go.transform.SetPositionAndRotation(new Vector3(x, PaddyWorld.Ground(x, z) - 0.1f, z), Quaternion.Euler(0, Rf(0, 360), 0));
+            go.AddComponent<MeshFilter>().sharedMesh = SaveMesh(ProceduralMeshes.SugarPalm(31 + pi, h), "SugarPalm" + pi++);
+            go.AddComponent<MeshRenderer>().sharedMaterials = new[] { palmTrunk, palmLeaf };
+            colliders.Add(new Vector3(x, z, 0.5f));
+        }
         // พุ่มไม้
         foreach (var (x, z, s) in new[] { (-5.5f, -8.8f, 0.45f), (6f, -8.5f, 0.5f), (12.5f, 1f, 0.45f), (-12.5f, -1f, 0.5f), (-18f, 14f, 0.7f), (19f, 16f, 0.7f) })
             Nature("shrub_02", x, z, s, Rf(0, 360), 0.6f);
@@ -195,15 +212,27 @@ public static class SceneBuilder
         world.dock = new Rect(dx - 0.72f, z0 - 0.1f, 1.44f, 4.4f);
 
         // ใบบัว + ดอกบัวในบ่อ
-        var pad = SurfMat("LotusPad", Hex("#46782e"), smooth: 0.55f); var lotus = SurfMat("Lotus", Hex("#e8a0b8"), smooth: 0.3f);
+        var pad = SurfMat("LotusPad", Color.white, vertexColor: true, smooth: 0.4f);
+        var lotus = SurfMat("Lotus", Color.white, vertexColor: true, smooth: 0.25f, cull: CullMode.Off);
+        var padMeshes = new[] { SaveMesh(ProceduralMeshes.LotusPad(1), "LotusPad1"), SaveMesh(ProceduralMeshes.LotusPad(2), "LotusPad2"), SaveMesh(ProceduralMeshes.LotusPad(3), "LotusPad3") };
+        var flowerMesh = SaveMesh(ProceduralMeshes.LotusFlower(4, false), "LotusFlower"); var budMesh = SaveMesh(ProceduralMeshes.LotusFlower(5, true), "LotusBud");
+        GameObject MeshObj(string name, Mesh mesh, Material mat, Vector3 pos, float yaw, float scale, bool shadows)
+        {
+            var go = new GameObject(name);
+            go.transform.SetPositionAndRotation(pos, Quaternion.Euler(0, yaw, 0)); go.transform.localScale = Vector3.one * scale;
+            go.AddComponent<MeshFilter>().sharedMesh = mesh;
+            var r = go.AddComponent<MeshRenderer>(); r.sharedMaterial = mat; r.shadowCastingMode = shadows ? ShadowCastingMode.On : ShadowCastingMode.Off;
+            return go;
+        }
         foreach (var (cx, cz, r) in new[] { (5.5f, 10.5f, 2.6f), (-6f, 9f, 2f), (7f, 2f, 1.6f), (-8f, 4f, 1.4f), (0f, 14f, 1.8f) })
             for (int i = 0; i < 12; i++)
             {
                 float x = cx + Rf(-1, 1) * r, z = cz + Rf(-1, 1) * r;
                 if (PaddyWorld.Ground(x, z) >= PaddyWorld.Water - 0.02f) continue;
-                var p = Prim(PrimitiveType.Cylinder, "LotusPad", new Vector3(x, PaddyWorld.Water + 0.015f, z), new Vector3(0.9f, 0.005f, 0.9f) * Rf(0.7f, 1.3f), pad);
-                p.transform.rotation = Quaternion.Euler(0, Rf(0, 360), 0);
-                if (rnd.NextDouble() < 0.3) Prim(PrimitiveType.Sphere, "Lotus", new Vector3(x + 0.15f, PaddyWorld.Water + 0.1f, z), new Vector3(0.22f, 0.18f, 0.22f), lotus);
+                MeshObj("LotusPad", padMeshes[rnd.Next(3)], pad, new Vector3(x, PaddyWorld.Water + 0.02f, z), Rf(0, 360), Rf(0.35f, 0.6f), false);
+                double fr = rnd.NextDouble();
+                if (fr < 0.25) MeshObj("Lotus", flowerMesh, lotus, new Vector3(x + 0.2f, PaddyWorld.Water + Rf(0.05f, 0.25f), z), Rf(0, 360), Rf(0.22f, 0.3f), true);
+                else if (fr < 0.38) MeshObj("LotusBud", budMesh, lotus, new Vector3(x + 0.2f, PaddyWorld.Water + Rf(0.1f, 0.35f), z), Rf(0, 360), Rf(0.16f, 0.22f), true);
             }
 
         // ---------- ตัวละคร + ปลาแม่แบบ ----------
@@ -246,7 +275,9 @@ public static class SceneBuilder
         var sys = new GameObject("Game");
         sys.AddComponent<WaterFx>();
         var foliage = sys.AddComponent<FoliageRenderer>();
-        foliage.material = SurfMat("Foliage", Color.white, sway: 0.0f, vertexColor: true, instancing: true, smooth: 0.2f);
+        var gm = LoadOrCreate($"{MatDir}/Grass_Field.mat", Shader.Find("CozyFishing/Grass"));
+        gm.enableInstancing = true;
+        foliage.material = gm;
         var hud = new GameObject("Hud").AddComponent<Hud>();
         hud.cam = cam;
         var fishing = sys.AddComponent<FishingController>();
@@ -277,6 +308,31 @@ public static class SceneBuilder
     }
 
     // ---------- ตัวช่วย ----------
+    // ใบไม้ของโมเดล Poly Haven → shader CozyFishing/Leaves (ไหวตามลม แสงทะลุใบ) — กิ่ง/ลำต้นใช้วัสดุ PBR เดิมของ glTFast
+    // ค่าไหว (เมตรในโลก) ตามขนาดต้น: ต้นไม้ใหญ่ไหวมาก พืชเล็กไหวน้อย
+    static readonly Dictionary<string, (float sway, float height, float flutter)> LeafWind = new Dictionary<string, (float, float, float)>
+    {
+        { "jacaranda_tree", (0.22f, 6f, 0.025f) }, { "shrub_02", (0.05f, 1.2f, 0.015f) }, { "shrub_03", (0.03f, 0.5f, 0.01f) }, { "shrub_04", (0.03f, 0.4f, 0.01f) },
+        { "fern_02", (0.04f, 0.6f, 0.012f) }, { "weed_plant_02", (0.04f, 0.5f, 0.01f) }, { "flower_empodium", (0.03f, 0.3f, 0.008f) },
+    };
+    static Material LeafMat(string file, Material src)
+    {
+        if (src == null || !LeafWind.TryGetValue(file, out var wind)) return null;
+        if (file == "jacaranda_tree" && !src.name.ToLower().Contains("leaves")) return null;
+        Texture tex = null;
+        foreach (var n in src.GetTexturePropertyNames())
+            if (n.ToLower().Contains("basecolor") || n == "_BaseMap" || n == "_MainTex") { tex = src.GetTexture(n); if (tex != null) break; }
+        if (tex == null) { Debug.LogWarning($"[SceneBuilder] no leaf texture on {file}/{src.name}"); return null; }
+        var m = LoadOrCreate($"{MatDir}/Leaves_{file}_{src.name.Replace(" ", "_")}.mat", Shader.Find("CozyFishing/Leaves"));
+        m.SetTexture("_BaseMap", tex);
+        float cutoff = src.HasProperty("alphaCutoff") ? src.GetFloat("alphaCutoff") : 0.5f;
+        m.SetFloat("_Cutoff", Mathf.Clamp(cutoff, 0.3f, 0.6f));
+        m.SetFloat("_Sway", wind.sway); m.SetFloat("_SwayHeight", wind.height); m.SetFloat("_Flutter", wind.flutter);
+        m.SetColor("_BaseColor", file == "jacaranda_tree" ? Color.white : new Color(1.3f, 1.3f, 1.15f));   // พุ่มไม้เล็กลายใบมืด ยกให้สว่างขึ้น
+        m.enableInstancing = true;
+        return m;
+    }
+
     static VolumeProfile BuildPostProfile()
     {
         var path = $"{MatDir}/PostFx_Paddy.asset";
