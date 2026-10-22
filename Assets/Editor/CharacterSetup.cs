@@ -13,12 +13,13 @@ public static class CharacterSetup
     const string ControllerPath = Dir + "/Fisher.controller";
     static readonly string[] Loops = { "remy_idle", "remy_walk", "remy_fishing_idle" };
 
-    // Pose (ตั้งจาก FishingController ผ่าน PlayerController): 0 เดิน/ยืน, 1 ง้างเบ็ด, 2 เหวี่ยง, 3 รอปลา, 4 สู้ปลา, 5 ได้ปลา
+    // Pose (ตั้งจาก FishingController ผ่าน PlayerController): 0 เดิน/ยืน, 1 ท่าเหวี่ยง/กรอสาย (ตำแหน่งในคลิปจาก CastT), 3 ถือคันรอปลา
+    // ท่ากระโดดสั่งตรงจากโค้ด (CrossFade "Jump") แล้วกลับท่าเดินเองเมื่อจบ
     public static RuntimeAnimatorController Configure()
     {
         Import("remy_idle", null);
         var avatar = AssetDatabase.LoadAllAssetsAtPath(ModelPath).OfType<Avatar>().FirstOrDefault();
-        foreach (var n in new[] { "remy_walk", "remy_fishing_idle", "remy_fishing_cast" }) Import(n, avatar);
+        foreach (var n in new[] { "remy_walk", "remy_fishing_idle", "remy_fishing_cast", "remy_jump" }) Import(n, avatar);
         foreach (var guid in AssetDatabase.FindAssets("t:Texture2D", new[] { Dir }))
         {
             var ti = (TextureImporter)AssetImporter.GetAtPath(AssetDatabase.GUIDToAssetPath(guid));
@@ -71,20 +72,22 @@ public static class CharacterSetup
         tree.AddChild(Clip("remy_walk"), 2.2f);
         sm.defaultState = loco;
 
+        ac.AddParameter("CastT", AnimatorControllerParameterType.Float);
         var fish = sm.AddState("FishIdle"); fish.motion = Clip("remy_fishing_idle");
-        var fight = sm.AddState("Fight"); fight.motion = Clip("remy_fishing_idle"); fight.speed = 1.8f;
-        var cast = sm.AddState("Cast"); cast.motion = Clip("remy_fishing_cast");
+        var cast = sm.AddState("Cast"); cast.motion = Clip("remy_fishing_cast"); cast.timeParameterActive = true; cast.timeParameter = "CastT";
+        var jump = sm.AddState("Jump"); jump.motion = Clip("remy_jump");
 
-        void Any(AnimatorState to, int pose, float dur = 0.25f)
+        AnimatorStateTransition T(AnimatorState from, AnimatorState to, int pose, float dur = 0.25f)
         {
-            var t = sm.AddAnyStateTransition(to);
-            t.canTransitionToSelf = false; t.hasExitTime = false; t.duration = dur;
+            var t = from.AddTransition(to); t.hasExitTime = false; t.duration = dur;
             t.AddCondition(AnimatorConditionMode.Equals, pose, "Pose");
+            return t;
         }
-        Any(loco, 0, 0.3f); Any(fish, 1); Any(cast, 2, 0.1f); Any(fight, 4); Any(fish, 5);
-        // หลังเหวี่ยงจบช่วงขว้าง ค่อยเข้าท่าถือคันรอปลา (Pose 3 ไม่ตัดท่าเหวี่ยงกลางคัน)
-        var after = cast.AddTransition(fish); after.hasExitTime = true; after.exitTime = 0.55f; after.duration = 0.35f;
-        var direct = loco.AddTransition(fish); direct.hasExitTime = false; direct.duration = 0.3f; direct.AddCondition(AnimatorConditionMode.Equals, 3, "Pose");
+        T(loco, cast, 1, 0.15f); T(loco, fish, 3, 0.3f);
+        T(fish, cast, 1, 0.15f); T(fish, loco, 0, 0.3f);
+        T(cast, fish, 3, 0.4f); T(cast, loco, 0, 0.3f);
+        var land = jump.AddTransition(loco); land.hasExitTime = true; land.exitTime = 0.6f; land.duration = 0.2f;
+        T(jump, cast, 1, 0.15f);
         AssetDatabase.SaveAssets();
         return ac;
     }

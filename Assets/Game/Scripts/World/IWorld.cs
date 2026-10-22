@@ -9,7 +9,7 @@ namespace CozyFishing
         float WaterY { get; }
         float GroundH(float x, float z);
         float StandY(float x, float z);
-        bool Walkable(float x, float z);
+        bool Walkable(float x, float z, float hop = 0);   // hop = ความสูงที่ตัวละครลอยจากพื้น (กระโดดข้ามของเตี้ยได้)
         bool CanCast(float x, float z);
         bool OnSolid(float x, float z);
         float DepthAt(float x, float z);

@@ -11,7 +11,7 @@ namespace CozyFishing
         public const float Water = -0.3f, PaddyY = -0.12f, Dike = 2.6f;
         public Rect dock = new Rect(-3.92f, -0.1f, 1.44f, 4.3f);       // พื้นที่ท่าไม้ (x, z, w, h) — SceneBuilder ตั้งค่าตามจริง
         public float dockY = 0.27f;
-        public List<Vector3> colliders = new List<Vector3>();          // x, z, radius
+        public List<Vector4> colliders = new List<Vector4>();          // x, z, รัศมี, ความสูง (หินเตี้ยกระโดดข้ามได้)
 
         public string StageId => "paddy";
         public float WaterY => Water;
@@ -60,12 +60,12 @@ namespace CozyFishing
         public float DepthAt(float x, float z) => Water - Ground(x, z);
         public float StandY(float x, float z) => OnDock(x, z) ? dockY : Mathf.Max(Ground(x, z), Paddy(x, z) > 0.5f ? PaddyY - 0.05f : Water);
 
-        public bool Walkable(float x, float z)
+        public bool Walkable(float x, float z, float hop = 0)
         {
             if (x < -22 || x > 22 || z < -15 || z > 22) return false;
             if (OnDock(x, z)) return true;
             if (Ground(x, z) < Water + 0.05f && Paddy(x, z) < 0.5f) return false;
-            foreach (var c in colliders) if ((x - c.x) * (x - c.x) + (z - c.y) * (z - c.y) < c.z * c.z) return false;
+            foreach (var c in colliders) if (hop < c.w - 0.15f && (x - c.x) * (x - c.x) + (z - c.y) * (z - c.y) < c.z * c.z) return false;
             return true;
         }
     }

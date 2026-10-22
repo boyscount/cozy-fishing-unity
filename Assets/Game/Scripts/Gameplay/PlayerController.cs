@@ -8,8 +8,12 @@ namespace CozyFishing
     {
         public Transform legL, legR, armL, armR, head, rodTip;
         public Animator animator;
-        public int Pose;                         // FishingController ตั้ง: 0 เดิน/ยืน, 1 ง้าง, 2 เหวี่ยง, 3 รอปลา, 4 สู้ปลา, 5 ได้ปลา
-        static readonly int SpeedId = Animator.StringToHash("Speed"), PoseId = Animator.StringToHash("Pose");
+        public int Pose;                         // FishingController ตั้ง: 0 เดิน/ยืน, 1 ท่าเหวี่ยง/กรอสาย (คุมด้วย CastT), 3 ถือคันรอปลา
+        public float CastT;                      // ตำแหน่งในท่า "เหวี่ยงเบ็ด+กรอสาย" (0..1) — ดู CharacterSetup
+        public float jumpSpeed = 5.6f, gravity = 15f;
+        public bool Airborne => hop > 0.001f || jumpVel > 0;
+        static readonly int SpeedId = Animator.StringToHash("Speed"), PoseId = Animator.StringToHash("Pose"), CastId = Animator.StringToHash("CastT");
+        float hop, jumpVel;
         public float speed = 3.6f;
         public float Yaw;
         public Vector3 Pos;
@@ -18,6 +22,8 @@ namespace CozyFishing
         public float ArmLTarget = float.NaN;
         IWorld world;
         float vel, phase, armRX, armLX;
+
+        public static float JumpLeadIn = 0.72f;  // ข้ามช่วงย่อตัวของท่ากระโดด Mixamo (เท้าพ้นพื้นที่ 0.75 วิ ลงพื้น 1.42 วิ) ให้ตัวลอยทันทีที่กด
 
         public Vector3 Forward => new Vector3(Mathf.Sin(Yaw * Mathf.Deg2Rad), 0, Mathf.Cos(Yaw * Mathf.Deg2Rad));
 
@@ -34,8 +40,19 @@ namespace CozyFishing
             var mv = GameInput.Move;
             if (mv.sqrMagnitude > 0.0025f && CanTurn)
             {
-                float want = Mathf.Atan2(mv.x, mv.y) * Mathf.Rad2Deg;
+                float want = Mathf.Atan2(mv.x, mv.y) * Mathf.Rad2Deg + CameraRig.ViewYaw;   // ทิศจอยอิงมุมกล้อง
                 Yaw = Mathf.LerpAngle(Yaw, want, Mathf.Min(1, dt * (CanWalk ? 12 : 5)));
+            }
+            // กระโดด (เฉพาะตอนเดินเล่น ไม่ใช่ระหว่างตกปลา)
+            if (GameInput.JumpPressed && CanWalk && !Airborne)
+            {
+                jumpVel = jumpSpeed;
+                if (animator != null) animator.CrossFadeInFixedTime("Jump", 0.08f, 0, JumpLeadIn);
+            }
+            if (Airborne)
+            {
+                hop += jumpVel * dt; jumpVel -= gravity * dt;
+                if (hop <= 0) { hop = 0; jumpVel = 0; }
             }
             float target = CanWalk ? speed * mv.magnitude : 0;
             vel += (target - vel) * Mathf.Min(1, dt * 10);
@@ -43,9 +60,10 @@ namespace CozyFishing
             {
                 var f = Forward * vel * dt;
                 float nx = Pos.x + f.x, nz = Pos.z + f.z;
-                if (world.Walkable(nx, nz)) { Pos.x = nx; Pos.z = nz; }
-                else if (world.Walkable(nx, Pos.z)) Pos.x = nx;
-                else if (world.Walkable(Pos.x, nz)) Pos.z = nz;
+                bool stuck = !world.Walkable(Pos.x, Pos.z, hop);   // ตกลงมาบนหิน → ให้เดินออกได้
+                if (stuck || world.Walkable(nx, nz, hop)) { Pos.x = nx; Pos.z = nz; }
+                else if (world.Walkable(nx, Pos.z, hop)) Pos.x = nx;
+                else if (world.Walkable(Pos.x, nz, hop)) Pos.z = nz;
                 else vel = 0;
             }
             Pos.y += (world.StandY(Pos.x, Pos.z) - Pos.y) * Mathf.Min(1, dt * 15);
@@ -54,8 +72,9 @@ namespace CozyFishing
             {
                 animator.SetFloat(SpeedId, vel * 0.6f, 0.1f, dt);   // ท่าเดิน Mixamo ก้าวช้ากว่าความเร็วเกม เล่นเร็วขึ้นตาม blend
                 animator.SetInteger(PoseId, Pose);
-                animator.speed = Pose == 0 ? Mathf.Lerp(1f, 1.5f, Mathf.InverseLerp(1.5f, speed, vel)) : 1f;
-                transform.position = Pos;
+                animator.SetFloat(CastId, CastT);
+                animator.speed = Pose == 0 && !Airborne ? Mathf.Lerp(1f, 1.5f, Mathf.InverseLerp(1.5f, speed, vel)) : 1f;
+                transform.position = Pos;   // ความสูงกระโดดอยู่ในท่า Mixamo แล้ว (hop ใช้เช็กข้ามหินเท่านั้น)
                 transform.rotation = Quaternion.Euler(0, Yaw, 0);
                 return;
             }

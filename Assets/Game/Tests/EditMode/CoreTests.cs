@@ -135,5 +135,17 @@ namespace CozyFishing.Tests
             for (int i = 0; i < s.Need; i++) { s.Pos = s.Center; Assert.IsTrue(s.Press()); }
             Assert.IsTrue(s.Done);
         }
+    
+        [Test]
+        public void Dex_RecordsNewSpeciesCountAndBestWeight()
+        {
+            FishDex.ResetForTests();
+            Assert.IsTrue(FishDex.Record("test_fish", 0.5f));
+            Assert.IsFalse(FishDex.Record("test_fish", 0.3f));
+            Assert.AreEqual(2, FishDex.Count("test_fish"));
+            Assert.AreEqual(0.5f, FishDex.BestKg("test_fish"), 1e-4);
+            Assert.IsTrue(FishDex.Has("test_fish"));
+            FishDex.ResetForTests();
+        }
     }
 }

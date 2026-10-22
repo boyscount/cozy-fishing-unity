@@ -11,6 +11,7 @@ namespace CozyFishing
     {
         public PlayerController player;
         public Hud hud;
+        public FishPreview preview;
         public GameObject fishTemplate;      // โมเดลปลาจาก Blender (ซ่อนไว้ในฉาก)
         public GameObject bobber, aim;       // สร้างไว้ในฉากโดย SceneBuilder (WebGL ตัดโมดูล Physics/shader ที่ไม่ได้อ้างถึงออก)
         public LineRenderer line;
@@ -39,6 +40,7 @@ namespace CozyFishing
         public void Init(IWorld w)
         {
             world = w;
+            Bot = Application.absoluteURL.Contains("bot") || System.Environment.CommandLine.Contains("-bot");
             line.positionCount = linePts.Length;
             aimRenderer = aim.GetComponentInChildren<Renderer>();
             aimMpb = new MaterialPropertyBlock();
@@ -46,12 +48,36 @@ namespace CozyFishing
             Set(FishState.Free);
         }
 
+        const float ThrowDelay = 0.16f;   // จากปล่อยปุ่มถึงทุ่นพุ่งออก (ตรงกับเฟรมแขนสะบัดของท่า Mixamo)
+        float reelT;
+        bool caughtIsNew, cardShown;
+
         void Set(FishState s) { State = s; t = 0; }
+
+        // ---------- โหมดทดสอบอัตโนมัติ (?bot ใน URL หรือ -bot): เล่นเองครบวง เหวี่ยง → รอ → ดึง → ตีเบ็ด → สู้ปลา → ปิดการ์ด ----------
+        public static bool Bot;   // ตั้งใน Init (อ่าน URL ระหว่างโหลดฉากไม่ได้)
+        float botNext;
+        bool BotHeld()
+        {
+            switch (State)
+            {
+                case FishState.Free: return t > 1.2f && t < 1.2f + 0.9f;            // ง้าง ~0.9 วิ แล้วปล่อย
+                case FishState.Charging: return charge < 0.7f;
+                case FishState.Bite: return t > 0.25f;                              // รอเห็นทุ่นจมแป๊บหนึ่งค่อยกด
+                case FishState.Strike:
+                    bool inZone = Mathf.Abs(strike.Pos - strike.Center) < strike.Width * 0.35f;
+                    if (inZone && Time.time > botNext) { botNext = Time.time + 0.35f; return true; }
+                    return false;
+                case FishState.Fight: return fight.Tension < Mathf.Min(0.8f, fight.ZoneCenter + fight.ZoneWidth * 0.3f);
+                case FishState.Caught: if (hud.CardOpen && t > 3.5f) hud.CloseCard(); return false;
+                default: return false;
+            }
+        }
 
         void Update()
         {
             float dt = Time.deltaTime;
-            bool held = GameInput.ActionHeld;
+            bool held = GameInput.ActionHeld || (Bot && BotHeld());
             if (held && !prevHeld) OnDown();
             if (!held && prevHeld) OnUp();
             prevHeld = held;
@@ -71,11 +97,13 @@ namespace CozyFishing
                     bool w = world.CanCast(p.x, p.z);
                     aim.SetActive(true);
                     aim.transform.position = new Vector3(p.x, (w ? world.WaterY : world.GroundH(p.x, p.z)) + 0.04f, p.z);
-                    aim.transform.localScale = Vector3.one * (1 + Mathf.Sin(now * 8) * 0.08f);
+                    aim.transform.localScale = new Vector3(0.8f, 0.005f, 0.8f) * (1 + Mathf.Sin(now * 8) * 0.08f);   // วงแบน ๆ บนผิวน้ำ (y คงบางไว้)
                     aimMpb.SetColor("_BaseColor", w ? Color.white : new Color(1f, 0.54f, 0.44f));
                     aimRenderer.SetPropertyBlock(aimMpb);
                     break;
                 case FishState.Casting:
+                    // ช่วงแรกแขนสะบัดไปข้างหน้า ทุ่นยังติดปลายคัน แล้วค่อยพุ่งออกพร้อมจังหวะปล่อยสาย
+                    if (t < ThrowDelay) { bob = tip + new Vector3(0, -0.3f, 0); from = tip; break; }
                     flight += dt / flightDur;
                     float k = Mathf.Min(1, flight);
                     bob = Vector3.Lerp(from, target, k) + Vector3.up * Mathf.Sin(k * Mathf.PI) * (1.5f + Vector3.Distance(from, target) * 0.22f);
@@ -130,7 +158,7 @@ namespace CozyFishing
                         caughtGo.transform.rotation = Quaternion.Euler(Mathf.Sin(t * 9) * 17, t * 140, Mathf.Sin(t * 12) * 14);
                     }
                     bob = caughtGo ? caughtGo.transform.position : top;
-                    if (t > 0.9f && !hud.CardOpen && caughtGo) hud.ShowCatch(fish, EndCatch);
+                    if (t > 0.9f && !hud.CardOpen && caughtGo && !cardShown) { cardShown = true; hud.ShowCatch(fish, EndCatch, preview != null ? preview.Live(fish.species) : null, caughtIsNew); }
                     break;
             }
             if (State != FishState.Charging) aim.SetActive(false);
@@ -235,11 +263,14 @@ namespace CozyFishing
             from = bob;
             Caught++;
             Money += Mathf.RoundToInt(fish.kg * fish.species.price);
+            caughtIsNew = FishDex.Record(fish.species.id, fish.kg);
             Set(FishState.Caught);
         }
 
         void EndCatch()
         {
+            cardShown = false;
+            if (preview != null) preview.StopLive();
             if (caughtGo) Destroy(caughtGo);
             caughtGo = null;
             Set(FishState.Free);
@@ -280,15 +311,17 @@ namespace CozyFishing
                 _ => 0,
             };
             player.ArmRTarget = a * armSign;
-            player.Pose = State switch
+            // ท่าตัวละคร Mixamo: คลิป "เหวี่ยงเบ็ด+กรอสาย" 8.8 วิ — ง้าง 0.06→0.165 · สะบัดไปหน้า 0.165→0.30 (ปล่อยสาย ~0.215) · กรอสาย 0.52→0.92
+            switch (State)
             {
-                FishState.Charging => 1,
-                FishState.Casting => 2,
-                FishState.Landed or FishState.Waiting or FishState.Bite or FishState.Retrieve => 3,
-                FishState.Strike or FishState.Fight => 4,
-                FishState.Caught => 5,
-                _ => 0,
-            };
+                case FishState.Charging: player.Pose = 1; player.CastT = Mathf.Lerp(0.06f, 0.165f, Mathf.SmoothStep(0, 1, charge)); break;
+                case FishState.Casting: player.Pose = 1; player.CastT = Mathf.Lerp(0.165f, 0.3f, Mathf.Clamp01(t / (ThrowDelay * 2.6f))); break;
+                case FishState.Fight: case FishState.Retrieve: case FishState.Snapped:
+                    player.Pose = 1; reelT += Time.deltaTime * (State == FishState.Fight && !GameInput.ActionHeld ? 0.03f : 0.11f);
+                    player.CastT = 0.52f + Mathf.Repeat(reelT, 0.4f); break;
+                case FishState.Free: player.Pose = 0; break;
+                default: player.Pose = 3; break;
+            }
             player.ArmLTarget = State == FishState.Caught ? -150 * armSign : State == FishState.Fight ? (GameInput.ActionHeld ? -52 + Mathf.Sin(now * 18) * 20 : -34) * armSign : float.NaN;
         }
 
@@ -297,8 +330,9 @@ namespace CozyFishing
             bool touch = hud.TouchUi;
             switch (State)
             {
-                case FishState.Free: hud.Hint(touch ? "กดค้างปุ่มเหวี่ยง เพื่อเล็ง · ปล่อยเพื่อเหวี่ยง" : "กดค้าง Space / คลิกค้าง เพื่อเล็ง · ปล่อยเพื่อเหวี่ยงเบ็ด"); hud.ActionLabel("เหวี่ยง", false); break;
+                case FishState.Free: hud.Hint(touch ? "กดค้างปุ่มเหวี่ยงเพื่อเล็ง · ลากจอเพื่อหมุนกล้อง" : "คลิกค้าง / กด E ค้าง เพื่อเล็ง · ปล่อยเพื่อเหวี่ยง\nWASD เดิน · Space กระโดด · คลิกขวาลาก หมุนกล้อง · ล้อเมาส์ ซูม"); hud.ActionLabel("เหวี่ยง", false); break;
                 case FishState.Charging: hud.Hint(""); hud.ActionLabel("ปล่อย!", false); break;
+                case FishState.Casting: case FishState.Landed: case FishState.Retrieve: hud.Hint(""); hud.ActionLabel("…", false); break;
                 case FishState.Waiting: hud.Hint("รอให้ทุ่นจม… (กดเพื่อเก็บสาย)"); hud.ActionLabel("เก็บสาย", false); break;
                 case FishState.Bite: hud.Hint("ทุ่นจม! กดเลย!"); hud.ActionLabel("ดึง!", true); break;
                 case FishState.Strike: hud.Hint("กดตอนเข็มอยู่ในโซนทอง!"); hud.ActionLabel("ตีเบ็ด!", true); break;

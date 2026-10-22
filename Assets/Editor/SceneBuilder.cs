@@ -10,6 +10,7 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.SceneManagement;
+using UnityEngine.UIElements;
 
 public static class SceneBuilder
 {
@@ -124,12 +125,12 @@ public static class SceneBuilder
             go.transform.SetPositionAndRotation(new Vector3(x, y ?? PaddyWorld.Ground(x, z) - 0.05f, z), Quaternion.Euler(0, yaw, 0));
             go.transform.localScale = Vector3.one * scale;
             Retint(go);
-            if (collide > 0) colliders.Add(new Vector3(x, z, collide * scale));
+            if (collide > 0) colliders.Add(new Vector4(x, z, collide * scale, 99));
             return go;
         }
         // ---------- โมเดลสมจริงจาก Poly Haven (ใช้วัสดุ PBR ที่ glTFast สร้างจากไฟล์) ----------
         var natureRoot = new GameObject("Nature").transform;
-        GameObject Nature(string file, float x, float z, float scale, float yaw, float collide = 0, bool shadows = true, float sink = 0.04f)
+        GameObject Nature(string file, float x, float z, float scale, float yaw, float collide = 0, bool shadows = true, float sink = 0.04f, float height = 99)
         {
             var src = AssetDatabase.LoadAssetAtPath<GameObject>($"{NatureDir}/{file}.glb");
             if (src == null) { Debug.LogWarning("[SceneBuilder] nature model missing: " + file); return null; }
@@ -144,7 +145,7 @@ public static class SceneBuilder
                 for (int i = 0; i < mats.Length; i++) mats[i] = LeafMat(file, mats[i]) ?? mats[i];
                 r.sharedMaterials = mats;
             }
-            if (collide > 0) colliders.Add(new Vector3(x, z, collide));
+            if (collide > 0) colliders.Add(new Vector4(x, z, collide, height));
             return go;
         }
         var rnd = new System.Random(808);
@@ -164,18 +165,18 @@ public static class SceneBuilder
             go.transform.SetPositionAndRotation(new Vector3(x, PaddyWorld.Ground(x, z) - 0.1f, z), Quaternion.Euler(0, Rf(0, 360), 0));
             go.AddComponent<MeshFilter>().sharedMesh = SaveMesh(ProceduralMeshes.SugarPalm(31 + pi, h), "SugarPalm" + pi++);
             go.AddComponent<MeshRenderer>().sharedMaterials = new[] { palmTrunk, palmLeaf };
-            colliders.Add(new Vector3(x, z, 0.5f));
+            colliders.Add(new Vector4(x, z, 0.5f, 99));
         }
         // พุ่มไม้
         foreach (var (x, z, s) in new[] { (-5.5f, -8.8f, 0.45f), (6f, -8.5f, 0.5f), (12.5f, 1f, 0.45f), (-12.5f, -1f, 0.5f), (-18f, 14f, 0.7f), (19f, 16f, 0.7f) })
             Nature("shrub_02", x, z, s, Rf(0, 360), 0.6f);
         // โขดหิน
-        Nature("rock_moss_set_01", -8.8f, 1.5f, 0.45f, Rf(0, 360), 0.9f, sink: 0.12f);
-        Nature("boulder_01", 9.5f, 3.5f, 0.9f, Rf(0, 360), 0.7f, sink: 0.15f);
-        Nature("namaqualand_boulder_02", 3.8f, -4.4f, 0.55f, Rf(0, 360), 0.5f, sink: 0.1f);
-        Nature("boulder_01", -6f, -3.6f, 0.6f, Rf(0, 360), 0.5f, sink: 0.15f);
-        Nature("namaqualand_boulder_02", -9.6f, 4f, 0.6f, Rf(0, 360), 0.6f, sink: 0.1f);
-        Nature("rock_moss_set_01", 8.6f, 8f, 0.35f, Rf(0, 360), 0.8f, sink: 0.12f);
+        Nature("rock_moss_set_01", -8.8f, 1.5f, 0.45f, Rf(0, 360), 0.9f, sink: 0.12f, height: 0.75f);
+        Nature("boulder_01", 9.5f, 3.5f, 0.9f, Rf(0, 360), 0.7f, sink: 0.15f, height: 0.85f);
+        Nature("namaqualand_boulder_02", 3.8f, -4.4f, 0.55f, Rf(0, 360), 0.5f, sink: 0.1f, height: 0.45f);
+        Nature("boulder_01", -6f, -3.6f, 0.6f, Rf(0, 360), 0.5f, sink: 0.15f, height: 0.55f);
+        Nature("namaqualand_boulder_02", -9.6f, 4f, 0.6f, Rf(0, 360), 0.6f, sink: 0.1f, height: 0.5f);
+        Nature("rock_moss_set_01", 8.6f, 8f, 0.35f, Rf(0, 360), 0.8f, sink: 0.12f, height: 0.6f);
         // ไม้เล็กรอบขอบบ่อ (แหวนดินระหว่างบ่อกับแปลงนา) — เว้นทางเดินจากจุดเกิดไปท่าน้ำ
         bool Clear(float x, float z)
         {
@@ -280,10 +281,20 @@ public static class SceneBuilder
         var gm = LoadOrCreate($"{MatDir}/Grass_Field.mat", Shader.Find("CozyFishing/Grass"));
         gm.enableInstancing = true;
         foliage.material = gm;
+        BuildHudPanel();
         var hud = new GameObject("Hud").AddComponent<Hud>();
         hud.cam = cam;
         var fishing = sys.AddComponent<FishingController>();
         fishing.player = player; fishing.hud = hud; fishing.fishTemplate = fishTpl;
+        // กล้องถ่ายรูปปลา (การ์ดได้ปลา + สมุดปลา) — เห็นเฉพาะเลเยอร์ 31 ที่ซ่อนใต้แผนที่ กล้องหลักไม่เห็นเลเยอร์นี้
+        var pvGo = new GameObject("FishPreview");
+        var pvCam = pvGo.AddComponent<Camera>();
+        pvCam.clearFlags = CameraClearFlags.SolidColor; pvCam.backgroundColor = new Color(0, 0, 0, 0);
+        pvCam.fieldOfView = 30; pvCam.nearClipPlane = 0.1f; pvCam.farClipPlane = 10; pvCam.cullingMask = 1 << FishPreview.Layer;
+        var pvData = pvGo.AddComponent<UniversalAdditionalCameraData>(); pvData.renderPostProcessing = false; pvData.renderShadows = false;
+        var preview = pvGo.AddComponent<FishPreview>(); preview.cam = pvCam; preview.fishing = fishing;
+        fishing.preview = preview; hud.preview = preview;
+        cam.cullingMask &= ~(1 << FishPreview.Layer);
         // ทุ่น (แดง-ขาว) · วงเล็ง · สายเบ็ด
         var bobber = new GameObject("Bobber");
         Prim(PrimitiveType.Sphere, "Top", Vector3.zero, Vector3.one * 0.22f, SurfMat("BobberRed", Hex("#d23a2c"), smooth: 0.6f)).transform.SetParent(bobber.transform, false);
@@ -310,6 +321,21 @@ public static class SceneBuilder
     }
 
     // ---------- ตัวช่วย ----------
+    // PanelSettings ของ HUD เป็น asset ใน Resources: มีธีม (ไม่งั้น layout เพี้ยน) และให้ editor แนบข้อมูล ICU ตัดคำไทยเข้า build
+    static void BuildHudPanel()
+    {
+        const string path = "Assets/Game/Resources/UI/HudPanel.asset";
+        var ps = AssetDatabase.LoadAssetAtPath<PanelSettings>(path);
+        if (ps == null) { ps = ScriptableObject.CreateInstance<PanelSettings>(); AssetDatabase.CreateAsset(ps, path); }
+        ps.themeStyleSheet = AssetDatabase.LoadAssetAtPath<ThemeStyleSheet>("Assets/Game/Resources/UI/CozyTheme.tss");
+        ps.scaleMode = PanelScaleMode.ScaleWithScreenSize;
+        ps.referenceResolution = new Vector2Int(1080, 1080);
+        ps.screenMatchMode = PanelScreenMatchMode.MatchWidthOrHeight;
+        ps.match = 0.5f;
+        EditorUtility.SetDirty(ps);
+        AssetDatabase.SaveAssets();
+    }
+
     // ใบไม้ของโมเดล Poly Haven → shader CozyFishing/Leaves (ไหวตามลม แสงทะลุใบ) — กิ่ง/ลำต้นใช้วัสดุ PBR เดิมของ glTFast
     // ค่าไหว (เมตรในโลก) ตามขนาดต้น: ต้นไม้ใหญ่ไหวมาก พืชเล็กไหวน้อย
     static readonly Dictionary<string, (float sway, float height, float flutter)> LeafWind = new Dictionary<string, (float, float, float)>

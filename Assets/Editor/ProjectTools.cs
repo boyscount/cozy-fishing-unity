@@ -87,6 +87,26 @@ public static class ProjectTools
             for (int i = 0; i < 30; i++) player.animator.Update(1 / 30f);
         }
         Shader.SetGlobalFloat("_CozyDim", 1);
+        // รูปปลาจากกล้อง FishPreview (ปกติ + เงาดำ) ไว้ตรวจมุม/ขนาด
+        var pv = Object.FindAnyObjectByType<CozyFishing.FishPreview>();
+        if (pv != null)
+        {
+            typeof(CozyFishing.FishPreview).GetMethod("Awake", flags)?.Invoke(pv, null);
+            Directory.CreateDirectory("Builds");
+            int idx = 0;
+            foreach (var sp in CozyFishing.FishDatabase.ForStage("paddy"))
+            {
+                foreach (var sil in new[] { false, true })
+                {
+                    var rt = pv.Icon(sp, sil); pv.Icon(sp, sil);
+                    RenderTexture.active = rt;
+                    var tx = new Texture2D(rt.width, rt.height, TextureFormat.RGBA32, false); tx.ReadPixels(new Rect(0, 0, rt.width, rt.height), 0, 0); tx.Apply();
+                    File.WriteAllBytes($"Builds/fish_{idx}_{(sil ? "s" : "c")}.png", tx.EncodeToPNG());
+                    RenderTexture.active = null;
+                }
+                idx++;
+            }
+        }
         var focus = new Vector3(1.5f * 0.75f, 0, -7.6f * 0.6f + 6 * 0.4f);
         Directory.CreateDirectory("Builds");
         foreach (var (name, w, h, k) in new[] { ("land", 1600, 900, 1f), ("port", 900, 1600, 1.6f), ("close", 1600, 900, 0f) })
