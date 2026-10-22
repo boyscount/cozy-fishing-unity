@@ -6,7 +6,7 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Game/Scenes/PaddyTest.unity
-    guid: d56c9f1e7e77fb646a34444ca78c2d82
+    path: Assets/Game/Scenes/Paddy.unity
+    guid: 1e034fc693123664594a9927149fb04b
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
