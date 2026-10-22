@@ -13,6 +13,10 @@ namespace CozyFishing
         Camera cam;
         public static float ViewYaw;          // มุมกล้องรอบแกนตั้ง (องศา) — PlayerController ใช้แปลงทิศเดิน
         float pitch = 35f, zoom = 1f;
+        bool fixedShot; Vector3 shotPos, shotLook;
+        /// มุมกล้องตายตัว (ฉากที่บ้าน) · ClearOverride กลับไปตามตัวละคร
+        public void Override(Vector3 pos, Vector3 look) { fixedShot = true; shotPos = pos; shotLook = look; transform.position = pos; transform.LookAt(look); }
+        public void ClearOverride() => fixedShot = false;
 
         public void Init(IWorld w) { world = w; cam = GetComponent<Camera>(); ViewYaw = 0; Snap(); }
 
@@ -26,7 +30,18 @@ namespace CozyFishing
 
         public void Snap() { target = Desired(); Place(1); }
 
-        void LateUpdate() => Place(Time.deltaTime);
+        void LateUpdate()
+        {
+            if (fixedShot)
+            {
+                // ฉากที่บ้าน: กล้องลอยช้า ๆ เล็กน้อยให้ดูมีชีวิต
+                float s = Time.time * 0.15f;
+                transform.position = shotPos + new Vector3(Mathf.Sin(s) * 0.25f, Mathf.Sin(s * 1.3f) * 0.08f, 0);
+                transform.LookAt(shotLook);
+                return;
+            }
+            Place(Time.deltaTime);
+        }
 
         void Place(float dt)
         {

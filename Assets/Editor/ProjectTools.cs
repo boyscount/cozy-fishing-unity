@@ -43,7 +43,7 @@ public static class ProjectTools
     {
         PlayerSettings.companyName = "boyscount";
         PlayerSettings.productName = "ตกปลาสบายใจ";
-        PlayerSettings.WebGL.compressionFormat = WebGLCompressionFormat.Brotli;
+        PlayerSettings.WebGL.compressionFormat = WebGLCompressionFormat.Gzip;   // Brotli ใช้แรมตอน build มากเกิน (เครื่องเหลือแรมน้อยแล้ว build ล้ม)
         PlayerSettings.WebGL.decompressionFallback = true;
         PlayerSettings.WebGL.dataCaching = true;
         PlayerSettings.WebGL.showDiagnostics = false;

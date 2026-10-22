@@ -12,6 +12,7 @@ namespace CozyFishing
         public PlayerController player;
         public Hud hud;
         public FishPreview preview;
+        public StoryDirector director;
         public GameObject fishTemplate;      // โมเดลปลาจาก Blender (ซ่อนไว้ในฉาก)
         public GameObject bobber, aim;       // สร้างไว้ในฉากโดย SceneBuilder (WebGL ตัดโมดูล Physics/shader ที่ไม่ได้อ้างถึงออก)
         public LineRenderer line;
@@ -20,8 +21,14 @@ namespace CozyFishing
         public FishState State { get; private set; }
         public Vector3 BobberPos => bob;
         public bool LineOut => State >= FishState.Casting && State <= FishState.Fight;
-        public int Caught { get; private set; }
-        public int Money { get; private set; }
+        public bool Busy => State == FishState.Strike || State == FishState.Fight || State == FishState.Caught;
+        bool paused;
+        /// อยู่บ้าน/ระหว่างเดินทาง: หยุดระบบตกปลา ซ่อนทุ่นและสาย
+        public bool Paused
+        {
+            get => paused;
+            set { paused = value; bobber.SetActive(!value); line.enabled = !value; aim.SetActive(false); if (value) { player.CanWalk = false; player.CanTurn = false; player.Pose = 0; } }
+        }
 
         IWorld world;
         readonly System.Random rng = new System.Random();
@@ -69,13 +76,27 @@ namespace CozyFishing
                     if (inZone && Time.time > botNext) { botNext = Time.time + 0.35f; return true; }
                     return false;
                 case FishState.Fight: return fight.Tension < Mathf.Min(0.8f, fight.ZoneCenter + fight.ZoneWidth * 0.3f);
-                case FishState.Caught: if (hud.CardOpen && t > 3.5f) hud.CloseCard(); return false;
+                case FishState.Caught: if (hud.CatchCardOpen && t > 3.5f) hud.CloseCard(false); return false;
                 default: return false;
             }
         }
 
+        /// เก็บสาย/ล้างปลาที่ค้างอยู่ทันที (ก่อนกลับบ้าน หรือเริ่มวันใหม่)
+        public void ResetLine()
+        {
+            if (hud.CatchCardOpen) hud.CloseCard(true);
+            pending = null; cardShown = false;
+            if (preview != null) preview.StopLive();
+            if (caughtGo) Destroy(caughtGo);
+            caughtGo = null;
+            prevHeld = false;
+            Set(FishState.Free);
+            if (player.rodTip) bob = player.rodTip.position + new Vector3(0, -0.55f, 0);
+        }
+
         void Update()
         {
+            if (paused) { hud.Power(-1); hud.Tension(false, 0, 0, 0, 0, false); hud.Strike(false, 0, 0, 0, 0, 0, 0); hud.Alert(false, default, false); return; }
             float dt = Time.deltaTime;
             bool held = GameInput.ActionHeld || (Bot && BotHeld());
             if (held && !prevHeld) OnDown();
@@ -158,7 +179,7 @@ namespace CozyFishing
                         caughtGo.transform.rotation = Quaternion.Euler(Mathf.Sin(t * 9) * 17, t * 140, Mathf.Sin(t * 12) * 14);
                     }
                     bob = caughtGo ? caughtGo.transform.position : top;
-                    if (t > 0.9f && !hud.CardOpen && caughtGo && !cardShown) { cardShown = true; hud.ShowCatch(fish, EndCatch, preview != null ? preview.Live(fish.species) : null, caughtIsNew); }
+                    if (t > 0.9f && !hud.CardOpen && caughtGo && !cardShown) { cardShown = true; ShowCard(); }
                     break;
             }
             if (State != FishState.Charging) aim.SetActive(false);
@@ -202,7 +223,10 @@ namespace CozyFishing
         }
 
         bool NearSpecial => new Vector2(bob.x - world.Special.x, bob.z - world.Special.z).magnitude < world.SpecialRadius;
-        void Roll() => fish = FishRoller.Roll(world.StageId, NearSpecial, world.DepthAt(bob.x, bob.z), 0.08f, 10f, rng);
+        // ดวงประจำวัน: ฟ้าครึ้ม/ฝน = ขยะบ่อยขึ้น · วันฝนหนักบางวันปลาแทบไม่กินเหยื่อ
+        void Roll() => fish = Story.S.dead && rng.NextDouble() < 0.85
+            ? FishRoller.Roll(world.StageId, false, 0, 1f, Story.S.time, rng)
+            : FishRoller.Roll(world.StageId, NearSpecial, world.DepthAt(bob.x, bob.z), Story.JunkChance, Story.S.time, rng);
 
         void Land()
         {
@@ -216,7 +240,7 @@ namespace CozyFishing
 
         void NewBite()
         {
-            biteAt = t + 2.2f + (float)rng.NextDouble() * 5.5f;
+            biteAt = t + (2.2f + (float)rng.NextDouble() * 5.5f) * Story.BiteMul;
             nibbles.Clear();
             int n = rng.Next(3);
             for (int i = 0; i < n; i++) nibbles.Add(biteAt - 0.6f - (float)rng.NextDouble() * 1.8f);
@@ -261,10 +285,34 @@ namespace CozyFishing
             caughtGo = MakeFish(fish.species, Mathf.Min(2.4f, 0.55f + fish.cm / 80f));
             caughtGo.transform.position = bob;
             from = bob;
-            Caught++;
-            Money += Mathf.RoundToInt(fish.kg * fish.species.price);
             caughtIsNew = FishDex.Record(fish.species.id, fish.kg);
+            // ข้องเต็ม → ยังไม่ใส่ รอให้ผู้เล่นเลือกแลกหรือปล่อยในการ์ด
+            var f = new BasketFish { id = fish.species.id, kg = fish.kg, cm = fish.cm };
+            if (Story.BasketFull) pending = f; else { pending = null; Story.AddFish(f); }
             Set(FishState.Caught);
+        }
+
+        BasketFish pending;
+
+        void ShowCard()
+        {
+            var img = preview != null ? preview.Live(fish.species) : null;
+            if (pending != null)
+            {
+                int ci = Story.CheapestIndex(); var c = Story.S.basket[ci];
+                bool better = Story.Value(pending) > Story.Value(c);
+                hud.ShowCatch(fish, img, caughtIsNew, $"เก็บตัวนี้ · ปล่อย{FishDatabase.Get(c.id)?.name}ตัวที่ถูกสุด ({Story.Baht(Story.Value(c))})", () => KeepPending(true),
+                    "ปล่อยตัวนี้คืนน้ำ", () => KeepPending(false), better ? "ตัวนี้ราคาดีกว่าตัวที่ถูกสุดในข้อง ควรแลก!" : "ตัวนี้ราคาน้อยกว่าทุกตัวในข้อง ปล่อยคืนน้ำดีกว่า");
+            }
+            else hud.ShowCatch(fish, img, caughtIsNew, $"เก็บใส่ข้องปลา ({Story.S.basket.Count}/{Story.Capacity})", () => { EndCatch(); director?.OnFishKept(); });
+        }
+
+        void KeepPending(bool keep)
+        {
+            if (keep && pending != null) { var old = Story.SwapCheapest(pending); hud.Toast($"เก็บ{FishDatabase.Get(pending.id)?.name} · ปล่อย{FishDatabase.Get(old.id)?.name}คืนน้ำ"); }
+            else hud.Toast("ปล่อยคืนน้ำ ขอให้โตไว ๆ นะ");
+            pending = null;
+            EndCatch();
         }
 
         void EndCatch()
@@ -343,7 +391,6 @@ namespace CozyFishing
             hud.Tension(State == FishState.Fight, fight?.Tension ?? 0, fight?.Progress ?? 0, fight?.ZoneCenter ?? 0.5f, fight?.ZoneWidth ?? 0.6f, State == FishState.Fight && fight.Tension > 0.85f);
             hud.Strike(State == FishState.Strike, strike?.Pos ?? 0, strike?.Center ?? 0, strike?.Width ?? 0, strike?.Hits ?? 0, strike?.Need ?? 0, strike?.Misses ?? 0);
             hud.Alert(State == FishState.Bite, player.Pos + Vector3.up * 2.3f, !fish.IsJunk && fish.species != null && fish.species.stars >= 3);
-            hud.SetCount(Caught, Money);
         }
 
         // ---------- สร้างวัตถุ ----------

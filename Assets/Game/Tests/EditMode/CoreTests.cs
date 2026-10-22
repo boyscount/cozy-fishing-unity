@@ -148,4 +148,88 @@ namespace CozyFishing.Tests
             FishDex.ResetForTests();
         }
     }
+
+    public class StoryTests
+    {
+        static StoryState Fresh() { var s = new StoryState(); Story.RollMarket(s, new Random(3)); Story.UseForTests(s); return s; }
+        static BasketFish F(string id, float kg) => new BasketFish { id = id, kg = kg, cm = 20 };
+
+        [Test]
+        public void BasketHasEightSlotsAndSwapsTheCheapest()
+        {
+            var s = Fresh();
+            var ids = FishDatabase.ForStage("paddy").Select(x => x.id).ToArray();
+            for (int i = 0; i < Story.Capacity; i++) s.basket.Add(F(ids[i % ids.Length], 0.2f + i * 0.1f));
+            Assert.AreEqual(8, Story.Capacity);
+            Assert.IsTrue(Story.BasketFull);
+            int ci = Story.CheapestIndex();
+            int cheapest = Story.Value(s.basket[ci]);
+            Assert.IsTrue(s.basket.All(f => Story.Value(f) >= cheapest));
+            var old = Story.SwapCheapest(F(ids[0], 5f));
+            Assert.AreEqual(cheapest, Story.Value(old));
+            Assert.AreEqual(8, s.basket.Count);
+        }
+
+        [Test]
+        public void HotFishSellsForMoreThanBasePriceRange()
+        {
+            var s = Fresh();
+            Assert.IsNotNull(s.hot);
+            var sp = FishDatabase.Get(s.hot);
+            Assert.GreaterOrEqual(Story.PriceOf(s.hot), (int)(sp.price * 0.65f * Story.HotMul) - 1);
+        }
+
+        [Test]
+        public void GrillingEnoughFeedsTheFamily_SellingEarnsMoney()
+        {
+            var s = Fresh();
+            var id = FishDatabase.ForStage("paddy").First().id;
+            s.basket.Add(F(id, 0.8f)); s.basket.Add(F(id, 0.6f)); s.basket.Add(F(id, 0.5f));
+            int happy = s.happy, sellValue = Story.Value(s.basket[2]);
+            var r = Story.SettleEvening(new[] { true, true, false });
+            Assert.AreEqual("full", r.mood);
+            Assert.AreEqual(happy + 12, s.happy);
+            Assert.AreEqual(sellValue, s.money);
+            Assert.AreEqual(0, s.basket.Count);
+        }
+
+        [Test]
+        public void EmptyBasketMakesFamilySad()
+        {
+            var s = Fresh();
+            var r = Story.SettleEvening(new bool[0]);
+            Assert.AreEqual("empty", r.mood);
+            Assert.AreEqual(62, s.happy);
+        }
+
+        [Test]
+        public void DefaultChoiceGrillsCheapFishUntilFed()
+        {
+            var s = Fresh();
+            var paddy = FishDatabase.ForStage("paddy").OrderBy(x => x.price).ToArray();
+            s.basket.Add(F(paddy[^1].id, 1f)); s.basket.Add(F(paddy[0].id, 1.3f));
+            var g = Story.DefaultGrill();
+            Assert.IsFalse(g[0]); Assert.IsTrue(g[1]);
+        }
+
+        [Test]
+        public void PayingTheRoofNeeds1500AndFixesIt()
+        {
+            var s = Fresh();
+            s.money = 1499; Assert.IsFalse(Story.PayGoal());
+            s.money = 1600; Assert.IsTrue(Story.PayGoal());
+            Assert.IsTrue(Story.RoofFixed); Assert.AreEqual(100, s.money);
+        }
+
+        [Test]
+        public void SleepingAdvancesTheDayAndResetsTheClock()
+        {
+            var s = Fresh();
+            s.time = 18f;
+            Story.Sleep(new Random(5));
+            Assert.AreEqual(2, s.day);
+            Assert.AreEqual(Story.DayStart, s.time);
+            Assert.IsTrue(Story.Lucks.Any(l => l.id == s.luck));
+        }
+    }
 }

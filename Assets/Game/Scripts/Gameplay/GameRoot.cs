@@ -9,6 +9,7 @@ namespace CozyFishing
         public PlayerController player;
         public FishingController fishing;
         public CameraRig rig;
+        public StoryDirector director;
 
         void Start()
         {
@@ -17,6 +18,7 @@ namespace CozyFishing
             player.Init(world);
             fishing.Init(world);
             rig.Init(world);
+            if (director != null) director.Begin(world);
         }
     }
 }

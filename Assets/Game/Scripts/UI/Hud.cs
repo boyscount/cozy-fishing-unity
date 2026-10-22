@@ -8,7 +8,7 @@ namespace CozyFishing
     // หน้าจอภาษาไทยทั้งหมด (UI Toolkit + ฟอนต์ Mali + Advanced Text Generator ให้สระ/วรรณยุกต์วางถูก)
     // ป้ายจำนวนปลา · คำแนะนำ · แถบแรงเหวี่ยง · แถบแรงตึงสาย · แถบตีเบ็ด · ป้าย "!" · การ์ดปลา · ปุ่มกดหลัก (ทุกจอ) · จอยบนจอสัมผัส
     // สเกล: อ้างอิงจอสี่เหลี่ยม 1080 หน่วย เฉลี่ยกว้าง/สูง (match 0.5) → แนวตั้งและแนวนอนตัวหนังสือขนาดใกล้กัน ไม่ล้นจอ
-    public class Hud : MonoBehaviour
+    public partial class Hud : MonoBehaviour
     {
         public Camera cam;
         public FishPreview preview;
@@ -23,7 +23,9 @@ namespace CozyFishing
         Label count, hint, toast, alert, sHits, cardName, cardStars, cardKg, cardPrice, cardDesc, actTxt, actKey;
         FontDefinition font, fontBold;
         float toastUntil;
-        Action onCardClose;
+        Action onCardOk, onCardAlt;
+        Button cardOk, cardAlt;
+        VisualElement countBoxRef;
 
         void Awake()
         {
@@ -105,7 +107,7 @@ namespace CozyFishing
 
         void Build()
         {
-            var countBox = Box(root, Paper, 999); Abs(countBox, 24, null, 24); Pad(countBox, 8, 26);
+            var countBox = countBoxRef = Box(root, Paper, 999); Abs(countBox, 24, null, 24); Pad(countBox, 8, 26);
             count = L(countBox, "ปลา 0 ตัว · ฿0", 30, Ink);
 
             // ข้อความแจ้งสั้น ๆ: กลางจอด้านบน
@@ -153,6 +155,7 @@ namespace CozyFishing
 
             BuildCard();
             BuildDex();
+            BuildStory();
             BuildButton();
             if (TouchUi) { BuildJoystick(); BuildTouchExtras(); }
         }
@@ -179,13 +182,17 @@ namespace CozyFishing
             var stats = new VisualElement { pickingMode = PickingMode.Ignore }; stats.style.flexDirection = FlexDirection.Row; stats.style.justifyContent = Justify.Center; stats.style.marginTop = 14; stats.style.flexShrink = 0; cb.Add(stats);
             cardKg = L(Stat(stats), "", 34, Ink); cardPrice = L(Stat(stats), "", 34, new Color(0.42f, 0.31f, 0.07f));
             cardDesc = L(cb, "", 26, Ink, false); cardDesc.style.marginTop = 16; cardDesc.style.marginBottom = 22;
-            var ok = new Button(CloseCard) { text = "เก็บใส่ข้องปลา" };
+            var ok = cardOk = new Button(() => CloseCard(false)) { text = "เก็บใส่ข้องปลา" };
             ok.style.unityFontDefinition = fontBold; ok.style.unityTextGenerator = TextGeneratorType.Advanced;
-            ok.style.fontSize = 34; ok.style.color = Color.white; ok.style.backgroundColor = Green; Pad(ok, 16, 50);
+            ok.style.fontSize = 32; ok.style.color = Color.white; ok.style.backgroundColor = Green; Pad(ok, 14, 40);
             ok.style.borderTopLeftRadius = ok.style.borderTopRightRadius = ok.style.borderBottomLeftRadius = ok.style.borderBottomRightRadius = 999;
             ok.style.borderTopWidth = ok.style.borderBottomWidth = ok.style.borderLeftWidth = ok.style.borderRightWidth = 0;
             ok.style.alignSelf = Align.Center; ok.style.flexShrink = 0;
             cb.Add(ok);
+            // ข้องเต็ม: ปุ่มที่สอง "ปล่อยคืนน้ำ"
+            cardAlt = new Button(() => CloseCard(true)) { text = "ปล่อยคืนน้ำ" };
+            StyleButton(cardAlt, new Color(0.3f, 0.55f, 0.7f)); cardAlt.style.alignSelf = Align.Center; cardAlt.style.marginTop = 8;
+            cb.Add(cardAlt);
             card.style.display = DisplayStyle.None;
         }
 
@@ -321,7 +328,15 @@ namespace CozyFishing
         }
 
         // ---------- API ให้ระบบตกปลาเรียก ----------
-        public void CloseCard() { if (!CardOpen) return; card.style.display = DisplayStyle.None; GameInput.Blocked = false; onCardClose?.Invoke(); }
+        public bool CatchCardOpen => card.style.display == DisplayStyle.Flex;
+        /// ปิดการ์ดปลา: alt = กดปุ่มที่สอง (ปล่อยคืนน้ำ)
+        public void CloseCard(bool alt = false)
+        {
+            if (!CatchCardOpen) return;
+            card.style.display = DisplayStyle.None;
+            GameInput.Blocked = ModalOpen;
+            (alt ? onCardAlt : onCardOk)?.Invoke();
+        }
         string lastHint = null;
         public void Hint(string s)
         {
@@ -334,7 +349,6 @@ namespace CozyFishing
         {
             actTxt.text = txt;
             actBtn.style.backgroundColor = hot ? Gold : Green;
-            actBtn.style.display = CardOpen ? DisplayStyle.None : DisplayStyle.Flex;
         }
         public void Power(float v)
         {
@@ -367,14 +381,8 @@ namespace CozyFishing
             alertBg.style.left = p.x - 48; alertBg.style.top = p.y - 48;
             alert.text = rare ? "!!" : "!";
         }
-        int lastCount = -1, lastMoney = -1;
-        public void SetCount(int n, int money)
-        {
-            if (n == lastCount && money == lastMoney) return;
-            lastCount = n; lastMoney = money;
-            count.text = $"ปลา {n} ตัว · ฿{money:N0}";
-        }
-        public void ShowCatch(Catch c, Action onClose, Texture image = null, bool isNew = false)
+        /// การ์ด "ได้ปลาแล้ว!" · okText/onOk = ปุ่มหลัก · altText/onAlt = ปุ่มที่สอง (ข้องเต็ม: ปล่อยคืนน้ำ)
+        public void ShowCatch(Catch c, Texture image, bool isNew, string okText, Action onOk, string altText = null, Action onAlt = null, string note = null)
         {
             var sp = c.species;
             cardImg.style.backgroundImage = image is RenderTexture rt ? Background.FromRenderTexture(rt) : default;
@@ -384,9 +392,11 @@ namespace CozyFishing
             cardName.text = sp.name;
             cardStars.text = $"{FishDatabase.Rarity[sp.stars]} · {sp.stars} ดาว";
             cardKg.text = $"{c.kg:0.00} กก.";
-            cardPrice.text = $"฿{Mathf.RoundToInt(c.kg * sp.price):N0}";
-            cardDesc.text = sp.desc;
-            onCardClose = onClose;
+            cardPrice.text = Story.Baht(Story.Value(new BasketFish { id = sp.id, kg = c.kg })) + (Story.S.hot == sp.id ? " ราคาพิเศษ!" : "");
+            cardDesc.text = string.IsNullOrEmpty(note) ? sp.desc : note + "\n" + sp.desc;
+            cardOk.text = okText; onCardOk = onOk;
+            cardAlt.text = altText ?? ""; onCardAlt = onAlt;
+            cardAlt.style.display = altText != null ? DisplayStyle.Flex : DisplayStyle.None;
             GameInput.Blocked = true;
             card.style.display = DisplayStyle.Flex;
             actBtn.style.display = DisplayStyle.None;
@@ -405,11 +415,15 @@ namespace CozyFishing
             fightRow.style.top = strikeRow.style.top = portrait ? 170 : 16;
             bool panelUp = fightBox.style.display == DisplayStyle.Flex || strikeBox.style.display == DisplayStyle.Flex;
             toastRow.style.top = panelUp ? (portrait ? 420 : 250) : 96;
-            if (dexBtn != null) dexBtn.style.display = CardOpen ? DisplayStyle.None : DisplayStyle.Flex;
-            // การ์ดปลาเปิด: ซ่อนจอย/ปุ่มกระโดดไม่ให้ทับการ์ด
-            var hide = CardOpen ? DisplayStyle.None : DisplayStyle.Flex;
+            // ตกปลาอยู่และไม่มีหน้าต่างเปิด → แสดงปุ่มควบคุม · อยู่บ้าน/มีการ์ด/หน้าต่าง → ซ่อน
+            bool play = !CardOpen && !ModalOpen && Story.Phase == StoryPhase.Fishing;
+            var hide = play ? DisplayStyle.Flex : DisplayStyle.None;
+            if (dexBtn != null) dexBtn.style.display = CardOpen || ModalOpen ? DisplayStyle.None : DisplayStyle.Flex;
             if (joy != null) joy.style.display = hide;
             if (jumpBtn != null) jumpBtn.style.display = hide;
+            actBtn.style.display = hide;
+            hintRow.style.display = hide;
+            UpdateStoryUi();
             var m = Mouse.current;
             if (m != null && root.panel != null)
             {

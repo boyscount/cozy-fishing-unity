@@ -151,7 +151,7 @@ public static class SceneBuilder
         var rnd = new System.Random(808);
         float Rf(float a, float b) => a + (float)rnd.NextDouble() * (b - a);
 
-        Place("Hut", -10.5f, -7.5f, 1.15f, 30, null, 1.6f);
+        var hut = Place("Hut", -10.5f, -7.5f, 1.15f, 30, null, 1.6f);
         // ต้นไม้ใหญ่ (Jacaranda) · ตาลโตนดยังใช้โมเดลเดิม (Poly Haven ไม่มีต้นตาล)
         foreach (var (x, z, s) in new[] { (-7.5f, -9.5f, 0.3f), (11f, -6.5f, 0.27f), (14.5f, 6f, 0.25f), (-15f, 4f, 0.28f) })
             Nature("jacaranda_tree", x, z, s, Rf(0, 360), 0.7f, sink: 0.1f);
@@ -309,6 +309,12 @@ public static class SceneBuilder
         rig.fishing = fishing;
         var root = sys.AddComponent<GameRoot>();
         root.world = world; root.player = player; root.fishing = fishing; root.rig = rig;
+        // ---------- โหมดเนื้อเรื่อง: แสงตามเวลา · หลังคารั่ว · ลำดับวัน ----------
+        var cycle = sys.AddComponent<DayCycle>(); cycle.sun = sun;
+        var director = sys.AddComponent<StoryDirector>();
+        director.fishing = fishing; director.player = player; director.rig = rig; director.hud = hud; director.sky = cycle;
+        director.roofLeak = BuildRoofLeak(hut);
+        hud.director = director; fishing.director = director; root.director = director;
 
         EditorSceneManager.SaveScene(scene, ScenePath);
         // อบแสงฟ้า (ambient SH + reflection) จาก HDRI — ไม่อบ lightmap
@@ -321,6 +327,41 @@ public static class SceneBuilder
     }
 
     // ---------- ตัวช่วย ----------
+    // หลังคารั่ว: หยดน้ำไหลจากรูหลังคาลงถังสังกะสี + แอ่งน้ำบนพื้น (StoryDirector ซ่อนเมื่อจ่ายค่าซ่อมแล้ว)
+    static GameObject BuildRoofLeak(GameObject hut)
+    {
+        var leak = new GameObject("RoofLeak");
+        var b = new Bounds(hut.transform.position, Vector3.zero);
+        foreach (var r in hut.GetComponentsInChildren<Renderer>()) b.Encapsulate(r.bounds);
+        var floor = new Vector3(b.center.x + 0.35f, PaddyWorld.Ground(b.center.x, b.center.z) + 0.02f, b.center.z - 0.2f);
+        leak.transform.position = floor;
+        // ถังรองน้ำ
+        var bucket = Prim(PrimitiveType.Cylinder, "Bucket", floor + new Vector3(0, 0.17f, 0), new Vector3(0.38f, 0.17f, 0.38f), SurfMat("Bucket", Hex("#8d949b"), smooth: 0.65f));
+        bucket.transform.SetParent(leak.transform, true);
+        var inner = Prim(PrimitiveType.Cylinder, "BucketWater", floor + new Vector3(0, 0.3f, 0), new Vector3(0.33f, 0.005f, 0.33f), SurfMat("BucketWater", Hex("#3d5a63"), smooth: 0.95f));
+        inner.transform.SetParent(leak.transform, true);
+        // แอ่งน้ำเปียกรอบถัง
+        var puddle = Prim(PrimitiveType.Cylinder, "Puddle", floor + new Vector3(0.25f, 0.0f, 0.1f), new Vector3(1.3f, 0.004f, 0.9f), SurfMat("Puddle", Hex("#2e3a36"), smooth: 0.92f));
+        puddle.GetComponent<Renderer>().shadowCastingMode = ShadowCastingMode.Off;
+        puddle.transform.SetParent(leak.transform, true);
+        // หยดน้ำ (particle) จากใต้หลังคาลงถัง · อีกจุดหยดลงพื้น
+        foreach (var (off, rate) in new[] { (new Vector3(0, 0, 0), 7f), (new Vector3(0.6f, 0, 0.3f), 3.5f) })
+        {
+            var go = new GameObject("Drips");
+            go.transform.SetParent(leak.transform, false);
+            go.transform.position = new Vector3(floor.x + off.x, b.max.y - 0.55f, floor.z + off.z);
+            var ps = go.AddComponent<ParticleSystem>();
+            var main = ps.main; main.startLifetime = 0.55f; main.startSpeed = 0; main.startSize = 0.035f; main.gravityModifier = 1.6f;
+            main.startColor = new Color(0.78f, 0.88f, 0.95f, 0.85f); main.maxParticles = 40; main.simulationSpace = ParticleSystemSimulationSpace.World;
+            var em = ps.emission; em.rateOverTime = rate;
+            var sh = ps.shape; sh.shapeType = ParticleSystemShapeType.Sphere; sh.radius = 0.03f;
+            var pr = go.GetComponent<ParticleSystemRenderer>();
+            pr.renderMode = ParticleSystemRenderMode.Stretch; pr.lengthScale = 4; pr.velocityScale = 0.04f;
+            pr.sharedMaterial = UnlitMat("Drip", new Color(0.8f, 0.9f, 1f));
+        }
+        return leak;
+    }
+
     // PanelSettings ของ HUD เป็น asset ใน Resources: มีธีม (ไม่งั้น layout เพี้ยน) และให้ editor แนบข้อมูล ICU ตัดคำไทยเข้า build
     static void BuildHudPanel()
     {
