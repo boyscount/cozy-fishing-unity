@@ -202,7 +202,7 @@ public static partial class SceneBuilder
         Particles("MangroveMist", new Vector3(GXc(15), GW + 0.4f, 15), new Vector3(14f, 44f, 0.1f), ParticleMat("Spray", new Color(1, 1, 1, 0.5f)), 16, new Vector2(3f, 6f), new Vector2(7f, 10f), new Vector2(0.03f, 0.1f), new Color(0.85f, 0.9f, 0.88f, 0.1f));
 
         // ---------- ตัวละคร กล้อง แสง ระบบเกม ----------
-        var look = new Look { sun = "#d4d8cc", sunIntensity = 1.35f, sunRot = new Vector2(52, 150), fog = "#8e9a90", fogStart = 12, fogEnd = 75, exposure = 0.95f, ambient = 1.15f, skyId = "Overcast", skyTint = "#76808a" };
+        var look = new Look { sun = "#d4d8cc", sunIntensity = 1.35f, sunRot = new Vector2(52, 150), fog = "#8e9a90", fogStart = 12, fogEnd = 75, exposure = 0.95f, ambient = 1.15f, skyId = "Overcast", skyTint = "#7a848c" };   // วัสดุฟ้าแยก ไม่ทับฟ้าหลืบแพสุสาน
         BuildGameplay(world, model, world.spawn, look, world);
         var foliage = Object.FindFirstObjectByType<FoliageRenderer>(); if (foliage != null) foliage.maxGrass = 0;   // ลานเลนไม่มีหญ้า
         SaveStage(scene, path);
