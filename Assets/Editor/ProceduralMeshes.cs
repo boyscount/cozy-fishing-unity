@@ -437,4 +437,84 @@ public static class ProceduralMeshes
         for (int i = 0; i < N; i++) for (int j = 0; j < M; j++) bld.Quad(0, idx[i, j], idx[i + 1, j], idx[i, j + 1], idx[i + 1, j + 1]);
         return bld.Build("Rowboat");
     }
+
+    // หลังคาจากมุงซ้อนชั้น: จั่วสองข้าง สันตามแกน Z ยาว length · แต่ละข้างมุงสามชั้นซ้อนเหลื่อม ชายล่างแต่ละชั้นหลุดลุ่ยไม่เท่ากัน
+    // มีความหนา (ผิวบน/ล่าง/ขอบ) · สีฟางซีดตามจุดยอด บางหย่อมดำคล้ำ/มีตะไคร่ (ใช้คู่กับลายจากแบบ triplanar)
+    public static Mesh ThatchRoof(int seed, float length, float halfW, float rise)
+    {
+        var rnd = new System.Random(seed);
+        float R(float a, float b) => a + (float)rnd.NextDouble() * (b - a);
+        var bld = new Builder(1);
+        const int C = 16, Bands = 3;
+        float L = length * 0.5f;
+        for (int side = -1; side <= 1; side += 2)
+            for (int band = 0; band < Bands; band++)
+            {
+                float t0 = Mathf.Max(0, band / (float)Bands - 0.06f), t1 = (band + 1) / (float)Bands;
+                float lift = 0.05f * (Bands - band);                                   // ชั้นบนนูนกว่าชั้นล่าง
+                int[] topA = new int[C + 1], topB = new int[C + 1], botA = new int[C + 1], botB = new int[C + 1];
+                for (int c = 0; c <= C; c++)
+                {
+                    float z = -L + 2 * L * c / C;
+                    float fray = band == Bands - 1 ? R(0.02f, 0.2f) : R(0f, 0.08f);  // ชายล่างหลุดลุ่ย (ชั้นล่างสุดมากสุด)
+                    float tb = t1 + fray / Mathf.Max(halfW, 0.1f);
+                    var straw = Color.Lerp(new Color(0.62f, 0.56f, 0.44f), new Color(0.45f, 0.4f, 0.32f), R(0, 1));
+                    if (rnd.NextDouble() < 0.12) straw = Color.Lerp(straw, new Color(0.36f, 0.4f, 0.3f), 0.6f);   // ตะไคร่
+                    Vector3 P(float t, float off) => new Vector3(side * halfW * t, rise * (1 - t) + lift + off, z);
+                    topA[c] = bld.Add(P(t0, 0.06f), straw); topB[c] = bld.Add(P(tb, -0.02f), straw * 0.8f);
+                    botA[c] = bld.Add(P(t0, -0.06f), straw * 0.55f); botB[c] = bld.Add(P(tb, -0.1f), straw * 0.5f);
+                }
+                for (int c = 0; c < C; c++)
+                {
+                    if (side > 0)
+                    {
+                        bld.Quad(0, topA[c], topA[c + 1], topB[c], topB[c + 1]);
+                        bld.Quad(0, botA[c + 1], botA[c], botB[c + 1], botB[c]);
+                        bld.Quad(0, topB[c], topB[c + 1], botB[c], botB[c + 1]);
+                    }
+                    else
+                    {
+                        bld.Quad(0, topA[c + 1], topA[c], topB[c + 1], topB[c]);
+                        bld.Quad(0, botA[c], botA[c + 1], botB[c], botB[c + 1]);
+                        bld.Quad(0, topB[c + 1], topB[c], botB[c + 1], botB[c]);
+                    }
+                }
+            }
+        return bld.Build("ThatchRoof");
+    }
+
+    // ผักตบชวา: ใบกลมมันตั้งขึ้นเป็นกอ ก้านป่อง · บางกอมีช่อดอกม่วงอ่อน
+    public static Mesh Hyacinth(int seed)
+    {
+        var rnd = new System.Random(seed);
+        float R(float a, float b) => a + (float)rnd.NextDouble() * (b - a);
+        var bld = new Builder(1);
+        int leaves = rnd.Next(6, 10);
+        for (int l = 0; l < leaves; l++)
+        {
+            float az = R(0, Mathf.PI * 2), tilt = R(0.5f, 1.1f), r = R(0.07f, 0.11f);
+            var dir = new Vector3(Mathf.Cos(az), 0, Mathf.Sin(az));
+            var c = dir * R(0.04f, 0.12f) + Vector3.up * R(0.12f, 0.22f);
+            var nrm = (dir * Mathf.Sin(tilt) + Vector3.up * Mathf.Cos(tilt)).normalized;
+            var u = Vector3.Cross(nrm, Vector3.up).normalized; var w = Vector3.Cross(u, nrm);
+            var col = Color.Lerp(new Color(0.18f, 0.38f, 0.12f), new Color(0.32f, 0.5f, 0.18f), R(0, 1));
+            const int S = 9;
+            for (int k = 0; k < S; k++)
+            {
+                float a0 = k / (float)S * Mathf.PI * 2, a1 = (k + 1) / (float)S * Mathf.PI * 2;
+                bld.TwoSided(0, c, c + (u * Mathf.Cos(a0) + w * Mathf.Sin(a0)) * r, c + (u * Mathf.Cos(a1) + w * Mathf.Sin(a1)) * r, col);
+            }
+            bld.TwoSided(0, Vector3.zero, c - w * r * 0.8f, dir * 0.03f, col * 0.75f);   // ก้านป่องลงน้ำ
+        }
+        if (rnd.NextDouble() < 0.45)   // ช่อดอกม่วง
+        {
+            var lilac = new Color(0.72f, 0.6f, 0.85f);
+            for (int f = 0; f < 7; f++)
+            {
+                var p = new Vector3(R(-0.025f, 0.025f), 0.28f + f * 0.025f, R(-0.025f, 0.025f));
+                bld.TwoSided(0, p + new Vector3(-0.025f, 0, 0), p + new Vector3(0.025f, 0, 0), p + new Vector3(0, 0.03f, 0.01f), lilac);
+            }
+        }
+        return bld.Build("Hyacinth");
+    }
 }

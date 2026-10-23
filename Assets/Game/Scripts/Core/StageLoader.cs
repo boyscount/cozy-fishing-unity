@@ -79,7 +79,7 @@ namespace CozyFishing
                     keys.Sort();
                     for (int ci = 0; ci < keys.Count && err == null; ci++)
                     {
-                        using (var req = UnityWebRequestAssetBundle.GetAssetBundle(url + keys[ci], Hash128.Parse(index[keys[ci]]), 0))
+                        using (var req = UnityWebRequestAssetBundle.GetAssetBundle(url + keys[ci] + "?v=" + index[keys[ci]], Hash128.Parse(index[keys[ci]]), 0))
                         {
                             var op = req.SendWebRequest();
                             while (!op.isDone) { Report(progress, (ci + req.downloadProgress) / keys.Count * 0.85f, "กำลังเตรียมเรือและคันเบ็ด…"); yield return null; }
@@ -95,7 +95,7 @@ namespace CozyFishing
                     if (old != null && old.name == key) bundle = old;   // อยู่ด่านนี้อยู่แล้ว (เช่นโหลดเซฟกลับมา)
                     else
                     {
-                        using (var req = UnityWebRequestAssetBundle.GetAssetBundle(url + key, Hash128.Parse(hash), 0))
+                        using (var req = UnityWebRequestAssetBundle.GetAssetBundle(url + key + "?v=" + hash, Hash128.Parse(hash), 0)   /* ?v= กันเบราว์เซอร์ส่งไฟล์เวอร์ชันเก่าจากแคช HTTP */)
                         {
                             var op = req.SendWebRequest();
                             while (!op.isDone) { Report(progress, (hasCommon ? 0.85f : 0) + req.downloadProgress * (hasCommon ? 0.15f : 1), "กำลังเตรียมบ่อปลา…"); yield return null; }

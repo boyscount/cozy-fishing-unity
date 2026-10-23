@@ -30,6 +30,7 @@ public static partial class SceneBuilder
     {
         public string sun = "#ffe9cc"; public float sunIntensity = 2.1f; public Vector2 sunRot = new Vector2(42, 150);
         public string fog = "#c6d6dc"; public float fogStart = 35, fogEnd = 130; public float exposure = 1.05f, ambient = 1.1f;
+        public string skyId, skyTint;   // ตั้งค่า = ใช้วัสดุฟ้าแยกของด่าน (เช่นฟ้าครึ้มหมอกเทา) ไม่ไปแก้ฟ้าที่ด่านอื่นใช้ร่วม
     }
 
     public class GameplayRefs { public StoryDirector director; public Hud hud; public PlayerController player; public Light sun; public Camera cam; }
@@ -64,9 +65,21 @@ public static partial class SceneBuilder
         sun.type = LightType.Directional; sun.color = Hex(look.sun); sun.intensity = look.sunIntensity; sun.shadows = LightShadows.Soft; sun.shadowStrength = 0.85f;
         sunGo.transform.rotation = Quaternion.Euler(look.sunRot.x, look.sunRot.y, 0);
         RenderSettings.sun = sun;
-        var sky = LoadOrCreate($"{MatDir}/Sky_Kloofendal.mat", Shader.Find("Skybox/Cubemap"));
-        sky.SetTexture("_Tex", AssetDatabase.LoadAssetAtPath<Cubemap>(HdriPath));
-        sky.SetFloat("_Exposure", look.exposure); sky.SetFloat("_Rotation", 150);
+        Material sky;
+        if (look.skyId == "Overcast")
+        {
+            // ฟ้าครึ้มทั้งผืน: ฟ้าไล่สีเทาเรียบ ๆ (HDRI เป็นฟ้าใส ย้อมสีแล้วยังฟ้า · procedural sky ออกส้มเหมือนเย็น)
+            sky = LoadOrCreate($"{MatDir}/Sky_Overcast.mat", Shader.Find("CozyFishing/SkyGradient"));
+            var fogC = Hex(look.fog);
+            sky.SetColor("_Horizon", fogC); sky.SetColor("_Ground", fogC * 0.9f);
+            sky.SetColor("_Zenith", Hex(look.skyTint ?? "#7a8490"));
+        }
+        else
+        {
+            sky = LoadOrCreate($"{MatDir}/Sky_{look.skyId ?? "Kloofendal"}.mat", Shader.Find("Skybox/Cubemap"));
+            sky.SetTexture("_Tex", AssetDatabase.LoadAssetAtPath<Cubemap>(HdriPath));
+            sky.SetFloat("_Exposure", look.exposure); sky.SetFloat("_Rotation", 150);
+        }
         RenderSettings.skybox = sky;
         RenderSettings.ambientMode = AmbientMode.Skybox; RenderSettings.ambientIntensity = look.ambient;
         RenderSettings.defaultReflectionMode = DefaultReflectionMode.Skybox; RenderSettings.defaultReflectionResolution = 256; RenderSettings.reflectionIntensity = 1;
