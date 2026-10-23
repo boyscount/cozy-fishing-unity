@@ -127,7 +127,7 @@ public static partial class SceneBuilder
         var wr = water.AddComponent<MeshRenderer>(); wr.sharedMaterial = wm; wr.shadowCastingMode = ShadowCastingMode.Off;
 
         // ---------- อุโมงค์หินปูน ----------
-        var rockMat = SurfMat("CaveRock", Color.white, 0.05f, vertexColor: true, smooth: 0.3f, tex: "rock_face_04", tiles: 0.3f);
+        var rockMat = SurfMat("CaveRock", Color.white, 0.05f, vertexColor: true, smooth: 0.12f, tex: "rock_face_04", tiles: 0.3f);
         Color RockTint(Vector3 p)
         {
             float wet = SStep(CW + 1.6f, CW - 0.1f, p.y), n = Mathf.PerlinNoise(p.z * 0.4f + 2, p.y * 0.5f + 8);
@@ -163,7 +163,7 @@ public static partial class SceneBuilder
 
         // ---------- หินย้อย หินงอก เสาหิน ----------
         var spikeRoot = new GameObject("Speleothems").transform;
-        var spikeMat = SurfMat("CaveSpike", Color.white, 0f, vertexColor: true, smooth: 0.4f, tex: "rock_face_04", tiles: 0.6f);
+        var spikeMat = SurfMat("CaveSpike", Color.white, 0f, vertexColor: true, smooth: 0.2f, tex: "rock_face_04", tiles: 0.6f);
         void Spike(Vector3 at, float len, bool down, float r0, Color c)
         {
             float s = down ? -1 : 1;
@@ -291,9 +291,10 @@ public static partial class SceneBuilder
         Particles("CaveMist", new Vector3(CXc(12), CW + 0.3f, 12), new Vector3(10f, 40f, 0.1f), ParticleMat("Spray", new Color(1, 1, 1, 0.5f)), 14, new Vector2(3f, 6f), new Vector2(7f, 10f), new Vector2(0.02f, 0.08f), new Color(0.7f, 0.85f, 0.9f, 0.07f));
 
         // ---------- ตัวละคร กล้อง แสง ระบบเกม ----------
-        var look = new Look { sun = "#a8c8d4", sunIntensity = 1.3f, sunRot = new Vector2(70, 170), fog = "#1a2c34", fogStart = 16, fogEnd = 58, exposure = 0.9f, ambient = 3f, skyId = "Overcast", skyTint = "#6a909c" };
+        var look = new Look { sun = "#a8c8d4", sunIntensity = 1.3f, sunRot = new Vector2(70, 170), fog = "#1a2c34", fogStart = 16, fogEnd = 58, exposure = 0.9f, ambient = 1.2f, skyId = "Overcast", skyTint = "#3e5660" };
         BuildGameplay(world, model, world.spawn, look, world);
         var foliage = Object.FindFirstObjectByType<FoliageRenderer>(); if (foliage != null) foliage.maxGrass = 0;   // ในถ้ำไม่มีหญ้า
+        RenderSettings.reflectionIntensity = 0.15f;   // ผนังถ้ำไม่สะท้อนฟ้า (บนเว็บหินออกขาวเหมือนน้ำแข็ง)
         SaveStage(scene, path);
     }
 }

@@ -603,4 +603,67 @@ public static class ProceduralMeshes
         }
         return bld.Build("Vines");
     }
+    // ต้นโกงกาง: ลำต้นตั้งบนรากค้ำยันโค้งเป็นซุ้มหลายสิบเส้น (แตกแขนงซ้อนกันเหมือนกรงเล็บ) · ยอดแตกกิ่ง + พุ่มใบมันเขียวเข้มเป็นกระจุก
+    // leaves = false → ต้นโกงกางตาย (เหลือแต่รากกับกิ่งแห้งสีซีด) · submesh 0 = เปลือก/ราก/กิ่ง, 1 = ใบ
+    public static Mesh Mangrove(int seed, float height, bool leaves)
+    {
+        var rnd = new System.Random(seed);
+        float R(float a, float b) => a + (float)rnd.NextDouble() * (b - a);
+        var bld = new Builder(2);
+        Color bark0 = leaves ? new Color(0.58f, 0.52f, 0.44f) : new Color(0.7f, 0.67f, 0.62f), bark1 = leaves ? new Color(0.72f, 0.66f, 0.56f) : new Color(0.85f, 0.83f, 0.78f);
+        var lean = new Vector3(R(-0.25f, 0.25f), 0, R(-0.25f, 0.25f));
+        Vector3 TrunkAt(float y) => new Vector3(lean.x * y * 0.3f, y, lean.z * y * 0.3f);
+        var trunk = new System.Collections.Generic.List<Vector3>();
+        for (int i = 0; i <= 8; i++) trunk.Add(TrunkAt(Mathf.Lerp(0.8f, height * 0.62f, i / 8f)));
+        Tube(bld, 0, trunk, 0.2f, 0.13f, bark0, bark1, 8);
+        // รากค้ำยัน: ออกจากลำต้นช่วง 0.9–2.6 ม. โค้งขึ้นนิดแล้วดิ่งลงปักเลน · บางเส้นแตกแขนงออกไปอีกชั้น
+        int roots = rnd.Next(13, 19);
+        for (int k = 0; k < roots; k++)
+        {
+            float az = k / (float)roots * Mathf.PI * 2 + R(-0.35f, 0.35f), hs = R(0.7f, 2.4f), reach = R(1.1f, 2.6f) * (0.7f + hs * 0.2f);
+            var dir = new Vector3(Mathf.Cos(az), 0, Mathf.Sin(az));
+            Vector3 p0 = TrunkAt(hs) + dir * 0.12f, p1 = TrunkAt(hs) + dir * reach * R(0.3f, 0.6f) + Vector3.up * R(0.25f, 0.8f) + new Vector3(R(-0.3f, 0.3f), 0, R(-0.3f, 0.3f)), p2 = dir * reach + new Vector3(R(-0.4f, 0.4f), -0.45f, R(-0.4f, 0.4f));
+            var pts = new System.Collections.Generic.List<Vector3>();
+            for (int i = 0; i <= 12; i++) { float t = i / 12f; pts.Add((1 - t) * (1 - t) * p0 + 2 * t * (1 - t) * p1 + t * t * p2); }
+            Tube(bld, 0, pts, R(0.06f, 0.09f), R(0.045f, 0.06f), bark0, bark1 * 0.9f, 5);
+            if (rnd.NextDouble() < 0.55)
+            {
+                var m = pts[rnd.Next(5, 9)]; float az2 = az + R(-0.7f, 0.7f); var d2 = new Vector3(Mathf.Cos(az2), 0, Mathf.Sin(az2));
+                Vector3 q1 = m + d2 * R(0.4f, 0.8f) + Vector3.up * R(0f, 0.25f), q2 = m + d2 * R(1f, 1.8f); q2.y = -0.4f;
+                var p2s = new System.Collections.Generic.List<Vector3>();
+                for (int i = 0; i <= 8; i++) { float t = i / 8f; p2s.Add((1 - t) * (1 - t) * m + 2 * t * (1 - t) * q1 + t * t * q2); }
+                Tube(bld, 0, p2s, 0.045f, 0.035f, bark0, bark1 * 0.85f, 4);
+            }
+        }
+        // กิ่งบน + พุ่มใบ
+        var top = TrunkAt(height * 0.6f);
+        int branches = rnd.Next(4, 7);
+        for (int b = 0; b < branches; b++)
+        {
+            float az = b / (float)branches * Mathf.PI * 2 + R(-0.4f, 0.4f), len = R(1.4f, 2.8f) * (leaves ? 1 : 0.8f);
+            var dir = new Vector3(Mathf.Cos(az), R(0.5f, 1.1f), Mathf.Sin(az)).normalized;
+            var pts = new System.Collections.Generic.List<Vector3>();
+            for (int i = 0; i <= 6; i++) { float t = i / 6f; pts.Add(top + dir * len * t + Vector3.down * 0.25f * t * t + Vector3.down * R(0, 0.4f) * (leaves ? 0 : t)); }
+            Tube(bld, 0, pts, 0.1f, 0.03f, bark0, bark1, 5);
+            var clusters = new System.Collections.Generic.List<Vector3> { pts[6] };
+            for (int tw = 0; tw < 3; tw++)
+            {
+                var from = pts[rnd.Next(2, 6)]; var d2 = (dir + Random3(rnd) * 0.9f).normalized; d2.y = Mathf.Abs(d2.y) * 0.6f + 0.2f;
+                var end = from + d2 * R(0.7f, 1.4f);
+                Tube(bld, 0, new[] { from, (from + end) * 0.5f + Vector3.up * 0.1f, end }, 0.035f, 0.012f, bark0, bark1, 4);
+                clusters.Add(end);
+            }
+            if (!leaves) continue;
+            foreach (var c in clusters)
+                for (int l = 0; l < 55; l++)
+                {
+                    var ctr = c + Vector3.Scale(Random3(rnd), new Vector3(1.05f, 0.55f, 1.05f)) + Vector3.up * 0.2f;
+                    var fwd = Random3(rnd).normalized; var side = Vector3.Cross(fwd, Vector3.up).normalized * 0.075f; var f = fwd * 0.15f;
+                    var col = Color.Lerp(new Color(0.17f, 0.28f, 0.12f), new Color(0.32f, 0.42f, 0.18f), R(0, 1));
+                    bld.TwoSided(1, ctr - f, ctr + side, ctr + f, col); bld.TwoSided(1, ctr - f, ctr + f, ctr - side, col);
+                }
+        }
+        return bld.Build("Mangrove");
+    }
+    static Vector3 Random3(System.Random r) { Vector3 v; do v = new Vector3((float)r.NextDouble() * 2 - 1, (float)r.NextDouble() * 2 - 1, (float)r.NextDouble() * 2 - 1); while (v.sqrMagnitude > 1 || v.sqrMagnitude < 0.01f); return v; }
 }

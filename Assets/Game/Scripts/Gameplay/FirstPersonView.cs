@@ -86,7 +86,7 @@ namespace CozyFishing
             if (!fishing.ExternalShowcase)
             {
                 fishing.ExternalShowcase = true; showT = 0; showFrom = g.position;
-                g.localScale = Vector3.one * Mathf.Max(0.16f, fishing.CaughtCm / 100f * 1.1f);   // ขนาดจริง (มุมกล้องหลังตัวละครขยายให้เห็นชัด)
+                g.localScale = Vector3.one * Mathf.Clamp(fishing.CaughtCm / 100f * 1.1f, 0.16f, 1.7f);   // ขนาดจริง (มุมกล้องหลังตัวละครขยายให้เห็นชัด) · ปลายักษ์ยาวเกินแขนจำกัดไว้ไม่ให้ล้นจอ
             }
             showT += dt;
             var c = cam.transform;

@@ -37,7 +37,7 @@ Material:
     m_Floats:
     - _Cull: 2
     - _MossAmount: 0.05
-    - _Smoothness: 0.3
+    - _Smoothness: 0.12
     - _Sway: 0
     - _SwayStart: 1.5
     - _TriScale: 0.3

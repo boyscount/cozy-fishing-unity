@@ -26,5 +26,8 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Game/Scenes/Cave.unity
     guid: 40cbe7da21d9d6649bb1d3b4057dcb2a
+  - enabled: 1
+    path: Assets/Game/Scenes/Mangrove.unity
+    guid: bb61261176c1c1242acc88a24e511cec
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}

@@ -128,7 +128,7 @@ Shader "CozyFishing/Water"
                 col += light.color * sp * _Glint * light.shadowAttenuation;
 
                 // ฟองบาง ๆ ริมฝั่ง + วงคลื่น
-                float fz = _FoamWidth + 0.04 * sin(p.x * 3 + p.y * 2 + t * 1.5) + n2(p * 3 + t * 0.3) * 0.05;
+                float fz = max(0.004, _FoamWidth + 0.04 * sin(p.x * 3 + p.y * 2 + t * 1.5) + n2(p * 3 + t * 0.3) * 0.05);   // ฟองแคบ ๆ ติดลบได้ → เกิดปื้นฟองขาวกลางน้ำลึก
                 float foam = smoothstep(fz, fz * 0.3, depth0) * (0.5 + 0.5 * n2(p * 9 + t * 0.5)) * step(0.001, _FoamWidth);   // _FoamWidth = 0 ปิดฟอง (น้ำในนาตื้นมาก)
                 foam = max(foam * 0.35, saturate(rip) * 0.55);
                 // แก่งน้ำเชี่ยว: ริ้วฟองขาวยืดตามทิศน้ำไหล ขยับตามกระแส · ฟองหนาขึ้นตรงน้ำตื้น

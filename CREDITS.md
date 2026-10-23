@@ -50,6 +50,12 @@ Each adapted image keeps the license of its source (CC BY-SA images stay CC BY-S
 | ปลาหมูเส้นดำ (Black-lined loach) | [Yasuhikotakia nigrolineata.jpg](https://commons.wikimedia.org/wiki/File:Yasuhikotakia_nigrolineata.jpg) | Lerdsuwa | CC BY-SA 3.0 |
 | ปลาพลวงหิน (Mahseer) | [Neolissochilus hexagonolepis.jpg](https://commons.wikimedia.org/wiki/File:Neolissochilus_hexagonolepis.jpg) | Ben Laloo | CC BY 3.0 |
 | ปลาผีเสื้อถ้ำตาบอด (Waterfall-climbing cavefish) | [Cryptotora thamicola 2.jpg](https://commons.wikimedia.org/wiki/File:Cryptotora_thamicola_2.jpg) | Chulabush Khatancharoen | CC BY 2.5 |
+| ปลาตีน (Giant mudskipper) | [Giant mudskipper (Periophthalmodon schlosseri).jpg](https://commons.wikimedia.org/wiki/File:Giant_mudskipper_(Periophthalmodon_schlosseri).jpg) | Lip Kee Yap | CC BY-SA 2.0 |
+| ปลาตะกรับ (Spotted scat) | [Scatophagus argus.jpg](https://commons.wikimedia.org/wiki/File:Scatophagus_argus.jpg) | Fokko Toelstede, Wikipedia-User „Nyks“ | CC BY-SA 3.0 |
+| ปลาเสือพ่นน้ำ (Banded archerfish) | [Toxotes jaculatrix - 9452.jpg](https://commons.wikimedia.org/wiki/File:Toxotes_jaculatrix_-_9452.jpg) | Amada44 | CC BY-SA 3.0 |
+| ปลาดุกทะเล (Gray eel-catfish) | [Plotosus canius Mintern 112.jpg](https://commons.wikimedia.org/wiki/File:Plotosus_canius_Mintern_112.jpg) | R. Mintern | Public domain |
+| ปลากะพงข้างปาน (Russell's snapper) | [Lutjanus russellii Uotto2.jpg](https://commons.wikimedia.org/wiki/File:Lutjanus_russellii_Uotto2.jpg) | Totti | CC BY-SA 4.0 |
+| ปลาฉนากรากมรณะ (Largetooth sawfish) | [Pristis pristis - Georgia Aquarium Jan 2006.jpg](https://commons.wikimedia.org/wiki/File:Pristis_pristis_-_Georgia_Aquarium_Jan_2006.jpg) | Diliff | CC BY 2.5 |
 
 ## Other assets
 

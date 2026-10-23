@@ -168,13 +168,13 @@ public static partial class SceneBuilder
 
         // หมอกเขียวต่ำ + หิ่งห้อยทั่วลำน้ำ
         var mist = ParticleMat("Spray", new Color(1, 1, 1, 0.5f));
-        Particles("BendMist", new Vector3(0, BW + 0.35f, 8), new Vector3(36f, 26f, 0.1f), mist, 18, new Vector2(3f, 6f), new Vector2(7f, 10f), new Vector2(0.03f, 0.12f), new Color(0.75f, 0.9f, 0.8f, 0.1f));
+        Particles("BendMist", new Vector3(0, BW + 0.35f, 8), new Vector3(36f, 26f, 0.1f), mist, 18, new Vector2(3f, 6f), new Vector2(7f, 10f), new Vector2(0.03f, 0.12f), new Color(0.8f, 0.86f, 0.9f, 0.1f));
         var fly = ParticleMat("Firefly", new Color(1.6f, 1.5f, 0.5f, 1));
         var ff = Particles("Fireflies", new Vector3(0, BW + 1.6f, 8), new Vector3(34f, 24f, 2.5f), fly, 14, new Vector2(0.04f, 0.08f), new Vector2(3f, 6f), new Vector2(0.05f, 0.25f), new Color(0.9f, 1f, 0.45f, 1));
         var noise = ff.noise; noise.enabled = true; noise.strength = 0.4f; noise.frequency = 0.35f;
 
         // ---------- ตัวละคร กล้อง แสง ระบบเกม ----------
-        var look = new Look { sun = "#c8dcc4", sunIntensity = 1.5f, sunRot = new Vector2(58, 160), fog = "#3c5244", fogStart = 5, fogEnd = 42, exposure = 0.9f, ambient = 1.15f, skyId = "Overcast", skyTint = "#24302a" };
+        var look = new Look { sun = "#c8dcc4", sunIntensity = 1.5f, sunRot = new Vector2(58, 160), fog = "#4a5862", fogStart = 6, fogEnd = 46, exposure = 0.9f, ambient = 1.0f, skyId = "Overcast", skyTint = "#62768a" };   // ฟ้าเทาอมน้ำเงินยามพลบ (เดิมเขียวทั้งผืน ดูแปลก)
         BuildGameplay(world, model, world.spawn, look, world);
         SaveStage(scene, path);
     }
