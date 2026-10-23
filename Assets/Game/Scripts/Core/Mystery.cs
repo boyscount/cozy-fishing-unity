@@ -29,6 +29,7 @@ namespace CozyFishing
         public (string who, string say)[] intro, solved;
         public Clue[] clues;
         public string stage = "paddy";
+        public string closed;                  // ข้อความในสมุดคดีเมื่อปิดคดีแล้ว
         public string question; public string[] options; public int answer;
         public string wrong;
         public int rewardMoney; public bool rewardBigBasket;
@@ -43,12 +44,13 @@ namespace CozyFishing
         public int v = 1;
         public bool started, solved;
         public int wrong;
+        public int chapter;                    // คดีที่กำลังสืบ (0 = คดีที่ 1 ที่บ่อทุ่งนา)
         public List<string> clues = new List<string>(), secrets = new List<string>();
         public List<string> counterKeys = new List<string>();
         public List<int> counterVals = new List<int>();
     }
 
-    public static class Mystery
+    public static partial class Mystery
     {
         const string Key = "abot.mystery.v1";
         public const string BottleJunk = "ขวดแก้วมีกระดาษม้วนอยู่ข้างใน";
@@ -98,6 +100,7 @@ namespace CozyFishing
                 ("ลูก", "ตะกร้าใบนี้ใส่ปลาได้ตั้ง 14 ตัวแน่ะพ่อ! แล้วเราไปตามหายายอิ่มที่ป่าลึกกันนะ"),
             },
             rewardMoney = 500, rewardBigBasket = true,
+            closed = "คดีปิดแล้ว · ตะกร้าแห่งวันพรุ่งนี้อยู่กับครอบครัวเรา ยายอิ่มทิ้งแผนที่ไว้ให้ตามรอยต่อ",
         };
 
         // ---------- ความลับของปลา (ด่านทุ่งนา) ----------
@@ -168,7 +171,18 @@ namespace CozyFishing
         };
 
         public static MysteryState M { get; private set; } = Load();
-        public static Case Current => Case1;
+        public static Case Current => M.chapter <= 0 ? Case1 : Later[System.Math.Min(M.chapter - 1, Later.Length - 1)];
+        public static int CaseCount => 1 + Later.Length;
+        public static bool HasNext => M.chapter < CaseCount - 1;
+        /// ไขครบทุกบทแล้ว (ปลดล็อกงานวัด)
+        public static bool AllSolved => M.solved && !HasNext;
+        /// เช้าวันใหม่หลังปิดคดี → เปิดบทถัดไป (ยังไม่เริ่มจนกว่าจะเล่าเรื่องตอนเช้า)
+        public static bool NextChapter()
+        {
+            if (!M.solved || !HasNext) return false;
+            M.chapter++; M.started = false; M.solved = false; M.wrong = 0; Save();
+            return true;
+        }
 
         static MysteryState Load()
         {

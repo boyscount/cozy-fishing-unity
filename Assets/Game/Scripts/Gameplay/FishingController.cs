@@ -79,7 +79,7 @@ namespace CozyFishing
             switch (State)
             {
                 case FishState.Free: return t > 1.2f && t < 1.2f + 0.9f;            // ง้าง ~0.9 วิ แล้วปล่อย
-                case FishState.Charging: return charge < 0.7f;
+                case FishState.Charging: return charge < 0.45f;   // บอททดสอบเหวี่ยงราว 9 ม. เท่าเดิม
                 case FishState.Bite: return t > 0.25f;                              // รอเห็นทุ่นจมแป๊บหนึ่งค่อยกด
                 case FishState.Strike:
                     bool inZone = Mathf.Abs(strike.Pos - strike.Center) < strike.Width * 0.35f;
@@ -122,7 +122,7 @@ namespace CozyFishing
                     bob = tip + new Vector3(Mathf.Sin(now * 2) * 0.05f, -0.55f, 0);
                     break;
                 case FishState.Charging:
-                    charge = Mathf.Min(1, charge + dt / 1.25f);
+                    charge = Mathf.Min(1, charge + dt / 1.6f);   // ระยะไกลขึ้น → ง้างนานขึ้นนิด กะระยะใกล้ได้แม่นเหมือนเดิม
                     bob = tip + new Vector3(0, -0.55f, 0);
                     var p = CastPoint(charge);
                     bool w = world.CanCast(p.x, p.z);
@@ -219,7 +219,8 @@ namespace CozyFishing
 
         void OnUp() { if (State == FishState.Charging) Cast(); }
 
-        Vector3 CastPoint(float c) { var f = player.Forward; float d = 1.3f + c * 8.7f; return new Vector3(player.Pos.x + f.x * d, 0, player.Pos.z + f.z * d); }
+        public const float MaxCast = 18f;   // ง้างเต็มแรงเหวี่ยงได้ราว 18 ม.
+        Vector3 CastPoint(float c) { var f = player.Forward; float d = 1.3f + c * (MaxCast - 1.3f); return new Vector3(player.Pos.x + f.x * d, 0, player.Pos.z + f.z * d); }
 
         void Cast()
         {

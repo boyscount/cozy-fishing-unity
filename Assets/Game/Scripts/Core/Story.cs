@@ -183,7 +183,7 @@ namespace CozyFishing
 
         public static Goal CurrentGoal => S.goal < Goals.Length ? Goals[S.goal] : null;
         public static bool RoofFixed => S.goal >= 1;
-        public static bool CanPayGoal => CurrentGoal != null && S.money >= CurrentGoal.cost && S.goal < 2;   // งานวัดต้องปลดล็อกด่านครบก่อน (ยังไม่มีในเวอร์ชันนี้)
+        public static bool CanPayGoal => CurrentGoal != null && S.money >= CurrentGoal.cost && (S.goal < 2 || Mystery.AllSolved);   // งานวัดต้องไขคดีตามแผนที่ยายอิ่มครบทุกบทก่อน
         public static bool PayGoal() { if (!CanPayGoal) return false; S.money -= CurrentGoal.cost; S.goal++; Save(); return true; }
 
         public static void Sleep(Random rng) { S.day++; RollDay(rng); Phase = StoryPhase.Morning; }

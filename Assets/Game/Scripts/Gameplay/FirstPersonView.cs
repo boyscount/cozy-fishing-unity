@@ -18,7 +18,8 @@ namespace CozyFishing
         FishingController fishing; CameraRig rig; PlayerController player; Hud hud;
         Transform headBone; HandIK ik; Camera cam;
         bool active; Vector3 camPos; Quaternion camRot; float savedNear, savedFov, showT;
-        Vector3 showFrom;
+        Vector3 showFrom; float showK, showLen;
+        Vector3 gripCorr;   // กำมือจริง (หลัง IK) อยู่ห่างจากเป้าข้อมือเท่าไร → เลื่อนเป้าชดเชยให้กำมืออยู่ตรงจุดที่ต้องการ
 
         public void Init(FishingController f, CameraRig r)
         {
@@ -47,7 +48,7 @@ namespace CozyFishing
             {
                 var s = fishing.State;
                 bool windup = s == FishState.Charging || s == FishState.Casting;
-                return headBone.position + player.transform.forward * (windup ? 0.2f : 0.16f) + Vector3.up * 0.05f;
+                return headBone.position + player.transform.forward * (windup ? 0.42f : 0.16f) + Vector3.up * (windup ? 0.1f : 0.05f);   // เหวี่ยง: ลำตัวโน้มไปหน้า กล้องต้องยื่นพ้นไหล่ตัวเอง
             }
         }
 
@@ -56,6 +57,13 @@ namespace CozyFishing
             if (fishing == null) return;
             bool want = Want();
             if (want && !active) Enter(); else if (!want && active) Exit();
+            if (ik != null)
+            {
+                // กรอสาย (สู้ปลา/เก็บสาย): มือซ้ายจับมือหมุนรอก · กดค้าง = หมุนเร็ว
+                var st = fishing.State;
+                ik.crank = st == FishState.Fight || st == FishState.Retrieve;
+                ik.crankSpeed = st == FishState.Retrieve || GameInput.ActionHeld || FishingController.Bot ? 2.2f : 0.4f;
+            }
             if (!active) return;
             float dt = Time.deltaTime;
             var s = fishing.State;
@@ -85,7 +93,7 @@ namespace CozyFishing
             var g = fishing.CaughtGo.transform;
             if (!fishing.ExternalShowcase)
             {
-                fishing.ExternalShowcase = true; showT = 0; showFrom = g.position;
+                fishing.ExternalShowcase = true; showT = 0; showFrom = g.position; gripCorr = Vector3.zero;
                 g.localScale = Vector3.one * Mathf.Clamp(fishing.CaughtCm / 100f * 1.1f, 0.16f, 1.7f);   // ขนาดจริง (มุมกล้องหลังตัวละครขยายให้เห็นชัด) · ปลายักษ์ยาวเกินแขนจำกัดไว้ไม่ให้ล้นจอ
             }
             showT += dt;
@@ -96,13 +104,17 @@ namespace CozyFishing
             var hand = c.position + c.forward * dist - c.right * (0.2f + len * 0.15f) + c.up * 0.1f;
             var hold = hand - c.up * (len * 0.5f + 0.05f);               // กลางตัวปลาอยู่ใต้มือครึ่งตัว
             float k = Mathf.SmoothStep(0, 1, Mathf.Min(1, showT / 0.6f));
+            showK = k; showLen = len;
             g.position = Vector3.Lerp(showFrom, hold, k) + Vector3.up * Mathf.Sin(k * Mathf.PI) * 0.4f;
             // หัวปลา (+X ของโมเดล) ชี้ขึ้น · หน้า (+Z) หันเข้าหากล้อง · แกว่งรอบแกนมอง + บิดตัวช้า ๆ
             var baseRot = Quaternion.LookRotation(-c.forward, c.right);
             g.rotation = Quaternion.AngleAxis(Mathf.Sin(showT * 2.3f) * 9f, c.forward) * Quaternion.AngleAxis(Mathf.Sin(showT * 1.3f) * 22f, c.up) * baseRot;
             if (ik != null)
             {
-                ik.target = Vector3.Lerp(g.TransformPoint(0.5f, 0, 0), hand, 0.5f) + c.up * 0.04f;   // มือซ้ายกำสายเหนือปากปลา
+                // มือซ้ายกำสายเหนือปากปลา: กำปั้นตั้ง นิ้วโป้งชี้ขึ้น ฝ่ามือหันเข้ากลางจอ · ศอกลงล่างซ้ายแนบลำตัว
+                ik.target = hand - gripCorr;
+                ik.targetRot = Quaternion.LookRotation(c.up, -c.right); ik.rotWeight = 1;
+                ik.elbowHint = hand - c.up * 0.5f - c.right * 0.3f - c.forward * 0.25f;
                 ik.weight = Mathf.MoveTowards(ik.weight, k, dt * 3);
             }
         }
@@ -111,6 +123,14 @@ namespace CozyFishing
         {
             // หลัง Animator: ย่อหัวให้เล็กจนมองไม่เห็น (ผม หมวก ติดไปด้วย) ไม่บังกล้องที่ตา
             if (active && headBone != null) headBone.localScale = Vector3.one * 0.001f;
+            // ปลาที่ยกโชว์ห้อยจากกำมือซ้ายจริง (หลัง IK) — ไม่ลอยห่างจากมือ
+            if (active && ik != null && fishing.State == FishState.Caught && fishing.CaughtGo != null && ik.weight > 0.5f)
+            {
+                var g = fishing.CaughtGo.transform; var c = cam.transform;
+                gripCorr = Vector3.ClampMagnitude(gripCorr + (ik.LeftGrip - (ik.target + gripCorr)) * 0.25f, 0.5f);   // สะสมความคลาดเคลื่อน (เป้า + ชดเชย = จุดที่ต้องการ)
+                var hang = ik.LeftGrip - c.up * Mathf.Max(0.03f, showLen * 0.5f - 0.05f);   // กำปั้นซ้อนหัวปลา = กำปลาไว้ในมือ
+                g.position = Vector3.Lerp(g.position, hang, Mathf.InverseLerp(0.5f, 1f, ik.weight) * showK);
+            }
         }
 
         void Enter()

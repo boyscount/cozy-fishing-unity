@@ -113,14 +113,20 @@ namespace CozyFishing
             busy = true;
             yield return hud.Fade(title, () => ShowHome(6.2f), null, fromBlack);
             if (intro) yield return hud.Dialog(Story.Intro);
-            // สืบคดี: เช้าวันที่ 2 ลุงเปี๊ยกมาเล่าเรื่องแสงทองใต้กอบัว
+            // สืบคดี: เช้าวันที่ 2 ลุงเปี๊ยกมาเล่าเรื่องแสงทองใต้กอบัว · ปิดคดีแล้วเช้าถัดมาเปิดบทต่อไปตามแผนที่ยายอิ่ม
+            Mystery.NextChapter();
             if (!Mystery.Started && Story.S.day >= 2)
             {
-                yield return hud.Dialog(Mystery.Current.intro);
+                var nc = Mystery.Current;
+                yield return hud.Dialog(nc.intro);
                 Mystery.Start();
-                hud.Toast("เปิดคดีใหม่! ดู \"สมุดคดี\" มุมขวาบน");
+                if (nc.stage != "paddy" && !Stages.Unlocked(nc.stage))
+                    yield return hud.Dialog(new[] { ("แม่", $"แต่ทางไป{Stages.Get(nc.stage).name}ต้องใช้เงิน {Story.Baht(Stages.Get(nc.stage).price)} นะพ่อ เก็บเงินอีกหน่อยแล้วค่อยไปกัน") });
+                hud.Toast($"เปิดคดีใหม่! ({Stages.Get(nc.stage).name}) ดู \"สมุดคดี\" มุมขวาบน");
             }
             else if (Mystery.ReadyToSolve) yield return hud.Dialog(new[] { ("ลูก", "พ่อ เบาะแสครบแล้วนะ! เปิดสมุดคดีแล้วไขปริศนากันเถอะ") });
+            else if (Mystery.Started && !Mystery.Solved && Mystery.Current.stage != "paddy" && Story.S.day % 3 == 0)
+                yield return hud.Dialog(new[] { ("ลูก", $"พ่อ อย่าลืมคดี \"{Mystery.Current.title}\" นะ เบาะแสอยู่ที่{Stages.Get(Mystery.Current.stage).name}") });
             Story.Phase = StoryPhase.Morning;
             string dest = null;
             hud.ShowMorning(id => dest = id, PayGoal);
@@ -158,7 +164,22 @@ namespace CozyFishing
             if (roofLeak) roofLeak.SetActive(!Story.RoofFixed);
             StartCoroutine(PaidLines(g));
         }
-        IEnumerator PaidLines(Goal g) { yield return hud.Dialog(new[] { ("แม่", g.done), ("ลูก", "เย้! ขอบคุณนะพ่อ") }); hud.RefreshMorning(); }
+        IEnumerator PaidLines(Goal g)
+        {
+            if (g == Story.Goals[Story.Goals.Length - 1])
+                // ตอนจบ: ทั้งครอบครัวพายายอิ่มกับผู้ใหญ่ทองไปเที่ยวงานวัด
+                yield return hud.Dialog(new[]
+                {
+                    ("แม่", g.done),
+                    ("ยายอิ่ม", "ชิงช้าสวรรค์สูงขนาดนี้ ยายมองเห็นทุ่งนาบ้านเราด้วยแหละหลาน"),
+                    ("ผู้ใหญ่ทอง", "ขอบคุณที่พาแม่ผมกลับมานะครับ ถ้าไม่มีพวกคุณ ลายสานพวกนั้นคงจมอยู่ใต้น้ำไปตลอดกาล"),
+                    ("ลูก", "พ่อ… ตะกร้าเก้าลายใส่ขนมสายไหมได้เต็มเลย!"),
+                    ("พ่อ", "ตะกร้าไม่ได้วิเศษหรอกลูก แต่ใครที่ตั้งใจหาปลาเลี้ยงคนที่รัก ตะกร้าของเขาจะไม่ว่างเปล่าในวันพรุ่งนี้"),
+                    ("ลูก", "เย้! ขอบคุณนะพ่อ"),
+                });
+            else yield return hud.Dialog(new[] { ("แม่", g.done), ("ลูก", "เย้! ขอบคุณนะพ่อ") });
+            hud.RefreshMorning();
+        }
 
         // ---------- ไขคดี (เรียกจากสมุดคดี) ----------
         public void TrySolve()
@@ -178,8 +199,11 @@ namespace CozyFishing
         IEnumerator Answer(int option)
         {
             if (!Mystery.Answer(option)) { yield return hud.Dialog(new[] { ("ลูก", "อืม… หนูว่ายังไม่ใช่นะพ่อ"), ("ลูก", Mystery.Current.wrong) }); yield break; }
-            yield return hud.Dialog(Mystery.Current.solved);
-            hud.Toast($"ไขคดีสำเร็จ! ได้ตะกร้าแห่งวันพรุ่งนี้ (ข้องใส่ได้ 14 ตัว) + {Story.Baht(Mystery.Current.rewardMoney)}");
+            var c = Mystery.Current;
+            yield return hud.Dialog(c.solved);
+            hud.Toast(c.rewardBigBasket ? $"ไขคดีสำเร็จ! ได้ตะกร้าแห่งวันพรุ่งนี้ (ข้องใส่ได้ 14 ตัว) + {Story.Baht(c.rewardMoney)}"
+                : Mystery.AllSolved ? $"ไขคดีสุดท้ายสำเร็จ! + {Story.Baht(c.rewardMoney)} · ปลดล็อกเป้าหมาย \"พาครอบครัวไปเที่ยวงานวัด\""
+                : $"ไขคดีสำเร็จ! ได้ลายสานใหม่ + {Story.Baht(c.rewardMoney)} · พรุ่งนี้เช้าตามแผนที่ไปจุดต่อไป");
         }
 
         // ---------- มื้อเย็น ----------
@@ -209,7 +233,7 @@ namespace CozyFishing
             var clue = Mystery.OnGrill(r.grilledFish);
             if (clue != null) { lines.Add(("ลูก", "พ่อ! แม่! ดูนี่สิ เจออะไรในท้องปลาด้วย")); lines.Add(("แม่", clue.found)); }
             foreach (var sec in Mystery.CheckGrillSecrets(r.grilledFish)) lines.Add(("ลูก", $"หนูรู้ความลับของ{FishDatabase.Get(sec.species)?.name}แล้ว! {sec.text}"));
-            if (Mystery.ReadyToSolve) lines.Add(("ลูก", "เบาะแสครบห้าอย่างแล้ว! เปิดสมุดคดีแล้วไขปริศนากันเถอะพ่อ"));
+            if (Mystery.ReadyToSolve) lines.Add(("ลูก", "เบาะแสครบแล้ว! เปิดสมุดคดีแล้วไขปริศนากันเถอะพ่อ"));
             yield return hud.Dialog(lines.ToArray());
             bool sleep = false;
             hud.Ask("ได้เวลาพักผ่อนแล้ว", ("นอนหลับ", () => sleep = true));

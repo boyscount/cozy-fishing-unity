@@ -123,9 +123,12 @@ public static partial class SceneBuilder
         fishing.preview = preview; hud.preview = preview;
         cam.cullingMask &= ~(1 << FishPreview.Layer);
         var bobber = new GameObject("Bobber");
-        Prim(PrimitiveType.Sphere, "Top", Vector3.zero, Vector3.one * 0.22f, SurfMat("BobberRed", Hex("#d23a2c"), smooth: 0.6f)).transform.SetParent(bobber.transform, false);
-        Prim(PrimitiveType.Sphere, "Bottom", new Vector3(0, -0.03f, 0), new Vector3(0.215f, 0.16f, 0.215f), SurfMat("BobberWhite", Hex("#f2f2f2"), smooth: 0.6f)).transform.SetParent(bobber.transform, false);
-        Prim(PrimitiveType.Cylinder, "Stick", new Vector3(0, 0.17f, 0), new Vector3(0.024f, 0.08f, 0.024f), SurfMat("BobberRed", Hex("#d23a2c"), smooth: 0.6f)).transform.SetParent(bobber.transform, false);
+        var bambooFloat = SurfMat("BobberBamboo", Hex("#d8b870"), smooth: 0.45f);
+        Prim(PrimitiveType.Cylinder, "Top", new Vector3(0, 0.04f, 0), new Vector3(0.07f, 0.13f, 0.07f), bambooFloat).transform.SetParent(bobber.transform, false);
+        Prim(PrimitiveType.Cylinder, "Bottom", new Vector3(0, -0.04f, 0), new Vector3(0.18f, 0.025f, 0.05f), bambooFloat).transform.SetParent(bobber.transform, false);   // ไม้ขวางกันพลิก
+        Prim(PrimitiveType.Cylinder, "Stick", new Vector3(0, 0.17f, 0), new Vector3(0.05f, 0.02f, 0.05f), SurfMat("BobberRed", Hex("#d23a2c"), smooth: 0.6f)).transform.SetParent(bobber.transform, false);
+        var feather = Prim(PrimitiveType.Cube, "Feather", new Vector3(0.02f, 0.25f, 0), new Vector3(0.012f, 0.13f, 0.045f), SurfMat("BobberFeather", Hex("#f2efe6"), smooth: 0.2f));
+        feather.transform.SetParent(bobber.transform, false); feather.transform.localRotation = Quaternion.Euler(0, 0, -14);
         Prim(PrimitiveType.Sphere, "Glow", new Vector3(0, 0.26f, 0), Vector3.one * 0.056f, UnlitMat("BobberGlow", Hex("#c8ff5a"))).transform.SetParent(bobber.transform, false);
         var aim = Prim(PrimitiveType.Cylinder, "AimRing", new Vector3(0, -50, 0), new Vector3(0.8f, 0.005f, 0.8f), UnlitMat("Aim", Color.white));
         aim.GetComponent<Renderer>().shadowCastingMode = ShadowCastingMode.Off;
@@ -332,11 +335,17 @@ public static partial class SceneBuilder
             var face = new Vector3(b.center.x - 0.2f, b.min.y + b.size.y * 0.58f, b.min.z + 0.55f);
             var eye = new GameObject("FishEye"); eye.transform.position = face;
             const float E = 1.6f;   // ขนาดดวงตา — ฝังเรียบไปกับหิน (แบนมาก) ม่านตาสีทองเรืองนิด ๆ
-            Prim(PrimitiveType.Sphere, "Brow", face + new Vector3(0, 0.32f, 0.02f) * E, new Vector3(1.3f, 0.35f, 0.42f) * E, SurfMat("EyeBrow", Hex("#6f6656"), 0.35f, smooth: 0.08f)).transform.SetParent(eye.transform, true);
-            Prim(PrimitiveType.Sphere, "Sclera", face, new Vector3(1.05f, 0.6f, 0.2f) * E, SurfMat("EyeSclera", Hex("#d9cfa8"), 0.15f, smooth: 0.3f)).transform.SetParent(eye.transform, true);
+            Prim(PrimitiveType.Sphere, "Brow", face + new Vector3(0, 0.32f, 0.02f) * E, new Vector3(1.3f, 0.35f, 0.42f) * E, SurfMat("EyeBrow", Hex("#8a8270"), 0.85f, smooth: 0.1f, tex: "rock_face_04", tiles: 0.8f)).transform.SetParent(eye.transform, true);
+            Prim(PrimitiveType.Sphere, "Sclera", face, new Vector3(1.05f, 0.6f, 0.2f) * E, SurfMat("EyeSclera", Hex("#b4a882"), 0.35f, smooth: 0.25f, tex: "rock_face_04", tiles: 1.6f)).transform.SetParent(eye.transform, true);
             var iris = SurfMat("EyeIris", Hex("#b8861e"), smooth: 0.7f); iris.SetColor("_EmissionColor", new Color(0.35f, 0.22f, 0.02f));
             Prim(PrimitiveType.Sphere, "Iris", face + new Vector3(0, -0.01f, -0.07f) * E, new Vector3(0.55f, 0.55f, 0.1f) * E, iris).transform.SetParent(eye.transform, true);
             Prim(PrimitiveType.Sphere, "Pupil", face + new Vector3(0, -0.01f, -0.11f) * E, new Vector3(0.16f, 0.4f, 0.06f) * E, SurfMat("EyePupil", Hex("#0d0b08"), smooth: 0.95f)).transform.SetParent(eye.transform, true);
+            // เปลือกตาล่างเป็นหินเปื้อนโคลน ให้ดวงตาจมอยู่ในเนื้อหิน ไม่ลอยแปะ
+            Prim(PrimitiveType.Sphere, "LowerLid", face + new Vector3(0, -0.3f, 0.03f) * E, new Vector3(1.25f, 0.3f, 0.4f) * E, SurfMat("EyeLid", Hex("#6e6252"), 0.4f, smooth: 0.08f, tex: "rock_face_04", tiles: 0.8f)).transform.SetParent(eye.transform, true);
+            // หมอกยามเช้าลอยผ่านโขดหิน (เฉพาะ 5 โมงครึ่ง–9 โมงครึ่ง)
+            var morningMist = Particles("EyeRockMist", new Vector3(face.x, RW + 0.6f, face.z - 1.5f), new Vector3(14f, 6f, 1.2f), ParticleMat("Spray", new Color(1, 1, 1, 0.5f)), 10,
+                new Vector2(4f, 7f), new Vector2(8f, 12f), new Vector2(0.05f, 0.15f), new Color(0.95f, 0.97f, 1f, 0.16f));
+            var mm = morningMist.gameObject.AddComponent<DuskOnly>(); mm.from = 5.5f; mm.to = 9.5f;
         }
 
         // ป่าบนเนินฝั่งไกล · พุ่มไม้ · ไผ่ · เฟิร์นริมน้ำ

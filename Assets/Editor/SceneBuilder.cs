@@ -239,7 +239,26 @@ public static partial class SceneBuilder
         // ---------- ตัวละคร กล้อง แสง ระบบเกม (ใช้ร่วมทุกด่าน) ----------
         var g = BuildGameplay(world, model, new Vector3(1.5f, 0, -7.6f), new Look(), null);
         g.director.roofLeak = BuildRoofLeak(hut);
+        BuildHomeAtmosphere(hut);
         SaveStage(scene, ScenePath);
+    }
+
+    // บรรยากาศรอบบ้าน: ควันไฟจากครัวลอยขึ้นช้า ๆ · ละอองฝุ่นสีทองลอยในอากาศ · หิ่งห้อยเหนือนาข้าวยามโพล้เพล้ (DuskOnly)
+    static void BuildHomeAtmosphere(GameObject hut)
+    {
+        var b = new Bounds(hut.transform.position, Vector3.zero);
+        foreach (var r in hut.GetComponentsInChildren<Renderer>()) b.Encapsulate(r.bounds);
+        var smoke = Particles("KitchenSmoke", new Vector3(b.max.x - 0.6f, b.max.y - 0.2f, b.center.z + 0.4f), new Vector3(0.5f, 0.5f, 0.1f),
+            ParticleMat("Smoke", new Color(0.6f, 0.58f, 0.56f, 0.5f)), 5, new Vector2(0.7f, 1.5f), new Vector2(5f, 7f), new Vector2(0.25f, 0.5f), new Color(0.62f, 0.6f, 0.58f, 0.32f));
+        var vel = smoke.velocityOverLifetime; vel.enabled = true; vel.x = new ParticleSystem.MinMaxCurve(0.15f, 0.35f); vel.y = new ParticleSystem.MinMaxCurve(0.05f, 0.15f); vel.z = new ParticleSystem.MinMaxCurve(0f, 0f);
+        var sz = smoke.sizeOverLifetime; sz.size = new ParticleSystem.MinMaxCurve(1, AnimationCurve.Linear(0, 0.5f, 1, 2.6f));
+        var dust = Particles("GoldenDust", new Vector3(b.center.x + 4f, 1.4f, b.center.z + 3f), new Vector3(14f, 10f, 2.4f),
+            ParticleMat("Dust", new Color(1.3f, 1.1f, 0.75f, 0.7f)), 10, new Vector2(0.02f, 0.045f), new Vector2(6f, 10f), new Vector2(0.02f, 0.08f), new Color(1f, 0.9f, 0.65f, 0.55f));
+        var dn = dust.noise; dn.enabled = true; dn.strength = 0.15f; dn.frequency = 0.25f;
+        var ff = Particles("Fireflies", new Vector3(b.center.x + 6f, 0.9f, b.center.z + 5f), new Vector3(22f, 16f, 1.6f),
+            ParticleMat("Firefly", new Color(1.6f, 1.5f, 0.5f, 1)), 12, new Vector2(0.04f, 0.08f), new Vector2(3f, 6f), new Vector2(0.05f, 0.25f), new Color(0.9f, 1f, 0.45f, 1));
+        var fn = ff.noise; fn.enabled = true; fn.strength = 0.4f; fn.frequency = 0.35f;
+        ff.gameObject.AddComponent<DuskOnly>();
     }
 
     // ---------- ตัวช่วย ----------

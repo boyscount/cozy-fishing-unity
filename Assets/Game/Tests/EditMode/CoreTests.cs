@@ -271,6 +271,21 @@ namespace CozyFishing.Tests
             Assert.IsTrue(Mystery.Solved);
             Assert.AreEqual(14, Story.Capacity);
             Assert.AreEqual(Mystery.Current.rewardMoney, Story.S.money);
+            // บทต่อไปตามแผนที่ยายอิ่ม: เปิดเช้าวันใหม่ · งานวัดยังล็อกจนกว่าจะครบทุกบท
+            Assert.IsFalse(Mystery.AllSolved);
+            Assert.IsTrue(Mystery.NextChapter());
+            Assert.AreEqual("rapids", Mystery.Current.stage);
+            Assert.IsFalse(Mystery.Started);
+            Assert.IsNull(Mystery.OnCatch("paddy", "chado", 7f, false, false, new Random(1)), "คดีที่ 2 ไม่หาเบาะแสที่บ่อทุ่งนา");
+            while (true)
+            {
+                Mystery.Start();
+                foreach (var c in Mystery.Current.clues) Mystery.M.clues.Add(c.id);
+                Assert.IsTrue(Mystery.Answer(Mystery.Current.answer), Mystery.Current.id);
+                if (!Mystery.NextChapter()) break;
+            }
+            Assert.IsTrue(Mystery.AllSolved);
+            Assert.AreEqual("headman", Mystery.Current.stage);
         }
 
         [Test]
@@ -287,6 +302,18 @@ namespace CozyFishing.Tests
             Assert.AreEqual(1, Mystery.CheckGrillSecrets(three).Count);
             Assert.IsTrue(Mystery.SecretKnown("salit"));
             Assert.AreEqual(54, Mystery.Secrets.Length);
+            // คดีทุกบท: อยู่ด่านที่มีจริง · เบาะแสจากปลาต้องเป็นปลาของด่านนั้น · id เบาะแสไม่ซ้ำ · คำตอบอยู่ในตัวเลือก
+            var ids = new System.Collections.Generic.HashSet<string>();
+            foreach (var c in new[] { Mystery.Case1 }.Concat(Mystery.Later))
+            {
+                Assert.IsTrue(Stages.All.Any(s => s.id == c.stage), c.id);
+                Assert.That(c.answer, Is.InRange(0, c.options.Length - 1), c.id);
+                foreach (var cl in c.clues)
+                {
+                    Assert.IsTrue(ids.Add(cl.id), "เบาะแสซ้ำ " + cl.id);
+                    if (!string.IsNullOrEmpty(cl.species)) Assert.AreEqual(c.stage, FishDatabase.Get(cl.species)?.stage, cl.id);
+                }
+            }
             foreach (var st in Stages.All) foreach (var sp in FishDatabase.ForStage(st.id)) Assert.IsNotNull(Mystery.SecretOf(sp.id), "ทุกปลาในด่านที่เปิดต้องมีความลับ: " + sp.id);
         }
     }

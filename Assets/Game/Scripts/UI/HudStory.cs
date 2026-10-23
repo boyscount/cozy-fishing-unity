@@ -16,6 +16,8 @@ namespace CozyFishing
         VisualElement fadeArt;
         VisualElement timeIco, skyIco, viewBtn; Label dayTxt, tempTxt, windTxt;
         Label statusTxt, clockTxt, askTxt, fadeTxt, dialogWho, dialogSay, bagTitle;
+        VisualElement dialogPortL, dialogPortR, dialogWhoIco, quest; Label questMain, questClue, questTitle; VisualElement questClueRow, questMainRow; bool questFolded;
+        string lastQuest;
         Action<string> onMorningGo; Action onMorningPay;
         Action<bool[]> onEveningDone;
         bool[] eveGrill;
@@ -28,12 +30,15 @@ namespace CozyFishing
         void BuildCase()
         {
             caseBtn = IconButton("casebook", new Color(0.62f, 0.5f, 0.85f), OpenCase, out caseBtnTxt);
-            casePanel = Overlay(out var cb, 860);
+            casePanel = Overlay(out var cb, 900);
+            Skin(cb, "clipboard", 40); cb.style.paddingTop = 76; cb.style.paddingBottom = 40; cb.style.paddingLeft = 58; cb.style.paddingRight = 58;
+            var clip = new VisualElement { pickingMode = PickingMode.Ignore }; clip.style.width = 230; clip.style.height = 96;
+            clip.style.backgroundImage = Resources.Load<Texture2D>("UI/Frames/clip"); Abs(clip, null, null, -18); clip.style.left = Length.Percent(50); clip.style.marginLeft = -115; cb.Add(clip);
             var cs = new ScrollView(ScrollViewMode.Vertical); cs.style.flexGrow = 1; cs.style.flexShrink = 1; cb.Add(cs);
             caseBody = new VisualElement(); cs.Add(caseBody);
             var row = Row(cb); row.style.marginTop = 12;
-            var solve = new Button(() => { Hide(casePanel); director?.TrySolve(); }) { text = "ไขคดี!", name = "solve" }; StyleButton(solve, new Color(0.85f, 0.45f, 0.2f)); row.Add(solve);
-            var close = new Button(() => Hide(casePanel)) { text = "ปิด" }; StyleButton(close, Gray); close.style.marginLeft = 10; row.Add(close);
+            var solve = new Button(() => { Hide(casePanel); director?.TrySolve(); }) { text = "ไขคดี!", name = "solve" }; WoodButton(solve, true); solve.style.unityBackgroundImageTintColor = new Color(1f, 0.62f, 0.32f); row.Add(solve);
+            var close = new Button(() => Hide(casePanel)) { text = "ปิด" }; WoodButton(close, true); close.style.unityBackgroundImageTintColor = new Color(0.9f, 0.55f, 0.45f); close.style.marginLeft = 12; row.Add(close);
             cluePop = Overlay(out var pb, 680);
             clueBody = new VisualElement { pickingMode = PickingMode.Ignore }; clueBody.style.flexShrink = 0; pb.Add(clueBody);
             var ok = new Button(() => Hide(cluePop)) { text = "จดลงสมุดคดี" }; StyleButton(ok, new Color(0.32f, 0.26f, 0.42f)); ok.style.alignSelf = Align.Center; ok.style.marginTop = 14; pb.Add(ok);
@@ -44,15 +49,27 @@ namespace CozyFishing
             if (CardOpen || ModalOpen) return;
             var c = Mystery.Current;
             caseBody.Clear();
-            L(caseBody, c.title, 38, new Color(0.78f, 0.7f, 1f));
-            var sum = L(caseBody, Mystery.Solved ? "คดีปิดแล้ว · ตะกร้าแห่งวันพรุ่งนี้อยู่กับครอบครัวเรา" : c.summary, 24, Ink, false); sum.style.marginTop = 6; sum.style.unityTextAlign = TextAnchor.MiddleLeft;
-            L(caseBody, $"เบาะแส {Mystery.CluesFound}/{c.clues.Length}", 28, Ink).style.marginTop = 12;
+            var ink = new Color(0.24f, 0.14f, 0.06f); var red = new Color(0.55f, 0.13f, 0.08f);
+            var t = L(caseBody, c.title, 44, red); t.style.unityFontDefinition = fontTitle;
+            var rule = new VisualElement { pickingMode = PickingMode.Ignore }; rule.style.height = 3; rule.style.width = Length.Percent(55); rule.style.alignSelf = Align.Center; rule.style.backgroundColor = new Color(0.55f, 0.13f, 0.08f, 0.6f); rule.style.marginBottom = 8; caseBody.Add(rule);
+            // สรุปคดี + ภาพสถานที่แบบโพลารอยด์ปักหมุด
+            var top = new VisualElement { pickingMode = PickingMode.Ignore }; top.style.flexDirection = FlexDirection.Row; top.style.alignItems = Align.FlexStart; caseBody.Add(top);
+            var sum = L(top, Mystery.Solved ? (c.closed ?? "คดีปิดแล้ว") : c.summary, 23, ink, false); sum.style.unityTextAlign = TextAnchor.MiddleLeft; sum.style.flexShrink = 1; sum.style.flexGrow = 1;
+            var pol = new VisualElement { pickingMode = PickingMode.Ignore }; pol.style.backgroundColor = new Color(0.97f, 0.95f, 0.9f); Pad(pol, 6, 6); pol.style.paddingBottom = 18; pol.style.marginLeft = 14; pol.style.flexShrink = 0; pol.style.rotate = new Rotate(4); top.Add(pol);
+            var art = new VisualElement { pickingMode = PickingMode.Ignore }; art.style.width = 170; art.style.height = 120; art.style.backgroundImage = Stages.Get(c.stage).Art; art.style.backgroundSize = new BackgroundSize(BackgroundSizeType.Cover); pol.Add(art);
+            var pin = Ico(pol, "pin", 30); Abs(pin, 76, null, -14);
+            // ตราประทับ "พบ" ตามจำนวนเบาะแส
+            var stamps = new VisualElement { pickingMode = PickingMode.Ignore }; stamps.style.flexDirection = FlexDirection.Row; stamps.style.alignItems = Align.Center; stamps.style.justifyContent = Justify.Center; stamps.style.marginTop = 12; caseBody.Add(stamps);
+            L(stamps, $"เบาะแส {Mystery.CluesFound}/{c.clues.Length}", 30, ink).style.marginRight = 12;
+            foreach (var clue in c.clues) Ico(stamps, Mystery.HasClue(clue.id) ? "stamp_on" : "stamp_off", 52).style.marginLeft = 4;
             foreach (var clue in c.clues)
             {
                 bool has = Mystery.HasClue(clue.id);
-                var box = Box(caseBody, has ? Glass2 : Glass3, 20, false); Pad(box, 10, 16); box.style.marginTop = 8;
-                var n = L(box, has ? clue.name : "??? เบาะแสที่ยังไม่พบ", 26, has ? Ink : Sub); n.style.unityTextAlign = TextAnchor.MiddleLeft;
-                var d = L(box, has ? clue.found : "คำใบ้: " + clue.hint, 22, Sub, false); d.style.unityTextAlign = TextAnchor.MiddleLeft; d.style.marginTop = 2;
+                var box = new VisualElement { pickingMode = PickingMode.Ignore }; Skin(box, "parchment", 18); Pad(box, 14, 22); box.style.marginTop = 10; caseBody.Add(box);
+                box.style.unityBackgroundImageTintColor = has ? Color.white : new Color(0.7f, 0.8f, 0.88f);   // ยังไม่พบ = กระดาษหม่นอมฟ้า
+                if (!has) { var qm = L(box, "?", 64, new Color(0.3f, 0.36f, 0.42f, 0.55f)); Abs(qm, null, 22, 0); }
+                var n = L(box, has ? clue.name : "??? เบาะแสที่ยังไม่พบ", 26, has ? ink : new Color(0.2f, 0.26f, 0.32f)); n.style.unityTextAlign = TextAnchor.MiddleLeft;
+                var d = L(box, has ? clue.found : "คำใบ้: " + clue.hint, 21, has ? new Color(0.35f, 0.24f, 0.12f) : new Color(0.25f, 0.3f, 0.36f), false); d.style.unityTextAlign = TextAnchor.MiddleLeft; d.style.marginTop = 2; d.style.marginRight = has ? 0 : 50;
             }
             casePanel.Q<Button>("solve").style.display = Mystery.ReadyToSolve ? DisplayStyle.Flex : DisplayStyle.None;
             Show(casePanel);
@@ -78,7 +95,7 @@ namespace CozyFishing
             statusBox.pickingMode = PickingMode.Position;
             statusBox.RegisterCallback<PointerDownEvent>(e => OpenBag());
             // นาฬิกา + วันที่ + อากาศ แบบไอคอน: ☀ 06:11  📅 2  /  ⛅ 28°  ༄ 1.7
-            clockBox = Box(root, Paper, 12); Abs(clockBox, 24, null, 84); Pad(clockBox, 6, 14);
+            clockBox = Box(root, Paper, 12); Abs(clockBox, 24, null, 92); Pad(clockBox, 10, 20); Skin(clockBox, "wood", 18);
             VisualElement Row2() { var r = new VisualElement { pickingMode = PickingMode.Ignore }; r.style.flexDirection = FlexDirection.Row; r.style.alignItems = Align.Center; clockBox.Add(r); return r; }
             var r1 = Row2(); timeIco = Ico(r1, "sun", 26);
             clockTxt = L(r1, "06:00", 24, Ink); clockTxt.style.marginLeft = 6;
@@ -87,6 +104,7 @@ namespace CozyFishing
             tempTxt = L(r2, "28°", 22, Sub); tempTxt.style.marginLeft = 6;
             Ico(r2, "wind", 22).style.marginLeft = 14; windTxt = L(r2, "1.7", 22, Sub); windTxt.style.marginLeft = 5;
             BuildCase();
+            BuildQuest();
             // ปุ่มสลับมุมกล้องตอนตกปลา: ตา = มุมบุคคลที่หนึ่ง · ตาขีดฆ่า = มุมกล้องหลังตัวละคร
             Label vl = null;
             viewBtn = IconButton(FirstPersonView.Enabled ? "eye" : "eye_off", new Color(0.55f, 0.75f, 0.85f), () =>
@@ -111,7 +129,9 @@ namespace CozyFishing
             var bclose = new Button(() => Hide(bag)) { text = "ปิด" }; StyleButton(bclose, Gray); bclose.style.alignSelf = Align.Center; bclose.style.marginTop = 12; bagBox.Add(bclose);
 
             // เช้าที่บ้าน
-            morning = Overlay(out var mBox, 820);
+            morning = Overlay(out var mBox, 900);
+            morning.style.backgroundImage = Resources.Load<Texture2D>("UI/Frames/backdrop"); morning.style.backgroundSize = new BackgroundSize(BackgroundSizeType.Cover);
+            mBox.style.backgroundColor = new Color(0, 0, 0, 0.18f); mBox.style.borderTopWidth = mBox.style.borderBottomWidth = mBox.style.borderLeftWidth = mBox.style.borderRightWidth = 0;
             var ms = new ScrollView(ScrollViewMode.Vertical); ms.style.flexGrow = 1; ms.style.flexShrink = 1; mBox.Add(ms);
             morningBody = new VisualElement(); ms.Add(morningBody);
 
@@ -128,10 +148,26 @@ namespace CozyFishing
 
             // กล่องบทสนทนา (ล่างจอ แตะ/กด Space ไปต่อ)
             dialogEl = new VisualElement { pickingMode = PickingMode.Position }; Abs(dialogEl, 0, 0, 0, 0); dialogEl.style.justifyContent = Justify.FlexEnd; dialogEl.style.alignItems = Align.Center; root.Add(dialogEl);
-            var db = Box(dialogEl, Paper, 30); Pad(db, 16, 28); MaxW(db, 900); db.style.marginBottom = 30;
-            dialogWho = L(db, "", 26, Gold); dialogWho.style.unityTextAlign = TextAnchor.MiddleLeft;
-            dialogSay = L(db, "", 30, Ink); dialogSay.style.unityTextAlign = TextAnchor.MiddleLeft; dialogSay.style.marginTop = 4;
-            var nx = L(db, "แตะเพื่อไปต่อ ▶", 20, Sub, false); nx.style.unityTextAlign = TextAnchor.MiddleRight;
+            // แถวล่าง: ภาพตัวละคร (ซ้าย = คนอื่น · ขวา = พ่อ) + กล่องไม้ไผ่จักสาน
+            var drow = new VisualElement { pickingMode = PickingMode.Ignore }; drow.style.flexDirection = FlexDirection.Row; drow.style.alignItems = Align.FlexEnd;
+            MaxW(drow, 1040); drow.style.marginBottom = 24; dialogEl.Add(drow);
+            VisualElement Portrait()
+            {
+                var p = new VisualElement { pickingMode = PickingMode.Ignore }; p.style.width = p.style.height = 190; p.style.flexShrink = 0; p.style.marginBottom = 20;
+                drow.Add(p); return p;
+            }
+            dialogPortL = Portrait(); dialogPortL.style.marginRight = -34;
+            var db = new VisualElement { pickingMode = PickingMode.Ignore }; db.style.flexGrow = 1; db.style.flexShrink = 1; drow.Add(db);
+            Skin(db, "dialog", 26); db.style.paddingTop = 26; db.style.paddingBottom = 26; db.style.paddingLeft = 52; db.style.paddingRight = 44;
+            dialogPortR = Portrait(); dialogPortR.style.marginLeft = -34;
+            var whoRow = new VisualElement { pickingMode = PickingMode.Ignore }; whoRow.style.flexDirection = FlexDirection.Row; whoRow.style.alignItems = Align.Center; db.Add(whoRow);
+            dialogWhoIco = Ico(whoRow, "magnifier", 30);
+            dialogWho = L(whoRow, "", 34, new Color(1f, 0.78f, 0.38f)); dialogWho.style.unityTextAlign = TextAnchor.MiddleLeft; dialogWho.style.marginLeft = 8;
+            dialogWho.style.unityFontDefinition = fontTitle;
+            var rule = new VisualElement { pickingMode = PickingMode.Ignore }; rule.style.height = 2; rule.style.marginTop = 2; rule.style.marginBottom = 6; rule.style.width = Length.Percent(60);
+            rule.style.backgroundColor = new Color(0.85f, 0.65f, 0.35f, 0.5f); db.Add(rule);
+            dialogSay = L(db, "", 30, new Color(0.97f, 0.93f, 0.84f)); dialogSay.style.unityTextAlign = TextAnchor.MiddleLeft;
+            var nx = L(db, "แตะเพื่อไปต่อ ▶", 20, new Color(0.85f, 0.75f, 0.6f), false); nx.style.unityTextAlign = TextAnchor.MiddleRight; nx.style.marginTop = 4;
             dialogEl.RegisterCallback<PointerDownEvent>(e => dialogNext = true);
             dialogEl.style.display = DisplayStyle.None;
 
@@ -174,6 +210,7 @@ namespace CozyFishing
             caseBtn.style.display = Mystery.Started && !CardOpen && !ModalOpen ? DisplayStyle.Flex : DisplayStyle.None;
             caseBtnTxt.text = Mystery.Solved ? "ปิดคดี" : Mystery.ReadyToSolve ? "ไขคดีได้!" : $"{Mystery.CluesFound}/{Mystery.Current.clues.Length}";
             caseBtnTxt.style.color = Mystery.ReadyToSolve && !Mystery.Solved ? new Color(1f, 0.82f, 0.35f) : Color.white;
+            UpdateQuest();
         }
         public void SetStatus(string clock, int day, int n, int cap, int money, bool fishingNow)
         {
@@ -256,6 +293,12 @@ namespace CozyFishing
             foreach (var (who, say) in lines)
             {
                 dialogWho.text = who; dialogSay.text = say;
+                var port = Resources.Load<Texture2D>("UI/Portraits/" + PortraitKey(who));
+                bool right = who == "พ่อ";
+                dialogPortL.style.backgroundImage = !right ? port : null; dialogPortR.style.backgroundImage = right ? port : null;
+                dialogPortL.style.visibility = !right && port != null ? Visibility.Visible : Visibility.Hidden;
+                dialogPortR.style.display = right && port != null ? DisplayStyle.Flex : DisplayStyle.None;
+                SetIco(dialogWhoIco, who == "ลูก" ? "casebook" : who == "แม่" ? "basket" : "magnifier");
                 dialogNext = false;
                 float shown = 0;
                 yield return null;
@@ -271,6 +314,69 @@ namespace CozyFishing
             Hide(dialogEl);
         }
 
+        static string PortraitKey(string who) => who switch
+        {
+            "แม่" => "mae", "พ่อ" => "pho", "ลูก" => "luk", "ลุงเปี๊ยก" => "lungpiak", "ยายอิ่ม" => "yai_im", "ผู้ใหญ่ทอง" => "phuyai_thong", _ => "",
+        };
+
+        // ---------- Quest Tracker (กระดาษเก่ามุมขวาบน · แตะเพื่อเปิดสมุดคดี) ----------
+        void BuildQuest()
+        {
+            quest = new VisualElement { pickingMode = PickingMode.Position }; Abs(quest, null, 22, 136);
+            quest.style.width = 250; Skin(quest, "parchment", 20); quest.style.paddingTop = 10; quest.style.paddingBottom = 12; quest.style.paddingLeft = 16; quest.style.paddingRight = 14;
+            quest.style.opacity = 0.86f;
+            root.Add(quest);
+            var title = L(quest, "บันทึกภารกิจ ▾", 24, new Color(0.3f, 0.18f, 0.08f)); title.style.unityFontDefinition = fontTitle; questTitle = title;
+            VisualElement QRow(string icon, out Label head, out Label body)
+            {
+                var r = new VisualElement { pickingMode = PickingMode.Ignore }; r.style.flexDirection = FlexDirection.Row; r.style.alignItems = Align.FlexStart; r.style.marginTop = 6; quest.Add(r);
+                Ico(r, icon, 22).style.marginTop = 2;
+                var col = new VisualElement { pickingMode = PickingMode.Ignore }; col.style.flexShrink = 1; col.style.marginLeft = 6; r.Add(col);
+                head = L(col, "", 17, new Color(0.55f, 0.12f, 0.08f)); head.style.unityTextAlign = TextAnchor.MiddleLeft;
+                body = L(col, "", 16, new Color(0.24f, 0.16f, 0.08f), false); body.style.unityTextAlign = TextAnchor.MiddleLeft;
+                return r;
+            }
+            questMainRow = QRow("pin", out var h1, out questMain); h1.text = "เควสหลัก";
+            questClueRow = QRow("magnifier", out var h2, out questClue); h2.text = "เบาะแส";
+            try { questFolded = PlayerPrefs.GetInt("abot.questFold", 0) == 1; } catch (Exception) { }
+            // แตะหัวกระดาษ = พับ/กาง · แตะเนื้อหา = เปิดสมุดคดี
+            title.pickingMode = PickingMode.Position;
+            title.RegisterCallback<PointerDownEvent>(e => { questFolded = !questFolded; try { PlayerPrefs.SetInt("abot.questFold", questFolded ? 1 : 0); } catch (Exception) { } lastQuest = null; e.StopPropagation(); });
+            quest.RegisterCallback<PointerDownEvent>(e => { if (Mystery.Started) OpenCase(); });
+        }
+
+        void UpdateQuest()
+        {
+            bool show = !CardOpen && !ModalOpen && fightBox.style.display != DisplayStyle.Flex && !FirstPersonView.Active && !(director != null && director.fishing != null && director.fishing.LineOut);   // สายอยู่ในน้ำ: ซ่อน ไม่ทับเกจระยะสาย
+            quest.style.display = show ? DisplayStyle.Flex : DisplayStyle.None;
+            if (!show) return;
+            var g = Story.CurrentGoal;
+            string main = g == null ? "ทำครบทุกเป้าหมายแล้ว" : Story.CanPayGoal ? $"{g.text} · เงินพอแล้ว!" : g.text;
+            string clue = null;
+            if (Mystery.Started)
+            {
+                var c = Mystery.Current;
+                if (Mystery.Solved) clue = Mystery.HasNext ? "ปิดคดีแล้ว · พรุ่งนี้เช้าตามแผนที่ยายอิ่มไปจุดต่อไป" : "ตามรอยยายอิ่มครบทุกบทแล้ว";
+                else if (Mystery.ReadyToSolve) clue = "เบาะแสครบแล้ว! แตะเพื่อเปิดสมุดคดีแล้วไขปริศนา";
+                else
+                {
+                    Clue next = null; foreach (var x in c.clues) if (!Mystery.HasClue(x.id)) { next = x; break; }
+                    var where = c.stage != Story.S.stage ? $"ไปที่{Stages.Get(c.stage).name} · " : "";
+                    var hint = next?.hint ?? "";
+                    if (hint.Length > 46) hint = hint.Substring(0, 44) + "…";   // สั้นพอ 2 บรรทัด · รายละเอียดเต็มอยู่ในสมุดคดี
+                    clue = $"{where}{hint} ({Mystery.CluesFound}/{c.clues.Length})";
+                }
+            }
+            var key = main + "|" + clue + "|" + questFolded;
+            if (key == lastQuest) return;
+            lastQuest = key;
+            questMain.text = main;
+            questTitle.text = questFolded ? "บันทึกภารกิจ ▸" : "บันทึกภารกิจ ▾";
+            questMainRow.style.display = questFolded ? DisplayStyle.None : DisplayStyle.Flex;
+            questClueRow.style.display = clue != null && !questFolded ? DisplayStyle.Flex : DisplayStyle.None;
+            questClue.text = clue ?? "";
+        }
+
         // ---------- เช้าที่บ้าน ----------
         public void ShowMorning(Action<string> go, Action pay)
         {
@@ -284,58 +390,93 @@ namespace CozyFishing
         {
             var s = Story.S;
             morningBody.Clear();
-            L(morningBody, $"เช้าวันที่ {s.day}", 44, Ink);
-            L(morningBody, Story.CurrentLuck.text, 28, new Color(0.55f, 0.8f, 1f)).style.marginTop = 4;
-            var stats = Row(morningBody); stats.style.marginTop = 12;
-            L(Stat(stats), $"เงินเก็บ {Story.Baht(s.money)}", 28, Money);
-            L(Stat(stats), $"ครอบครัว {(s.happy >= 75 ? "มีความสุข" : s.happy >= 40 ? "สบายดี" : "หิวโหย")} {s.happy}%", 28, Ink);
-            var hot = s.hot != null ? FishDatabase.Get(s.hot) : null;
-            if (hot != null)
+            var brown = new Color(0.24f, 0.14f, 0.06f); var cream = new Color(1f, 0.93f, 0.78f);
+            var title = L(morningBody, $"เช้าวันที่ {s.day}", 50, cream); title.style.unityFontDefinition = fontTitle; Shadow(title);
+            // ข่าวหมู่บ้าน: แผ่นกระดาษประกาศ (อากาศ · ราคาตลาด)
+            VisualElement Notice(string text, Color col)
             {
-                var hb = Box(morningBody, new Color(0.32f, 0.2f, 0.08f, 0.9f), 22, false); Pad(hb, 10, 18); hb.style.marginTop = 12;
-                L(hb, $"วันนี้แม่ค้ารับซื้อ{(FishDex.Has(hot.id) ? hot.name : "ปลาลึกลับ")}ราคาพิเศษ {Story.Baht(Story.PriceOf(hot.id))}/กก.", 26, Money);
+                var n = new VisualElement { pickingMode = PickingMode.Ignore }; Skin(n, "parchment", 20); Pad(n, 12, 30); n.style.marginTop = 8; n.style.alignSelf = Align.Center;
+                morningBody.Add(n); L(n, text, 26, col); return n;
             }
+            Notice(Story.CurrentLuck.text, brown);
+            var hot = s.hot != null ? FishDatabase.Get(s.hot) : null;
+            if (hot != null) Notice($"วันนี้แม่ค้ารับซื้อ{(FishDex.Has(hot.id) ? hot.name : "ปลาลึกลับ")}ราคาพิเศษ {Story.Baht(Story.PriceOf(hot.id))}/กก.", new Color(0.55f, 0.2f, 0.05f));
+            // ป้ายไม้: เงินเก็บ · ความสุขครอบครัว
+            var stats = Row(morningBody); stats.style.marginTop = 10;
+            VisualElement Plaque(string icon, string text, Color col)
+            {
+                var pl = new VisualElement { pickingMode = PickingMode.Ignore }; Skin(pl, "wood", 18); Pad(pl, 10, 22); pl.style.flexDirection = FlexDirection.Row; pl.style.alignItems = Align.Center;
+                pl.style.marginLeft = pl.style.marginRight = 6; stats.Add(pl); Ico(pl, icon, 32); L(pl, text, 26, col).style.marginLeft = 8; return pl;
+            }
+            Plaque("coin", $"เงินเก็บ {Story.Baht(s.money)}", Money);
+            Plaque("heart", $"ครอบครัว {(s.happy >= 75 ? "มีความสุข" : s.happy >= 40 ? "สบายดี" : "หิวโหย")} {s.happy}%", cream);
+            // เป้าหมายครอบครัว: กรอบไม้ไผ่บนกระดาษ + ภาพสเก็ตช์ของเป้าหมาย
             var g = Story.CurrentGoal;
-            var gb = Box(morningBody, Glass2, 22, false); Pad(gb, 12, 18); gb.style.marginTop = 12;
+            var gb = new VisualElement { pickingMode = PickingMode.Ignore }; Skin(gb, "bamboo_paper", 26); gb.style.paddingTop = 22; gb.style.paddingBottom = 24; gb.style.paddingLeft = 30; gb.style.paddingRight = 26;
+            gb.style.marginTop = 12; gb.style.flexDirection = FlexDirection.Row; gb.style.alignItems = Align.Center; morningBody.Add(gb);
+            var gcol = new VisualElement { pickingMode = PickingMode.Ignore }; gcol.style.flexGrow = 1; gcol.style.flexShrink = 1; gb.Add(gcol);
             if (g != null)
             {
-                var gl = L(gb, $"เป้าหมาย: {g.text}", 28, Ink); gl.style.unityTextAlign = TextAnchor.MiddleLeft;
-                var bar = Bar(gb, 24, Track); var fill = Box(bar, Gold, 12, false); fill.style.height = Length.Percent(100);
+                var gl = L(gcol, $"เป้าหมาย: {g.text}", 30, brown); gl.style.unityTextAlign = TextAnchor.MiddleLeft; gl.style.unityFontDefinition = fontTitle;
+                var bar = Bar(gcol, 24, new Color(0.3f, 0.22f, 0.14f, 0.5f)); var fill = Box(bar, new Color(0.9f, 0.5f, 0.15f), 12, false); fill.style.height = Length.Percent(100);
                 fill.style.width = Length.Percent(Mathf.Clamp01((float)s.money / g.cost) * 100);
-                var gr = Row(gb); gr.style.justifyContent = Justify.SpaceBetween; gr.style.marginTop = 8; gr.style.alignItems = Align.Center;
-                L(gr, $"{Story.Baht(s.money)} / {Story.Baht(g.cost)}", 24, Ink);
-                if (Story.CanPayGoal) { var pb = new Button(() => onMorningPay?.Invoke()) { text = s.goal == 0 ? "จ่ายค่าซ่อมหลังคา" : "จ่ายเลย" }; StyleButton(pb, new Color(0.85f, 0.45f, 0.2f)); gr.Add(pb); }
-                else if (s.goal >= 2) L(gr, "(ต้องปลดล็อกที่ตกปลาครบทุกด่านก่อน)", 20, Sub, false);
+                var gr = Row(gcol); gr.style.justifyContent = Justify.SpaceBetween; gr.style.marginTop = 8; gr.style.alignItems = Align.Center;
+                L(gr, $"{Story.Baht(s.money)} / {Story.Baht(g.cost)}", 24, brown);
+                if (Story.CanPayGoal) { var pb = new Button(() => onMorningPay?.Invoke()) { text = s.goal == 0 ? "จ่ายค่าซ่อมหลังคา" : "จ่ายเลย" }; WoodButton(pb, true); gr.Add(pb); }
+                else if (s.goal >= 2 && !Mystery.AllSolved) L(gr, "(ตามรอยแผนที่ยายอิ่มให้ครบทุกคดีก่อน)", 20, new Color(0.45f, 0.3f, 0.18f), false);
+                var sk = new VisualElement { pickingMode = PickingMode.Ignore }; sk.style.width = 180; sk.style.height = 120; sk.style.flexShrink = 0; sk.style.marginLeft = 12;
+                sk.style.backgroundImage = Resources.Load<Texture2D>("UI/Icons/" + (s.goal == 0 ? "goal_roof" : s.goal == 1 ? "goal_bike" : "goal_fair")); gb.Add(sk);
             }
-            else L(gb, "ทำครบทุกเป้าหมายแล้ว! ตกปลาสบาย ๆ ได้ตลอดไป", 26, Ink);
-            if (!Story.RoofFixed) L(morningBody, "หลังคาบ้านยังรั่วอยู่ เมื่อคืนต้องเอาถังรองน้ำฝน…", 22, Sub, false).style.marginTop = 8;
-            // เลือกที่ตกปลาวันนี้: ด่านที่เปิดแล้วไปได้เลย · ด่านถัดไปซื้อทางด้วยเงินเก็บ
-            L(morningBody, "วันนี้จะไปตกปลาที่ไหน?", 28, Ink).style.marginTop = 16;
-            foreach (var st in Stages.All)
+            else L(gcol, "ทำครบทุกเป้าหมายแล้ว! ตกปลาสบาย ๆ ได้ตลอดไป", 26, brown);
+            if (!Story.RoofFixed) { var lk = L(morningBody, "หลังคาบ้านยังรั่วอยู่ เมื่อคืนต้องเอาถังรองน้ำฝน…", 22, cream, false); lk.style.marginTop = 8; Shadow(lk); }
+            // เลือกที่ตกปลา: การ์ดกระดาษ + ภาพโพลารอยด์ปักหมุด · ความยาก · แว่นขยายถ้ามีคดีค้างที่ด่านนั้น
+            var q = L(morningBody, "วันนี้จะไปตกปลาที่ไหน?", 34, cream); q.style.marginTop = 18; q.style.unityFontDefinition = fontTitle; Shadow(q);
+            for (int si = 0; si < Stages.All.Length; si++)
             {
+                var st = Stages.All[si];
                 bool open = Stages.Unlocked(st.id);
-                var row = Box(morningBody, Glass2, 10, false); Pad(row, 8, 12); row.style.flexDirection = FlexDirection.Row; row.style.alignItems = Align.Center; row.style.marginTop = 8;
-                var art = new VisualElement { pickingMode = PickingMode.Ignore };
-                art.style.width = 150; art.style.height = 100; art.style.flexShrink = 0; art.style.marginRight = 12;
+                var row = new VisualElement { pickingMode = PickingMode.Ignore }; Skin(row, "parchment", 20); Pad(row, 14, 20);
+                row.style.flexDirection = FlexDirection.Row; row.style.alignItems = Align.Center; row.style.marginTop = 10; morningBody.Add(row);
+                var polaroid = new VisualElement { pickingMode = PickingMode.Ignore }; polaroid.style.backgroundColor = new Color(0.97f, 0.95f, 0.9f); Pad(polaroid, 6, 6); polaroid.style.paddingBottom = 16;
+                polaroid.style.flexShrink = 0; polaroid.style.marginRight = 14; polaroid.style.rotate = new Rotate(si % 2 == 0 ? -3 : 2); row.Add(polaroid);
+                var art = new VisualElement { pickingMode = PickingMode.Ignore }; art.style.width = 168; art.style.height = 108;
                 art.style.backgroundImage = st.Art; art.style.backgroundSize = new BackgroundSize(BackgroundSizeType.Cover);
-                art.style.unityBackgroundImageTintColor = open ? Color.white : new Color(0.45f, 0.45f, 0.45f);
-                Radius(art, 8); row.Add(art);
+                art.style.unityBackgroundImageTintColor = open ? Color.white : new Color(0.45f, 0.42f, 0.4f); polaroid.Add(art);
+                var pin = Ico(polaroid, "pin", 30); Abs(pin, 78, null, -14);
                 var info = new VisualElement { pickingMode = PickingMode.Ignore }; info.style.flexGrow = 1; info.style.flexShrink = 1; info.style.marginRight = 10; row.Add(info);
-                var nm = L(info, st.name, 28, open ? Ink : Sub); nm.style.unityTextAlign = TextAnchor.MiddleLeft;
-                var ds = L(info, open ? st.desc : $"{st.desc} · ค่าเดินทางครั้งแรก {Story.Baht(st.price)}", 18, Sub, false); ds.style.unityTextAlign = TextAnchor.MiddleLeft;
+                var nm = L(info, st.name, 32, open ? brown : new Color(0.45f, 0.36f, 0.28f)); nm.style.unityTextAlign = TextAnchor.MiddleLeft; nm.style.unityFontDefinition = fontTitle;
+                var ds = L(info, open ? st.desc : $"{st.desc} · ค่าเดินทางครั้งแรก {Story.Baht(st.price)}", 18, new Color(0.32f, 0.22f, 0.12f), false); ds.style.unityTextAlign = TextAnchor.MiddleLeft;
+                var tags = new VisualElement { pickingMode = PickingMode.Ignore }; tags.style.flexDirection = FlexDirection.Row; tags.style.alignItems = Align.Center; tags.style.marginTop = 4; info.Add(tags);
+                int lvl = 1 + Mathf.RoundToInt(si * 4f / Mathf.Max(1, Stages.All.Length - 1));
+                L(tags, "ความยาก", 18, new Color(0.6f, 0.35f, 0.1f)).style.marginRight = 4;
+                for (int k = 0; k < 5; k++) Ico(tags, k < lvl ? "star_on" : "star_off", 20);
+                if (Mystery.Started && !Mystery.Solved && Mystery.Current.stage == st.id)
+                {
+                    Ico(tags, "magnifier", 24).style.marginLeft = 12;
+                    L(tags, $"มีคดีค้าง ({Mystery.CluesFound}/{Mystery.Current.clues.Length})", 18, new Color(0.55f, 0.12f, 0.08f)).style.marginLeft = 4;
+                }
                 var id = st.id;
                 if (open)
                 {
-                    var b = new Button(() => { Hide(morning); onMorningGo?.Invoke(id); }) { text = "ไปตกที่นี่" };
-                    StyleButton(b, Gold); row.Add(b);
+                    var bt = new Button(() => { Hide(morning); onMorningGo?.Invoke(id); }) { text = "ไปตกที่นี่" };
+                    WoodButton(bt, true); row.Add(bt);
                 }
                 else
                 {
                     bool can = s.money >= st.price;
-                    var b = new Button(() => { if (Stages.Buy(id)) { Toast($"เปิดทางไป{Stages.Get(id).name}แล้ว!"); RefreshMorning(); } }) { text = $"ซื้อทาง {Story.Baht(st.price)}" };
-                    StyleButton(b, can ? Green : Gray); b.SetEnabled(can); row.Add(b);
+                    var bt = new Button(() => { if (Stages.Buy(id)) { Toast($"เปิดทางไป{Stages.Get(id).name}แล้ว!"); RefreshMorning(); } }) { text = $"ซื้อทาง {Story.Baht(st.price)}" };
+                    WoodButton(bt, can); bt.SetEnabled(can); row.Add(bt);
                 }
             }
+        }
+
+        // ปุ่มป้ายไม้เก่า (หน้าเช้า)
+        void WoodButton(Button b, bool active)
+        {
+            StyleButton(b, Color.clear);
+            Skin(b, "plank", 22); b.style.color = active ? new Color(0.22f, 0.12f, 0.04f) : new Color(0.4f, 0.34f, 0.28f);
+            b.style.unityBackgroundImageTintColor = active ? Color.white : new Color(0.7f, 0.68f, 0.65f);
+            Pad(b, 14, 30); b.style.fontSize = 26;
         }
 
         // ---------- มื้อเย็น ----------

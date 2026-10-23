@@ -30,11 +30,11 @@ namespace CozyFishing
             float low = 1 - Mathf.Clamp01((elev - 3f) / 32f);            // ใกล้ขอบฟ้า → แสงส้ม
             float day = Mathf.Clamp01((elev - 3f) / 22f);
             float cloud = Mathf.Lerp(0.5f, 1f, Mathf.InverseLerp(0.35f, 1f, luckSun));
-            sun.color = Color.Lerp(baseColor, new Color(1f, 0.6f, 0.36f), low * 0.85f);
-            sun.intensity = baseIntensity * Mathf.Lerp(0.3f, 1f, day) * cloud;
+            sun.color = Color.Lerp(baseColor, new Color(1f, 0.55f, 0.28f), low * 0.95f);   // golden hour
+            sun.intensity = baseIntensity * Mathf.Lerp(0.5f, 1f, day) * cloud * (1 + low * 0.15f * (1 - Mathf.Clamp01((3.5f - elev) / 3f)));
             sun.shadowStrength = Mathf.Lerp(0.35f, 0.85f, cloud);
             RenderSettings.ambientIntensity = baseAmbient * Mathf.Lerp(0.5f, 1f, day) * Mathf.Lerp(0.75f, 1f, cloud);
-            var dusk = new Color(0.86f, 0.66f, 0.56f);
+            var dusk = new Color(0.9f, 0.62f, 0.48f);
             var gray = new Color(0.68f, 0.72f, 0.75f);
             RenderSettings.fogColor = Color.Lerp(Color.Lerp(baseFog, gray, 1 - cloud), dusk, low * 0.55f) * Mathf.Lerp(0.6f, 1f, day);
         }
