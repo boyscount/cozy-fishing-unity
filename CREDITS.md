@@ -56,6 +56,12 @@ Each adapted image keeps the license of its source (CC BY-SA images stay CC BY-S
 | ปลาดุกทะเล (Gray eel-catfish) | [Plotosus canius Mintern 112.jpg](https://commons.wikimedia.org/wiki/File:Plotosus_canius_Mintern_112.jpg) | R. Mintern | Public domain |
 | ปลากะพงข้างปาน (Russell's snapper) | [Lutjanus russellii Uotto2.jpg](https://commons.wikimedia.org/wiki/File:Lutjanus_russellii_Uotto2.jpg) | Totti | CC BY-SA 4.0 |
 | ปลาฉนากรากมรณะ (Largetooth sawfish) | [Pristis pristis - Georgia Aquarium Jan 2006.jpg](https://commons.wikimedia.org/wiki/File:Pristis_pristis_-_Georgia_Aquarium_Jan_2006.jpg) | Diliff | CC BY 2.5 |
+| ปลาแปบ (Glass-belly minnow) | [Parach oxygastr 130605-36382 tae.JPG](https://commons.wikimedia.org/wiki/File:Parach_oxygastr_130605-36382_tae.JPG) | Wibowo Djatmiko (Wie146) | CC BY-SA 3.0 |
+| ปลากระมัง (Smith’s barb) | [Puntioplites bulu (10.3897-BDJ.11.e100337) Figure 11.jpg](https://commons.wikimedia.org/wiki/File:Puntioplites_bulu_(10.3897-BDJ.11.e100337)_Figure_11.jpg) | Aqmal-Naser et al. (2023) | CC BY 4.0 |
+| ปลาเนื้ออ่อน (Whisker sheatfish) | [Phalacronotus bleekeri.jpg](https://commons.wikimedia.org/wiki/File:Phalacronotus_bleekeri.jpg) | The original uploader was วัตุลึกลับใต้น้ำ at Thai Wikipedia | CC BY-SA 3.0 |
+| ปลาบู่ทราย (Marble goby) | [Oxyeleotris marmorata - Yung-Lun Lin - 586219175.jpeg](https://commons.wikimedia.org/wiki/File:Oxyeleotris_marmorata_-_Yung-Lun_Lin_-_586219175.jpeg) | Yung-Lun Lin | CC BY 4.0 |
+| ปลาม้า (Boeseman croaker) | [Boesemania microlepis.jpg](https://commons.wikimedia.org/wiki/File:Boesemania_microlepis.jpg) | Lerdsuwa | CC BY-SA 3.0 |
+| ปลากระเบนราหูน้ำจืด (Giant freshwater stingray) | [Giant freshwater stingray.JPG](https://commons.wikimedia.org/wiki/File:Giant_freshwater_stingray.JPG) | Amelia Guo | CC BY 3.0 |
 
 ## Other assets
 
