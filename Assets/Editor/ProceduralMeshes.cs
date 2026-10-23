@@ -424,8 +424,9 @@ public static class ProceduralMeshes
         for (int i = 0; i <= N; i++)
         {
             float t = i / (float)N, z = (t - 0.5f) * length;
-            float w = width * 0.5f * Mathf.Pow(Mathf.Sin(t * Mathf.PI), 0.55f) + 0.01f;
-            float d = depth * Mathf.Pow(Mathf.Sin(t * Mathf.PI), 0.35f);
+            float sn = Mathf.Max(0, Mathf.Sin(t * Mathf.PI));                   // sin(π) ออกมาติดลบนิด ๆ → Pow ได้ NaN
+            float w = width * 0.5f * Mathf.Pow(sn, 0.55f) + 0.01f;
+            float d = depth * Mathf.Pow(sn, 0.35f);
             float sheer = 0.12f * (2 * t - 1) * (2 * t - 1);                     // ขอบเรือแอ่นขึ้นที่หัวท้าย
             for (int j = 0; j <= M; j++)
             {
@@ -516,5 +517,90 @@ public static class ProceduralMeshes
             }
         }
         return bld.Build("Hyacinth");
+    }
+
+    // ท่อเรียวตามเส้นโค้ง (ราก กิ่ง เถาวัลย์) · รัศมีไล่จาก r0 ถึง r1
+    static void Tube(Builder bld, int sub, System.Collections.Generic.IList<Vector3> pts, float r0, float r1, Color c0, Color c1, int sides = 6)
+    {
+        int prevStart = -1;
+        for (int i = 0; i < pts.Count; i++)
+        {
+            float t = i / (float)(pts.Count - 1);
+            var tg = (pts[Mathf.Min(i + 1, pts.Count - 1)] - pts[Mathf.Max(i - 1, 0)]).normalized;
+            var a = Vector3.Cross(tg, Mathf.Abs(tg.y) > 0.9f ? Vector3.right : Vector3.up).normalized; var b = Vector3.Cross(tg, a);
+            float r = Mathf.Lerp(r0, r1, t); var col = Color.Lerp(c0, c1, t);
+            int start = bld.v.Count;
+            for (int k = 0; k <= sides; k++) { float an = k / (float)sides * Mathf.PI * 2; bld.Add(pts[i] + (a * Mathf.Cos(an) + b * Mathf.Sin(an)) * r, col); }
+            if (prevStart >= 0) for (int k = 0; k < sides; k++) bld.Quad(sub, prevStart + k, start + k, prevStart + k + 1, start + k + 1);
+            prevStart = start;
+        }
+    }
+
+    // ต้นไทรรัด (ไทรย้อย): รากใหญ่หลายสิบเส้นแผ่ออกจากโคนลงดิน/น้ำ บิดเกลียวรวมเป็นลำต้น ยอดแตกกิ่งใหญ่ + รากอากาศห้อยจากกิ่งลงมา
+    // submesh 0 = ลำต้น/ราก/กิ่ง, 1 = รากอากาศเส้นเล็ก (ใส่วัสดุไหวลมได้)
+    public static Mesh Banyan(int seed, float height)
+    {
+        var rnd = new System.Random(seed);
+        float R(float a, float b) => a + (float)rnd.NextDouble() * (b - a);
+        var bld = new Builder(2);
+        Color bark0 = new Color(0.36f, 0.32f, 0.26f), bark1 = new Color(0.5f, 0.46f, 0.38f);
+        int strands = rnd.Next(14, 20);
+        var tips = new System.Collections.Generic.List<Vector3>();
+        for (int s = 0; s < strands; s++)
+        {
+            float az = s / (float)strands * Mathf.PI * 2 + R(-0.2f, 0.2f), spread = R(1.6f, 3.4f), tw = R(0.6f, 1.4f) * (rnd.NextDouble() < 0.5 ? 1 : -1);
+            var pts = new System.Collections.Generic.List<Vector3>();
+            for (int i = 0; i <= 18; i++)
+            {
+                float t = i / 18f;
+                float rad = Mathf.Lerp(spread, 0.35f + R(0, 0.12f), Mathf.SmoothStep(0, 1, Mathf.Min(1, t * 2.2f)));   // แผ่ที่โคน → รวบเป็นลำ
+                float y = t < 0.3f ? Mathf.Lerp(-0.6f, 0.9f, t / 0.3f) * (1 - Mathf.Pow(1 - t / 0.3f, 2) * 0.4f) : Mathf.Lerp(0.9f, height, (t - 0.3f) / 0.7f);
+                float a = az + tw * t * 2.2f;
+                pts.Add(new Vector3(Mathf.Cos(a) * rad, y, Mathf.Sin(a) * rad));
+            }
+            Tube(bld, 0, pts, R(0.09f, 0.16f), R(0.07f, 0.12f), bark0 * R(0.85f, 1.1f), bark1 * R(0.85f, 1.1f));
+        }
+        // กิ่งใหญ่แผ่ออกจากยอด
+        int branches = rnd.Next(5, 8);
+        for (int b = 0; b < branches; b++)
+        {
+            float az = R(0, Mathf.PI * 2), len = R(3f, 5.5f), rise = R(0.4f, 1.8f);
+            var dir = new Vector3(Mathf.Cos(az), 0, Mathf.Sin(az));
+            var pts = new System.Collections.Generic.List<Vector3>();
+            for (int i = 0; i <= 10; i++) { float t = i / 10f; pts.Add(new Vector3(0, height - 0.6f, 0) + dir * len * t + Vector3.up * (rise * t - 0.8f * t * t)); }
+            Tube(bld, 0, pts, 0.32f, 0.06f, bark0, bark1);
+            for (int k = 3; k <= 10; k += rnd.Next(1, 3)) tips.Add(pts[k]);
+        }
+        // รากอากาศ: เส้นเล็กห้อยตรงลงมาจากกิ่ง บางเส้นยาวถึงพื้น
+        foreach (var tp in tips)
+            for (int k = 0; k < rnd.Next(1, 4); k++)
+            {
+                var top = tp + new Vector3(R(-0.3f, 0.3f), 0, R(-0.3f, 0.3f)); float drop = R(1.5f, top.y + 0.4f);
+                Tube(bld, 1, new[] { top, top + Vector3.down * drop * 0.5f + new Vector3(R(-0.1f, 0.1f), 0, R(-0.1f, 0.1f)), top + Vector3.down * drop }, 0.025f, 0.012f, bark1 * 0.9f, bark1 * 0.7f, 4);
+            }
+        return bld.Build("Banyan");
+    }
+
+    // เถาวัลย์ห้อยโยง: สายโค้งหย่อนระหว่างจุดยึดสองจุดบนเรือนยอด + เส้นห้อยดิ่งลงมา (ยาว width ตามแกน X สูง height)
+    public static Mesh Vines(int seed, float width, float height)
+    {
+        var rnd = new System.Random(seed);
+        float R(float a, float b) => a + (float)rnd.NextDouble() * (b - a);
+        var bld = new Builder(1);
+        Color c0 = new Color(0.28f, 0.3f, 0.18f), c1 = new Color(0.4f, 0.38f, 0.24f);
+        for (int l = 0; l < rnd.Next(4, 7); l++)
+        {
+            var a = new Vector3(R(-width * 0.5f, 0), height + R(-0.5f, 0.5f), R(-1, 1)); var b = new Vector3(R(0, width * 0.5f), height + R(-0.5f, 0.5f), R(-1, 1));
+            float sag = R(1.2f, 3.5f);
+            var pts = new System.Collections.Generic.List<Vector3>();
+            for (int i = 0; i <= 14; i++) { float t = i / 14f; pts.Add(Vector3.Lerp(a, b, t) + Vector3.down * sag * 4 * t * (1 - t)); }
+            Tube(bld, 0, pts, R(0.025f, 0.05f), R(0.025f, 0.05f), c0, c1, 5);
+        }
+        for (int h = 0; h < rnd.Next(6, 12); h++)
+        {
+            var top = new Vector3(R(-width * 0.5f, width * 0.5f), height, R(-1.2f, 1.2f)); float drop = R(1f, height * 0.85f);
+            Tube(bld, 0, new[] { top, top + new Vector3(R(-0.15f, 0.15f), -drop * 0.5f, R(-0.15f, 0.15f)), top + Vector3.down * drop }, 0.022f, 0.012f, c0, c1, 4);
+        }
+        return bld.Build("Vines");
     }
 }

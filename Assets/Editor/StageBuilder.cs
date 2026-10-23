@@ -14,7 +14,7 @@ using UnityEngine.SceneManagement;
 public static partial class SceneBuilder
 {
     // ลำดับฉากใน build (ฉากแรก = บ้าน/บ่อทุ่งนา)
-    static readonly string[] StageScenes = { "Paddy", "Rapids", "Temple", "Marsh", "Houseboat" };
+    static readonly string[] StageScenes = { "Paddy", "Rapids", "Temple", "Marsh", "Houseboat", "Bend" };
 
     public static void CreateAll()
     {
@@ -23,6 +23,7 @@ public static partial class SceneBuilder
         CreateTemple();
         CreateMarsh();
         CreateHouseboat();
+        CreateBend();
     }
 
     // บรรยากาศแสงของแต่ละด่าน
@@ -69,7 +70,8 @@ public static partial class SceneBuilder
         if (look.skyId == "Overcast")
         {
             // ฟ้าครึ้มทั้งผืน: ฟ้าไล่สีเทาเรียบ ๆ (HDRI เป็นฟ้าใส ย้อมสีแล้วยังฟ้า · procedural sky ออกส้มเหมือนเย็น)
-            sky = LoadOrCreate($"{MatDir}/Sky_Overcast.mat", Shader.Find("CozyFishing/SkyGradient"));
+            var skyName = look.skyTint == "#76808a" || look.skyTint == null ? "Sky_Overcast" : "Sky_Overcast" + look.skyTint.Replace("#", "_");   // แยกวัสดุตามสี ไม่ทับฟ้าของด่านอื่น
+            sky = LoadOrCreate($"{MatDir}/{skyName}.mat", Shader.Find("CozyFishing/SkyGradient"));
             var fogC = Hex(look.fog);
             sky.SetColor("_Horizon", fogC); sky.SetColor("_Ground", fogC * 0.9f);
             sky.SetColor("_Zenith", Hex(look.skyTint ?? "#7a8490"));

@@ -38,6 +38,12 @@ Each adapted image keeps the license of its source (CC BY-SA images stay CC BY-S
 | ปลากระทุงเหว (Freshwater garfish) | [Xenentodon cancila (Hamilton- Buchanan).jpg](https://commons.wikimedia.org/wiki/File:Xenentodon_cancila_(Hamilton-_Buchanan).jpg) | Nilesh Heda | Public domain |
 | ปลาเค้าขาว (Wallago catfish) | [Wallago attu illustration.jpg](https://commons.wikimedia.org/wiki/File:Wallago_attu_illustration.jpg) | The Great Mule of Eupatoria | CC BY-SA 4.0 |
 | ปลากระโห้ผีแพ (Ghost giant barb) | [Cyprinidae Catlocarpio siamensis 2.jpg](https://commons.wikimedia.org/wiki/File:Cyprinidae_Catlocarpio_siamensis_2.jpg) | NasserHalaweh | CC BY-SA 4.0 |
+| ปลาแป้นแก้ว (Siamese glassfish) | [Parambassis siamensis.jpg](https://commons.wikimedia.org/wiki/File:Parambassis_siamensis.jpg) | Dimas Angga Hedianto | CC BY 3.0 |
+| ปลากระดี่มุก (Pearl gourami) | [Trichopodus leerii h080.jpg](https://commons.wikimedia.org/wiki/File:Trichopodus_leerii_h080.jpg) | h080 | CC BY-SA 2.0 |
+| ปลาหมอช้างเหยียบ (Striped tigernose) | [DKoehl Pristolepis fasciata 2022-12-04.jpg](https://commons.wikimedia.org/wiki/File:DKoehl_Pristolepis_fasciata_2022-12-04.jpg) | Dan Koehl | CC BY 3.0 |
+| ปลาหลด (Spotted spiny eel) | [Macrognathus-siamensis-UF-236679-Zachary-Randall.jpg](https://commons.wikimedia.org/wiki/File:Macrognathus-siamensis-UF-236679-Zachary-Randall.jpg) | Zachary Randall, Florida Museum | CC BY 4.0 |
+| ปลาตองลาย (Royal knifefish) | [Shanghai Ocean Aquarium - Chitala blanci 1.jpg](https://commons.wikimedia.org/wiki/File:Shanghai_Ocean_Aquarium_-_Chitala_blanci_1.jpg) | This illustration was made by Peter Potrowl. Please credit t | CC BY 3.0 |
+| ปลาช่อนงูเห่า (Cobra snakehead) | [Ophiocephalus marulius juv Ford 76.jpg](https://commons.wikimedia.org/wiki/File:Ophiocephalus_marulius_juv_Ford_76.jpg) | George Henry Ford | Public domain |
 
 ## Other assets
 

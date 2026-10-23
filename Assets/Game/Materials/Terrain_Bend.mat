@@ -1,0 +1,70 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Terrain_Bend
+  m_Shader: {fileID: 4800000, guid: fd4d768b2effaea4c97583aa2198225f, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _GrassMap:
+        m_Texture: {fileID: 2800000, guid: 24b9b86e6a87b974d96c00c28cf0ba0c, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _GrassNormal:
+        m_Texture: {fileID: 2800000, guid: 83e2e08ca2b0cdb46b00365e45a56185, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _GrassRough:
+        m_Texture: {fileID: 2800000, guid: 21d10a3e14dbb6d47b94b522fd1926f0, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MudMap:
+        m_Texture: {fileID: 2800000, guid: 014a444fa4c091444b44192dcb3c2eec, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MudNormal:
+        m_Texture: {fileID: 2800000, guid: a375b7a3cc1e1284482744ba333eb1c6, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MudRough:
+        m_Texture: {fileID: 2800000, guid: db9e95a74c0c6c94c9a4f1b6885aa423, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _PathMap:
+        m_Texture: {fileID: 2800000, guid: 24b9b86e6a87b974d96c00c28cf0ba0c, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _PathNormal:
+        m_Texture: {fileID: 2800000, guid: 83e2e08ca2b0cdb46b00365e45a56185, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _PathRough:
+        m_Texture: {fileID: 2800000, guid: 21d10a3e14dbb6d47b94b522fd1926f0, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _NormalStrength: 1
+    m_Colors:
+    - _GrassTint: {r: 0.41568628, g: 0.47843137, b: 0.34509805, a: 1}
+    - _MountTint: {r: 0.2901961, g: 0.3529412, b: 0.26666668, a: 1}
+    - _Tiles: {r: 0.35, g: 0.4, b: 0.3, a: 0.03}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1
