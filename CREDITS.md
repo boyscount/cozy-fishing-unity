@@ -44,6 +44,12 @@ Each adapted image keeps the license of its source (CC BY-SA images stay CC BY-S
 | ปลาหลด (Spotted spiny eel) | [Macrognathus-siamensis-UF-236679-Zachary-Randall.jpg](https://commons.wikimedia.org/wiki/File:Macrognathus-siamensis-UF-236679-Zachary-Randall.jpg) | Zachary Randall, Florida Museum | CC BY 4.0 |
 | ปลาตองลาย (Royal knifefish) | [Shanghai Ocean Aquarium - Chitala blanci 1.jpg](https://commons.wikimedia.org/wiki/File:Shanghai_Ocean_Aquarium_-_Chitala_blanci_1.jpg) | This illustration was made by Peter Potrowl. Please credit t | CC BY 3.0 |
 | ปลาช่อนงูเห่า (Cobra snakehead) | [Ophiocephalus marulius juv Ford 76.jpg](https://commons.wikimedia.org/wiki/File:Ophiocephalus_marulius_juv_Ford_76.jpg) | George Henry Ford | Public domain |
+| ปลาค้อถ้ำ (Cave loach) | [Spotback Loach, Sri Lanka imported from iNaturalist photo 58771249.jpg](https://commons.wikimedia.org/wiki/File:Spotback_Loach,_Sri_Lanka_imported_from_iNaturalist_photo_58771249.jpg) | (c) Pieter Prins, some rights reserved (CC BY-SA) | CC BY-SA 4.0 |
+| ปลาจาด (Hill barb) | [Poropuntius huguenini Bleeker.jpg](https://commons.wikimedia.org/wiki/File:Poropuntius_huguenini_Bleeker.jpg) | Published by Zoologische Mededelingen, at http://www.zoologi | CC BY 3.0 |
+| ปลาผีเสื้อติดหิน (Hillstream loach) | [Hillstream Loach.JPG](https://commons.wikimedia.org/wiki/File:Hillstream_Loach.JPG) | Spiketooth | CC BY-SA 3.0 |
+| ปลาหมูเส้นดำ (Black-lined loach) | [Yasuhikotakia nigrolineata.jpg](https://commons.wikimedia.org/wiki/File:Yasuhikotakia_nigrolineata.jpg) | Lerdsuwa | CC BY-SA 3.0 |
+| ปลาพลวงหิน (Mahseer) | [Neolissochilus hexagonolepis.jpg](https://commons.wikimedia.org/wiki/File:Neolissochilus_hexagonolepis.jpg) | Ben Laloo | CC BY 3.0 |
+| ปลาผีเสื้อถ้ำตาบอด (Waterfall-climbing cavefish) | [Cryptotora thamicola 2.jpg](https://commons.wikimedia.org/wiki/File:Cryptotora_thamicola_2.jpg) | Chulabush Khatancharoen | CC BY 2.5 |
 
 ## Other assets
 
