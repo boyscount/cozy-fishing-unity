@@ -23,9 +23,11 @@ namespace CozyFishing
         float saveT;
         IWorld world;
 
+        public static bool TitleDone;   // แสดงหน้าแรกครั้งเดียวต่อการเปิดเกม (กลับหน้าแรกได้จากหน้าเช้า)
         public void Begin(IWorld w)
         {
             world = w;
+            if (!TitleDone && !FishingController.Bot) { StartCoroutine(Title()); return; }
             // ทดสอบ: ?bot&day2 ข้ามไปเช้าวันที่ 2 (เปิดคดี) ทันทีเมื่อเริ่มเซฟใหม่
             if (FishingController.Bot && Application.absoluteURL.Contains("day2") && Story.S.day == 1 && Story.Phase == StoryPhase.New) { Story.S.day = 2; Story.Phase = StoryPhase.Morning; }
             // หลายด่าน: บ้านอยู่ในฉากบ่อทุ่งนา · ตกปลาด่านอื่นโหลดฉากของด่านนั้น
@@ -44,6 +46,34 @@ namespace CozyFishing
                 case StoryPhase.Morning: StartCoroutine(Morning("เช้าวันที่ " + Story.S.day, false, true)); break;
                 default: StartCoroutine(Morning("บ้านไม้หลังเล็ก ริมทุ่งนา…", true, true)); break;
             }
+        }
+
+        // ---------- หน้าแรก ----------
+        IEnumerator Title()
+        {
+            fishing.Paused = true;
+            while (true)
+            {
+                string pick = null;
+                string info = Story.HasStorySave ? $"คดีที่ {Mystery.M.chapter + 1} · วันที่ {Story.S.day}" : null;
+                hud.ShowTitle(info, k => pick = k);
+                while (pick == null) yield return null;
+                if (pick == "dex") { hud.OpenDexFromTitle(); continue; }
+                if (pick == "settings") { hud.ShowSettings(); continue; }
+                if (pick == "new" && Story.HasStorySave)
+                {
+                    bool? ok = null;
+                    hud.Ask("เริ่มการเดินทางใหม่? ความคืบหน้าเนื้อเรื่อง เงิน และคดีจะเริ่มต้นใหม่ (สมุดสะสมปลายังอยู่)", ("เริ่มใหม่", () => ok = true), ("ยกเลิก", () => ok = false));
+                    while (ok == null) yield return null;
+                    if (ok == false) continue;
+                }
+                if (pick == "new") { Story.Reset(); Mystery.ResetStory(); }
+                if (pick == "free") Story.EnterFreePlay();
+                break;
+            }
+            hud.HideTitle();
+            TitleDone = true;
+            Begin(world);
         }
 
         float Speed => FishingController.Bot ? 10f : 1f;    // โหมดทดสอบ: วันผ่านเร็ว 10 เท่า
@@ -114,8 +144,9 @@ namespace CozyFishing
             yield return hud.Fade(title, () => ShowHome(6.2f), null, fromBlack);
             if (intro) yield return hud.Dialog(Story.Intro);
             // สืบคดี: เช้าวันที่ 2 ลุงเปี๊ยกมาเล่าเรื่องแสงทองใต้กอบัว · ปิดคดีแล้วเช้าถัดมาเปิดบทต่อไปตามแผนที่ยายอิ่ม
-            Mystery.NextChapter();
-            if (!Mystery.Started && Story.S.day >= 2)
+            if (!Story.FreePlay) Mystery.NextChapter();
+            if (Story.FreePlay) { }
+            else if (!Mystery.Started && Story.S.day >= 2)
             {
                 var nc = Mystery.Current;
                 yield return hud.Dialog(nc.intro);
@@ -131,6 +162,11 @@ namespace CozyFishing
             string dest = null;
             hud.ShowMorning(id => dest = id, PayGoal);
             while (dest == null) yield return null;
+            if (dest == "__title")
+            {
+                busy = false; Story.ExitFreePlay(); TitleDone = false;
+                Begin(world); yield break;
+            }
             warned = false; fullAsked = false;
             Story.S.time = Story.DayStart;
             Story.S.stage = dest;
@@ -221,6 +257,14 @@ namespace CozyFishing
             }
             yield return hud.Fade(travel ? Stages.Get(Story.S.stage).back : "กลับถึงบ้านแล้ว…", () => ShowHome(Mathf.Max(Story.S.time, 17.6f)), Stages.Get("paddy").Art, !travel);   // !travel = เพิ่งโหลดฉากบ้านมาจากด่านอื่น
             Story.S.stage = "paddy";
+            if (Story.FreePlay)
+            {
+                var fr = Story.SettleEvening(new bool[Story.S.basket.Count]);
+                if (fr.earned > 0) hud.Toast($"ขายปลาได้ {Story.Baht(fr.earned)}");
+                Story.Sleep(rng);
+                StartCoroutine(Morning("ตกปลาอิสระ · วันใหม่", false));
+                yield break;
+            }
             bool[] choice = null;
             hud.ShowEvening(c => choice = c);
             while (choice == null) yield return null;

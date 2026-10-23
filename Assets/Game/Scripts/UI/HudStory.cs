@@ -22,7 +22,7 @@ namespace CozyFishing
         Action<bool[]> onEveningDone;
         bool[] eveGrill;
         bool dialogNext;
-        public bool ModalOpen => Shown(ask) || Shown(fadeEl) || Shown(dialogEl) || Shown(morning) || Shown(evening) || Shown(bag) || Shown(casePanel) || Shown(cluePop);
+        public bool ModalOpen => Shown(ask) || Shown(fadeEl) || Shown(dialogEl) || Shown(morning) || Shown(evening) || Shown(bag) || Shown(casePanel) || Shown(cluePop) || Shown(title) || Shown(settings);
         VisualElement caseBtn, casePanel, caseBody, cluePop, clueBody;
         Label caseBtnTxt;
 
@@ -391,7 +391,7 @@ namespace CozyFishing
             var s = Story.S;
             morningBody.Clear();
             var brown = new Color(0.24f, 0.14f, 0.06f); var cream = new Color(1f, 0.93f, 0.78f);
-            var title = L(morningBody, $"เช้าวันที่ {s.day}", 50, cream); title.style.unityFontDefinition = fontTitle; Shadow(title);
+            var title = L(morningBody, Story.FreePlay ? "ตกปลาอิสระ · เลือกที่ตกปลา" : $"เช้าวันที่ {s.day}", 50, cream); title.style.unityFontDefinition = fontTitle; Shadow(title);
             // ข่าวหมู่บ้าน: แผ่นกระดาษประกาศ (อากาศ · ราคาตลาด)
             VisualElement Notice(string text, Color col)
             {
@@ -400,9 +400,9 @@ namespace CozyFishing
             }
             Notice(Story.CurrentLuck.text, brown);
             var hot = s.hot != null ? FishDatabase.Get(s.hot) : null;
-            if (hot != null) Notice($"วันนี้แม่ค้ารับซื้อ{(FishDex.Has(hot.id) ? hot.name : "ปลาลึกลับ")}ราคาพิเศษ {Story.Baht(Story.PriceOf(hot.id))}/กก.", new Color(0.55f, 0.2f, 0.05f));
+            if (hot != null && !Story.FreePlay) Notice($"วันนี้แม่ค้ารับซื้อ{(FishDex.Has(hot.id) ? hot.name : "ปลาลึกลับ")}ราคาพิเศษ {Story.Baht(Story.PriceOf(hot.id))}/กก.", new Color(0.55f, 0.2f, 0.05f));
             // ป้ายไม้: เงินเก็บ · ความสุขครอบครัว
-            var stats = Row(morningBody); stats.style.marginTop = 10;
+            var stats = Row(morningBody); stats.style.marginTop = 10; stats.style.display = Story.FreePlay ? DisplayStyle.None : DisplayStyle.Flex;
             VisualElement Plaque(string icon, string text, Color col)
             {
                 var pl = new VisualElement { pickingMode = PickingMode.Ignore }; Skin(pl, "wood", 18); Pad(pl, 10, 22); pl.style.flexDirection = FlexDirection.Row; pl.style.alignItems = Align.Center;
@@ -414,6 +414,7 @@ namespace CozyFishing
             var g = Story.CurrentGoal;
             var gb = new VisualElement { pickingMode = PickingMode.Ignore }; Skin(gb, "bamboo_paper", 26); gb.style.paddingTop = 22; gb.style.paddingBottom = 24; gb.style.paddingLeft = 30; gb.style.paddingRight = 26;
             gb.style.marginTop = 12; gb.style.flexDirection = FlexDirection.Row; gb.style.alignItems = Align.Center; morningBody.Add(gb);
+            if (Story.FreePlay) gb.style.display = DisplayStyle.None;
             var gcol = new VisualElement { pickingMode = PickingMode.Ignore }; gcol.style.flexGrow = 1; gcol.style.flexShrink = 1; gb.Add(gcol);
             if (g != null)
             {
@@ -428,7 +429,7 @@ namespace CozyFishing
                 sk.style.backgroundImage = Resources.Load<Texture2D>("UI/Icons/" + (s.goal == 0 ? "goal_roof" : s.goal == 1 ? "goal_bike" : "goal_fair")); gb.Add(sk);
             }
             else L(gcol, "ทำครบทุกเป้าหมายแล้ว! ตกปลาสบาย ๆ ได้ตลอดไป", 26, brown);
-            if (!Story.RoofFixed) { var lk = L(morningBody, "หลังคาบ้านยังรั่วอยู่ เมื่อคืนต้องเอาถังรองน้ำฝน…", 22, cream, false); lk.style.marginTop = 8; Shadow(lk); }
+            if (!Story.RoofFixed && !Story.FreePlay) { var lk = L(morningBody, "หลังคาบ้านยังรั่วอยู่ เมื่อคืนต้องเอาถังรองน้ำฝน…", 22, cream, false); lk.style.marginTop = 8; Shadow(lk); }
             // เลือกที่ตกปลา: การ์ดกระดาษ + ภาพโพลารอยด์ปักหมุด · ความยาก · แว่นขยายถ้ามีคดีค้างที่ด่านนั้น
             var q = L(morningBody, "วันนี้จะไปตกปลาที่ไหน?", 34, cream); q.style.marginTop = 18; q.style.unityFontDefinition = fontTitle; Shadow(q);
             for (int si = 0; si < Stages.All.Length; si++)
@@ -450,7 +451,7 @@ namespace CozyFishing
                 int lvl = 1 + Mathf.RoundToInt(si * 4f / Mathf.Max(1, Stages.All.Length - 1));
                 L(tags, "ความยาก", 18, new Color(0.6f, 0.35f, 0.1f)).style.marginRight = 4;
                 for (int k = 0; k < 5; k++) Ico(tags, k < lvl ? "star_on" : "star_off", 20);
-                if (Mystery.Started && !Mystery.Solved && Mystery.Current.stage == st.id)
+                if (!Story.FreePlay && Mystery.Started && !Mystery.Solved && Mystery.Current.stage == st.id)
                 {
                     Ico(tags, "magnifier", 24).style.marginLeft = 12;
                     L(tags, $"มีคดีค้าง ({Mystery.CluesFound}/{Mystery.Current.clues.Length})", 18, new Color(0.55f, 0.12f, 0.08f)).style.marginLeft = 4;
@@ -468,6 +469,14 @@ namespace CozyFishing
                     WoodButton(bt, can); bt.SetEnabled(can); row.Add(bt);
                 }
             }
+            MorningBackButton();
+        }
+
+        void MorningBackButton()
+        {
+            var back = new Button(() => { Hide(morning); onMorningGo?.Invoke("__title"); }) { text = "กลับหน้าแรก" };
+            WoodButton(back, true); back.style.unityBackgroundImageTintColor = new Color(0.8f, 0.78f, 0.72f); back.style.alignSelf = Align.Center; back.style.marginTop = 16;
+            morningBody.Add(back);
         }
 
         // ปุ่มป้ายไม้เก่า (หน้าเช้า)

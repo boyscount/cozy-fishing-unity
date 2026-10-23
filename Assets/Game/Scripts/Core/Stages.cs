@@ -46,7 +46,7 @@ namespace CozyFishing
         };
 
         public static StageDef Get(string id) => All.FirstOrDefault(s => s.id == id) ?? All[0];
-        public static bool Unlocked(string id) => id == "paddy" || Story.S.unlocked.Contains(id);
+        public static bool Unlocked(string id) => id == "paddy" || Story.FreePlay || Story.S.unlocked.Contains(id);
         public static bool Buy(string id)
         {
             var s = Get(id);

@@ -97,7 +97,22 @@ namespace CozyFishing
             RollMarket(s, new Random());
             return s;
         }
-        public static void Save() { try { PlayerPrefs.SetString(Key, JsonUtility.ToJson(S)); PlayerPrefs.Save(); } catch (Exception) { } }
+        const string FreeKey = "cozy.free.v1";
+        /// โหมดตกปลาอิสระ: ทุกด่านเปิด ไม่มีเนื้อเรื่อง/คดี · บันทึกแยกจากเนื้อเรื่อง
+        public static bool FreePlay { get; private set; }
+        public static bool HasStorySave => S.day > 1 || Phase != StoryPhase.New;
+        public static void Save() { try { PlayerPrefs.SetString(FreePlay ? FreeKey : Key, JsonUtility.ToJson(S)); PlayerPrefs.Save(); } catch (Exception) { } }
+        public static void EnterFreePlay()
+        {
+            FreePlay = true;
+            StoryState f = null;
+            try { var json = PlayerPrefs.GetString(FreeKey, ""); if (!string.IsNullOrEmpty(json)) f = JsonUtility.FromJson<StoryState>(json); } catch (Exception) { }
+            if (f == null) { f = new StoryState(); RollMarket(f, new Random()); }
+            f.unlocked = Stages.All.Select(st => st.id).ToList();
+            f.phase = StoryPhase.Morning.ToString(); f.basket.Clear(); f.time = DayStart; f.bigBasket = true;
+            S = f; Save();
+        }
+        public static void ExitFreePlay() { if (!FreePlay) return; Save(); FreePlay = false; S = Load(); }
         public static void Reset(Random rng = null) { S = new StoryState(); RollMarket(S, rng ?? new Random()); Save(); }
         public static void UseForTests(StoryState s) => S = s;
         public static StoryPhase Phase { get => Enum.TryParse<StoryPhase>(S.phase, out var p) ? p : StoryPhase.New; set { S.phase = value.ToString(); Save(); } }

@@ -8,7 +8,11 @@ namespace CozyFishing
     // ปลาติดเบ็ด (ตีเบ็ด/สู้ปลา) → กล้องโผล่กลับขึ้นผิวน้ำ · น้ำตื้นเกินไปไม่ดำ
     public class UnderwaterView : MonoBehaviour
     {
-        public static bool Enabled = true;
+        public static bool Enabled
+        {
+            get { try { return PlayerPrefs.GetInt("abot.uw", 1) == 1; } catch (System.Exception) { return true; } }
+            set { try { PlayerPrefs.SetInt("abot.uw", value ? 1 : 0); PlayerPrefs.Save(); } catch (System.Exception) { } }
+        }
         IWorld world; FishingController fishing; CameraRig rig;
         System.Collections.Generic.List<GameObject> unders = new System.Collections.Generic.List<GameObject>(); GameObject bait; ParticleSystem motes; LineRenderer leader;
         ParticleSystem rays, leaves, lineBubbles, mudBubbles; GameObject bed; Transform[] weeds; Vector3 bedAt = new Vector3(9999, 0, 0);

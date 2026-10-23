@@ -204,7 +204,9 @@ namespace CozyFishing
         public static bool HasClue(string id) => M.clues.Contains(id);
         public static int CluesFound => Current.clues.Count(c => HasClue(c.id));
         public static bool ReadyToSolve => M.started && !M.solved && CluesFound == Current.clues.Length;
-        static bool Hunting => M.started && !M.solved;
+        static bool Hunting => M.started && !M.solved && !Story.FreePlay;
+        /// เริ่มการเดินทางใหม่: ล้างคดีทั้งหมด (ความลับของปลาที่รู้แล้วยังเก็บไว้ในสมุด)
+        public static void ResetStory() { var keep = M.secrets; M = new MysteryState { secrets = keep }; Save(); }
 
         static bool Fits(Clue c, float hour, bool nearSpecial, bool nearDock) =>
             hour >= c.hourFrom && hour < c.hourTo && (!c.nearSpecial || nearSpecial) && (!c.nearDock || nearDock);
