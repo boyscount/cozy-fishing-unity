@@ -263,7 +263,7 @@ namespace CozyFishing
             lineNum.parent.style.display = show ? DisplayStyle.Flex : DisplayStyle.None;
             if (!show) return;
             lineNum.text = deep ? m.ToString("0.0") : Mathf.RoundToInt(m).ToString();
-            lineNum.style.fontSize = deep ? 40 : 56;
+            lineNum.style.fontSize = deep ? 24 : 32;
             lineUnit.text = Loc.T(deep ? "ม. ลึก" : "ม.");   // ตั้งทุกเฟรม → แปลตรงนี้เลย (ตัวแปลอัตโนมัติไล่ตามไม่ทัน ไทยจะกะพริบ)
         }
         /// UnderwaterView ตั้งตอนดำลงใต้น้ำ (ความลึกน้ำตรงทุ่น) · -1 = แสดงระยะสายตามปกติ
@@ -343,9 +343,11 @@ namespace CozyFishing
             float size = TouchUi ? 230 : 170;
             // ระยะสาย: กรอบไม้พันเชือกแนวตั้งชิดขอบขวา เหนือปุ่มหลัก
             var lineBox = new VisualElement { pickingMode = PickingMode.Ignore }; Abs(lineBox, null, 30, null, 40 + size + 34); lineBox.style.alignItems = Align.Center;
-            lineBox.style.width = 92; lineBox.style.paddingTop = 22; lineBox.style.paddingBottom = 20; Skin(lineBox, "ropeframe", 20); root.Add(lineBox);
-            lineNum = L(lineBox, "0", 56, new Color(1f, 0.92f, 0.75f)); Shadow(lineNum);
-            lineUnit = L(lineBox, "ม.", 22, new Color(0.95f, 0.85f, 0.65f)); Shadow(lineUnit);
+            // ป้ายเล็กแนวนอน (ตัวเลข + หน่วย) ไม่กินที่จอ
+            lineBox.style.flexDirection = FlexDirection.Row; lineBox.style.alignItems = Align.FlexEnd;
+            lineBox.style.paddingTop = lineBox.style.paddingBottom = 10; lineBox.style.paddingLeft = lineBox.style.paddingRight = 16; Skin(lineBox, "ropeframe", 20); root.Add(lineBox);
+            lineNum = L(lineBox, "0", 32, new Color(1f, 0.92f, 0.75f)); Shadow(lineNum);
+            lineUnit = L(lineBox, "ม.", 16, new Color(0.95f, 0.85f, 0.65f)); Shadow(lineUnit); lineUnit.style.marginLeft = 4; lineUnit.style.marginBottom = 3;
             lineBox.style.display = DisplayStyle.None;
             actRing = new VisualElement { pickingMode = PickingMode.Ignore }; Abs(actRing, null, 40 - 16, null, 40 - 16);
             actRing.style.width = actRing.style.height = size + 32; actRing.generateVisualContent += DrawRing; root.Add(actRing);
