@@ -17,10 +17,11 @@ namespace CozyFishing
         float nextDash, dashEnd;
         public event Action OnDash;
 
-        public FightModel(FishSpecies species, bool fiberRod, Random rng)
+        readonly float reelK;
+        public FightModel(FishSpecies species, bool fiberRod, Random rng, float rodTension = 1f, float reelSpeed = 1f)
         {
             sp = species; this.rng = rng;
-            rodK = fiberRod ? 0.8f : 1f;
+            rodK = (fiberRod ? 0.8f : 1f) * rodTension; reelK = reelSpeed;
             nextDash = 1f + (float)rng.NextDouble() * 1.5f;
         }
 
@@ -46,7 +47,7 @@ namespace CozyFishing
             if (reeling)
             {
                 Tension += (0.35f + pull * 0.5f) * rodK * dt;
-                Progress += sp.prog * dt * (InZone ? 1f : 0.35f) - (Dashing ? sp.dash * 0.06f * dt : 0f);
+                Progress += sp.prog * reelK * dt * (InZone ? 1f : 0.35f) - (Dashing ? sp.dash * 0.06f * dt : 0f);
             }
             else
             {

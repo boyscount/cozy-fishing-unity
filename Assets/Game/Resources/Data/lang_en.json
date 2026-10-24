@@ -1,6 +1,354 @@
 {
 "items": [
 {
+"th": "ซื้อของ",
+"en": "Buy"
+},
+{
+"th": "ร้านลุงส้ม",
+"en": "Uncle Som's Shop"
+},
+{
+"th": "เงินเก็บ",
+"en": "Savings"
+},
+{
+"th": "ซื้อเพิ่ม",
+"en": "Buy more"
+},
+{
+"th": "ใช้เหยื่อนี้",
+"en": "Use this bait"
+},
+{
+"th": "ซื้อ",
+"en": "Buy"
+},
+{
+"th": "ราคา {0}",
+"en": "Price {0}"
+},
+{
+"th": "ราคา {0} · {1}",
+"en": "Price {0} \u00b7 {1}"
+},
+{
+"th": "ลุงส้ม: {0}",
+"en": "Uncle Som: {0}"
+},
+{
+"th": "ต้องมีคันขั้นก่อนหน้า",
+"en": "Need the previous rod first"
+},
+{
+"th": "ต้องมีรอกขั้นก่อนหน้า",
+"en": "Need the previous reel first"
+},
+{
+"th": "มีครบ 5 เส้นแล้ว",
+"en": "Already have 5"
+},
+{
+"th": "เงินไม่พอ",
+"en": "Not enough money"
+},
+{
+"th": "จะไปน้ำลึกตอนกลางคืนรึ? เอาสายสิญจน์ติดตัวไป ผีจะไม่กล้าเข้าใกล้",
+"en": "Heading to deep water at night, eh? Take a sacred thread \u2014 the spirits won't dare come close"
+},
+{
+"th": "ทำบุญกรวดน้ำให้เขาเสียหน่อย คืนนี้จะได้ตกปลาสบายใจ",
+"en": "Make some merit for them, and you'll fish with an easy heart tonight"
+},
+{
+"th": "คันดี ๆ เหวี่ยงไกล ปลาใหญ่ก็ไม่หลุดมือนะหลาน",
+"en": "A good rod casts far, and the big ones won't slip away, kiddo"
+},
+{
+"th": "กุ้งเป็นเพิ่งช้อนมาเมื่อเช้า ปลาหายากชอบนักแล",
+"en": "Live shrimp, scooped this morning \u2014 the rare ones love it"
+},
+{
+"th": "ตกปลากลางคืนต้องมีของกันตัวไว้ ลุงเห็นมาเยอะแล้ว",
+"en": "Fishing at night, you need something to protect you. I've seen plenty"
+},
+{
+"th": "ซื้อของเข้าบ้านบ้าง ลูกเมียจะได้ยิ้มออก",
+"en": "Buy something for the house \u2014 the family will smile again"
+},
+{
+"th": "ตู้เย็นประตูเดียว",
+"en": "Single-Door Fridge"
+},
+{
+"th": "ครอบครัวสุขขึ้นทุกเช้า · เก็บปลาไว้กินได้นาน",
+"en": "Family happier every morning \u00b7 fish keeps longer"
+},
+{
+"th": "ทาสีบ้านใหม่ทั้งหลัง",
+"en": "Repaint the Whole House"
+},
+{
+"th": "ครอบครัวสุขขึ้นทุกเช้า · บ้านดูอบอุ่นขึ้น",
+"en": "Family happier every morning \u00b7 the house feels warmer"
+},
+{
+"th": "โทรทัศน์ขาวดำ",
+"en": "Black-and-White TV"
+},
+{
+"th": "ครอบครัวสุขขึ้นทุกเช้า · เพื่อนบ้านมาดูละครด้วย",
+"en": "Family happier every morning \u00b7 neighbours come to watch soaps"
+},
+{
+"th": "ส่งลูกเรียนพิเศษในเมือง",
+"en": "Tutoring in Town for Your Child"
+},
+{
+"th": "ครอบครัวสุขขึ้นทุกเช้า · ลูกได้เรียนสูงอย่างที่ฝัน",
+"en": "Family happier every morning \u00b7 your child can study as far as they dream"
+},
+{
+"th": "ต่อเติมชานบ้านริมน้ำ",
+"en": "Riverside Veranda Extension"
+},
+{
+"th": "ครอบครัวสุขขึ้นทุกเช้า · นั่งดูพระอาทิตย์ตกด้วยกัน",
+"en": "Family happier every morning \u00b7 watching sunsets together"
+},
+{
+"th": "เมื่อกี้… มีใครยืนอยู่ฝั่งโน้นหรือเปล่า?",
+"en": "Just now\u2026 was someone standing on the far bank?"
+},
+{
+"th": "ร้านโชห่วยป้าแจ่ม",
+"en": "Auntie Jaem's General Store"
+},
+{
+"th": "เบ็ดและรอก",
+"en": "Rods & Reels"
+},
+{
+"th": "เหยื่อ",
+"en": "Bait"
+},
+{
+"th": "กันผี",
+"en": "Ghost Wards"
+},
+{
+"th": "ของในบ้าน",
+"en": "Home"
+},
+{
+"th": "กลับ",
+"en": "Back"
+},
+{
+"th": "คันเบ็ดไฟเบอร์",
+"en": "Fiberglass Rod"
+},
+{
+"th": "เหวี่ยงไกล 22 ม. · สายตึงช้าลงนิดหน่อย",
+"en": "Casts 22 m \u00b7 line tightens a little slower"
+},
+{
+"th": "คันคาร์บอนเบา",
+"en": "Light Carbon Rod"
+},
+{
+"th": "เหวี่ยงไกล 26 ม. · สู้ปลาใหญ่ได้ดีขึ้น",
+"en": "Casts 26 m \u00b7 handles big fish better"
+},
+{
+"th": "คันเบ็ดครูช่างฝีมือ",
+"en": "Master Craftsman's Rod"
+},
+{
+"th": "เหวี่ยงไกล 30 ม. · สายตึงช้าที่สุด",
+"en": "Casts 30 m \u00b7 line tightens slowest"
+},
+{
+"th": "รอกสปินนิ่ง",
+"en": "Spinning Reel"
+},
+{
+"th": "กรอสายเร็วขึ้น 15%",
+"en": "Reels in 15% faster"
+},
+{
+"th": "รอกเบทคาสติ้ง",
+"en": "Baitcasting Reel"
+},
+{
+"th": "กรอสายเร็วขึ้น 30%",
+"en": "Reels in 30% faster"
+},
+{
+"th": "รอกทองเหลืองโบราณ",
+"en": "Antique Brass Reel"
+},
+{
+"th": "กรอสายเร็วขึ้น 45%",
+"en": "Reels in 45% faster"
+},
+{
+"th": "กุ้งเป็น (10 ตัว)",
+"en": "Live Shrimp (10)"
+},
+{
+"th": "ปลาหายากและปลาดาวสูงชอบ โอกาสเจอสูงขึ้น",
+"en": "Rare and high-star fish love it \u2014 better odds"
+},
+{
+"th": "รำข้าวปั้น (10 ก้อน)",
+"en": "Rice-Bran Balls (10)"
+},
+{
+"th": "ปลากินเหยื่อเร็วขึ้นราวหนึ่งในสาม",
+"en": "Fish bite about a third sooner"
+},
+{
+"th": "กบน้อย (10 ตัว)",
+"en": "Little Frogs (10)"
+},
+{
+"th": "ล่อปลาตัวใหญ่ น้ำหนักเฉลี่ยมากขึ้น",
+"en": "Lures bigger fish \u2014 heavier on average"
+},
+{
+"th": "ตะเกียงน้ำมันอย่างดี",
+"en": "Fine Oil Lantern"
+},
+{
+"th": "แสงสว่างกว้างขึ้น · สติลดช้าลง 15%",
+"en": "Wider light \u00b7 nerve drains 15% slower"
+},
+{
+"th": "ไฟฉายถ่านก้อนใหญ่",
+"en": "Big-Battery Flashlight"
+},
+{
+"th": "ส่องไกลขึ้น · ถ่านอยู่ได้นานขึ้นเกือบเท่าตัว",
+"en": "Shines farther \u00b7 battery lasts almost twice as long"
+},
+{
+"th": "สายสิญจน์",
+"en": "Sacred Thread"
+},
+{
+"th": "ดึงสติกลับมาได้หนึ่งครั้งเมื่อสติหมด (มีได้ 5 เส้น)",
+"en": "Pulls your nerve back once when it runs out (hold up to 5)"
+},
+{
+"th": "ทำบุญที่วัด",
+"en": "Make Merit at the Temple"
+},
+{
+"th": "คืนนี้ผีทุกด่านดุน้อยลงครึ่งหนึ่ง",
+"en": "Tonight every ghost is half as fierce"
+},
+{
+"th": "มุ้งผืนใหม่",
+"en": "New Mosquito Net"
+},
+{
+"th": "ครอบครัวสุขขึ้นทุกเช้า",
+"en": "Family a little happier every morning"
+},
+{
+"th": "พัดลมตั้งพื้น",
+"en": "Standing Fan"
+},
+{
+"th": "ตู้กับข้าวมุ้งลวด",
+"en": "Screened Food Cupboard"
+},
+{
+"th": "วิทยุทรานซิสเตอร์",
+"en": "Transistor Radio"
+},
+{
+"th": "ครอบครัวสุขขึ้นทุกเช้า · ฟังข่าวพยากรณ์อากาศ",
+"en": "Family happier every morning \u00b7 weather news on air"
+},
+{
+"th": "ตู้โชว์สมุดสะสมปลา",
+"en": "Fish Book Display Cabinet"
+},
+{
+"th": "ครอบครัวสุขขึ้นทุกเช้า · ลูกภูมิใจในพ่อ",
+"en": "Family happier every morning \u00b7 your child is proud of you"
+},
+{
+"th": "มีแล้ว",
+"en": "Owned"
+},
+{
+"th": "ทำบุญวันนี้แล้ว",
+"en": "Done today"
+},
+{
+"th": "ใช้",
+"en": "Use"
+},
+{
+"th": "ใช้ไส้เดือน",
+"en": "Use worms"
+},
+{
+"th": "เหยื่อที่ใช้อยู่: {0}",
+"en": "Bait in use: {0}"
+},
+{
+"th": "ไส้เดือนขุดเองฟรี ใช้ได้ไม่จำกัด",
+"en": "Worms you dig yourself \u2014 free and unlimited"
+},
+{
+"th": "เหลือ {0} ตัว · ใช้ทีละตัวเมื่อได้ปลา",
+"en": "{0} left \u00b7 one is used per fish caught"
+},
+{
+"th": "ไส้เดือน",
+"en": "Worms"
+},
+{
+"th": "กุ้งเป็น",
+"en": "Live shrimp"
+},
+{
+"th": "รำข้าวปั้น",
+"en": "Rice-bran balls"
+},
+{
+"th": "กบน้อย",
+"en": "Little frogs"
+},
+{
+"th": "{0} · มี {1}",
+"en": "{0} \u00b7 have {1}"
+},
+{
+"th": "{0} · มี {1}/5",
+"en": "{0} \u00b7 have {1}/5"
+},
+{
+"th": "ซื้อ {0}",
+"en": "Buy {0}"
+},
+{
+"th": "ซื้อ{0}แล้ว!",
+"en": "Bought {0}!"
+},
+{
+"th": "ถวายสังฆทาน กรวดน้ำให้ดวงวิญญาณ… คืนนี้ใจสงบขึ้น",
+"en": "You offer alms and pour water for the spirits\u2026 tonight your mind is calmer"
+},
+{
+"th": "เหยื่อหมดแล้ว กลับไปใช้ไส้เดือน",
+"en": "Out of bait \u2014 back to worms"
+},
+{
 "th": "ดุน้อย",
 "en": "Mild"
 },

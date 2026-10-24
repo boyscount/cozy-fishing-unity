@@ -24,11 +24,12 @@ namespace CozyFishing
                 * (s.stars >= 3 ? 0.6f + d * 0.5f : 1f)
                 * (nearSpecial && s.stars >= 2 ? 1.4f : 1f)
                 * (s.time == "any" ? 1f : s.time == per ? 2.2f : 0.6f)
-                * (s.stars >= 3 ? 1f + haunt * (s.rare ? 6f : 3f) : 1f)).ToArray();
+                * (s.stars >= 3 ? 1f + haunt * (s.rare ? 6f : 3f) : 1f)
+                * (s.rare || s.stars >= 3 ? Shop.RareMul : 1f)).ToArray();   // เหยื่อกุ้งเป็น: ปลาหายาก/ดาวสูงเข้าบ่อยขึ้น
             var r = rng.NextDouble() * w.Sum();
             var sp = pool[0];
             for (int i = 0; i < w.Length; i++) { r -= w[i]; if (r <= 0) { sp = pool[i]; break; } }
-            var t = (float)Math.Min(1, Math.Pow(rng.NextDouble(), 1.6) * (0.8 + d * 0.25));
+            var t = (float)Math.Min(1, Math.Pow(rng.NextDouble(), 1.6) * (0.8 + d * 0.25) + Shop.SizeBoost);   // เหยื่อกบ: ตัวใหญ่ขึ้น
             return new Catch
             {
                 species = sp,

@@ -36,6 +36,11 @@ namespace CozyFishing
         public List<string> unlocked = new List<string>();  // ด่านที่ซื้อทางไปแล้ว (บ่อทุ่งนาเปิดเสมอ)
         public int caught, junk, sold, grilled, empty, earned;
         public int amulets;                                  // สายสิญจน์/เหรียญขวัญถุง (ตกได้กลางคืน) กันผี
+        // ร้านโชห่วย (Shop.cs): ขั้นคัน/รอก · เหยื่อที่ใช้อยู่ + จำนวนคงเหลือ · วันที่ทำบุญ · ของถาวร (ตะเกียง ไฟฉาย ของในบ้าน)
+        public int rod, reel, baitShrimp, baitBran, baitFrog, meritDay = -1;
+        public string bait = "worm";
+        public List<string> items = new List<string>();
+        public bool glimpsed;                                // เห็นผีแวบ ๆ ครั้งแรกแล้ว (เย็นวันแรก)
     }
 
     public class EveningResult
@@ -132,7 +137,9 @@ namespace CozyFishing
             var sp = FishDatabase.Get(id);
             return sp == null ? 0 : (int)Math.Round(sp.price * MarketMul(id) * (S.hot == id ? HotMul : 1));
         }
-        public static int Value(BasketFish f) => (int)Math.Round(f.kg * PriceOf(f.id));
+        // ปลาตัวโตมาก (เกิน 5 กก.) ราคาต่อกิโลลดหลั่น: ปลาตำนาน 100 กก. ยังเป็นรางวัลใหญ่ แต่ไม่ทำให้เงินล้นจนของในร้านไร้ค่า
+        public static float SellKg(float kg) => kg <= 5f ? kg : 5f + (float)Math.Pow(kg - 5f, 0.6);
+        public static int Value(BasketFish f) => (int)Math.Round(SellKg(f.kg) * PriceOf(f.id));
         public static int BasketValue => S.basket.Sum(Value);
         public static string Trend(string id) { var m = MarketMul(id) * (S.hot == id ? HotMul : 1); return m >= 1.12f ? "up" : m <= 0.88f ? "down" : "flat"; }
 
@@ -202,7 +209,7 @@ namespace CozyFishing
         public static bool CanPayGoal => CurrentGoal != null && S.money >= CurrentGoal.cost && (S.goal < 2 || Mystery.AllSolved);   // งานวัดต้องไขคดีตามแผนที่ยายอิ่มครบทุกบทก่อน
         public static bool PayGoal() { if (!CanPayGoal) return false; S.money -= CurrentGoal.cost; S.goal++; Save(); return true; }
 
-        public static void Sleep(Random rng) { S.day++; RollDay(rng); Phase = StoryPhase.Morning; }
+        public static void Sleep(Random rng) { S.day++; RollDay(rng); Shop.MorningHappiness(); Phase = StoryPhase.Morning; }
 
         public static string FmtTime(float h) { h %= 24; return $"{(int)h:00}:{(int)((h % 1) * 60):00}"; }   // หลังเที่ยงคืน (เวลาเกิน 24) แสดงเป็น 00:xx, 01:xx …
         public static string Baht(int n) => "฿" + n.ToString("N0");

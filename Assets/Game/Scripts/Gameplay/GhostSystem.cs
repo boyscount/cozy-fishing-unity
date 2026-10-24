@@ -39,7 +39,7 @@ namespace CozyFishing
         enum S { Hidden, Appearing, Approach, Near, Leaving }
         IWorld world; FishingController fishing; Hud hud; StoryDirector director;
         Def def; Transform ghost; Material mat; S state = S.Hidden;
-        float timer, cooldown = 8, alpha, stare, expose, warpT, nightAnnounced;
+        float timer, cooldown = 8, alpha, stare, expose, warpT, nightAnnounced, glimpseT;
         Vector3 pos; bool stoleOrSnapped;
         Light lantern, flash, aura; AudioSource heart;
         readonly List<ParticleSystem> dimPs = new List<ParticleSystem>(); readonly List<Light> dimLights = new List<Light>(); readonly List<float> dimLightBase = new List<float>();
@@ -226,7 +226,7 @@ namespace CozyFishing
             float dt = Time.deltaTime;
             var cam = Camera.main ? Camera.main.transform : null;
             // ตะเกียง/ไฟฉาย
-            lantern.enabled = IsNight;
+            lantern.enabled = IsNight; lantern.range = Shop.LanternRange;   // ตะเกียงน้ำมันอย่างดีจากร้าน: สว่างกว้างขึ้น
             if (lantern.enabled)
             {
                 var p = fishing.player.Pos; lantern.transform.position = p + Vector3.up * 1.3f + fishing.player.Forward * 0.35f;
@@ -237,17 +237,33 @@ namespace CozyFishing
             if (UnityEngine.InputSystem.Keyboard.current != null && UnityEngine.InputSystem.Keyboard.current.fKey.wasPressedThisFrame && IsNight) FlashOn = !FlashOn;
             if (FlashOn && Battery <= 0) { FlashOn = false; hud.Toast("ไฟฉายแบตหมด…"); }
             flash.enabled = FlashOn && cam != null;
-            if (flash.enabled) { flash.transform.SetPositionAndRotation(cam.position, cam.rotation); Battery = Mathf.Max(0, Battery - dt * 4f); }
+            if (flash.enabled) { flash.transform.SetPositionAndRotation(cam.position, cam.rotation); Battery = Mathf.Max(0, Battery - dt * 4f * Shop.BatteryDrainMul); flash.range = Shop.FlashRange; }
 
             if (cineT >= 0 && (hud.ModalOpen || hud.CardOpen)) cineT = cineLen;   // มีหน้าต่างเด้งขึ้น → จบฉากผีทันที
             if (cineRestore && cineCam != null) { cineRestore = false; cineCam.transform.SetPositionAndRotation(cineBasePos, cineBaseRot); }   // คืนตำแหน่งกล้องก่อนกล้องหลักคำนวณเฟรมนี้
             if (!IsNight) revealedTonight = false;
+            if (def != null && !IsNight && !Story.FreePlay && !Story.S.glimpsed && Story.Phase == StoryPhase.Fishing && Story.S.time >= 17.2f && Story.S.time < NightFrom && !hud.ModalOpen && !hud.CardOpen && cam != null)
+            {   // ร่างซีดยืนนิ่งไกล ๆ ราวสองวินาทีแล้วหายไป
+                Story.S.glimpsed = true; Story.Save();
+                var f = cam.forward; f.y = 0; f = f.sqrMagnitude > 1e-4f ? f.normalized : Vector3.forward;
+                var gp = fishing.player.Pos + Quaternion.Euler(0, Random.Range(-25f, 25f), 0) * f * Mathf.Max(14f, def.dist * 1.4f);
+                gp.y = Mathf.Max(world.GroundH(gp.x, gp.z), world.WaterY); pos = gp;
+                ghost.gameObject.SetActive(true); ghost.position = gp; glimpseT = 2.6f;
+                sting.volume = 0.35f; sting.Play(); Sfx.GhostBuzz();
+                hud.Toast("เมื่อกี้… มีใครยืนอยู่ฝั่งโน้นหรือเปล่า?");
+            }
+            if (glimpseT > 0)
+            {
+                glimpseT -= dt; float a = Mathf.Sin(Mathf.Clamp01(1 - glimpseT / 2.6f) * Mathf.PI) * 0.65f;
+                mat.SetFloat("_Alpha", a); if (hairMat) hairMat.SetFloat("_Alpha", a);
+                if (glimpseT <= 0) { mat.SetFloat("_Alpha", 0); if (hairMat) hairMat.SetFloat("_Alpha", 0); if (state == S.Hidden) ghost.gameObject.SetActive(false); sting.volume = 0.8f; }
+            }
             if (!IsNight) { if (state != S.Hidden) Hide(); Sanity = Mathf.MoveTowards(Sanity, 100, dt * 10); Battery = 100; Publish(false, cam); return; }
             if (nightAnnounced == 0 && def != null) { nightAnnounced = 1; hud.Toast($"ค่ำแล้ว… ระวังให้ดี ที่นี่มี{def.name}"); }
             if (def == null) { Sanity = Mathf.MoveTowards(Sanity, 100, dt * 2); Publish(night, cam); return; }   // บ่อหลังบ้าน: ไม่มีผี
             Step(dt, cam);
             // เกจสติ
-            float drain = Fear * 7f * def.fear * (Story.S.amulets > 0 ? 0.55f : 1f);
+            float drain = Fear * 7f * def.fear * (Story.S.amulets > 0 ? 0.55f : 1f) * Shop.SanityDrainMul;   // ตะเกียงดี/ทำบุญ: สติลดช้าลง
             if (state == S.Hidden) Sanity = Mathf.Min(100, Sanity + dt * 2.5f); else Sanity -= drain * dt;
             if (Sanity <= 0)
             {
@@ -361,7 +377,7 @@ namespace CozyFishing
             }
             ghost.gameObject.SetActive(true); ghost.position = pos;
             alpha = 0; state = S.Appearing; timer = 0; stare = 0; expose = 0; warpT = 0; stoleOrSnapped = false;
-            StartReveal(cam, !revealedTonight);
+            StartReveal(cam, !revealedTonight); Sfx.GhostBuzz();
         }
 
         void StartReveal(Transform cam, bool full)

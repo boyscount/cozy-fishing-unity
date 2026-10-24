@@ -23,7 +23,7 @@ namespace CozyFishing
         Action<bool[]> onEveningDone;
         bool[] eveGrill;
         bool dialogNext;
-        public bool ModalOpen => Shown(ask) || Shown(fadeEl) || Shown(dialogEl) || Shown(morning) || Shown(evening) || Shown(bag) || Shown(casePanel) || Shown(cluePop) || Shown(title) || Shown(settings) || Shown(bed) || Shown(sneak);
+        public bool ModalOpen => Shown(ask) || Shown(fadeEl) || Shown(dialogEl) || Shown(morning) || Shown(evening) || Shown(bag) || Shown(casePanel) || Shown(cluePop) || Shown(title) || Shown(settings) || Shown(bed) || Shown(sneak) || Shown(shop);
         VisualElement caseBtn, casePanel, caseBody, cluePop, clueBody;
         Label caseBtnTxt;
 
@@ -402,6 +402,7 @@ namespace CozyFishing
             onMorningGo = go; onMorningPay = pay;
             RefreshMorning();
             Show(morning);
+            if (FishingController.Bot && Application.absoluteURL.Contains("openshop")) { Story.S.money = Mathf.Max(Story.S.money, 6000); RefreshMorning(); ShowShop(); return; }   // ทดสอบ: เปิดร้านโชห่วยทันที
             if (FishingController.Bot) StartCoroutine(BotClick(morning, 2.5f, () => { Hide(morning); onMorningGo?.Invoke(BotStage()); }));
         }
 
@@ -440,6 +441,9 @@ namespace CozyFishing
             }
             Plaque("coin", $"เงินเก็บ {Story.Baht(s.money)}", Money);
             Plaque("heart", $"ครอบครัว {(s.happy >= 75 ? "มีความสุข" : s.happy >= 40 ? "สบายดี" : "หิวโหย")} {s.happy}%", cream);
+            // ร้านโชห่วย: คันเบ็ด รอก เหยื่อ ของกันผี ของในบ้าน
+            var shopBtn = new Button(ShowShop) { text = "ร้านลุงส้ม" }; WoodButton(shopBtn, true); shopBtn.style.alignSelf = Align.Center; shopBtn.style.marginTop = 10;
+            shopBtn.style.unityBackgroundImageTintColor = new Color(1f, 0.82f, 0.55f); ButtonIcon(shopBtn, "coin", 30, Color.white); morningBody.Add(shopBtn);
             // เป้าหมายครอบครัว: กรอบไม้ไผ่บนกระดาษ + ภาพสเก็ตช์ของเป้าหมาย
             var g = Story.CurrentGoal;
             var gb = new VisualElement { pickingMode = PickingMode.Ignore }; Skin(gb, "bamboo_paper", 26); gb.style.paddingTop = 22; gb.style.paddingBottom = 24; gb.style.paddingLeft = 30; gb.style.paddingRight = 26;

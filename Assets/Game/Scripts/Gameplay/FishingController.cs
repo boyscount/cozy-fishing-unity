@@ -167,7 +167,7 @@ namespace CozyFishing
                     bob.y = y;
                     if (t > biteAt)
                     {
-                        Set(FishState.Bite);
+                        Set(FishState.Bite); Sfx.Bite();
                         biteEnd = fish.IsJunk ? 1.2f : fish.species.win;
                         WaterFx.AddRipple(bob.x, bob.z, 1.5f);
                     }
@@ -232,7 +232,7 @@ namespace CozyFishing
 
         void OnUp() { if (State == FishState.Charging) Cast(); }
 
-        public const float MaxCast = 18f;   // ง้างเต็มแรงเหวี่ยงได้ราว 18 ม.
+        public static float MaxCast => Shop.CastDist;   // ง้างเต็มแรง: คันไม้ไผ่ 18 ม. · คันจากร้านไกลขึ้นถึง 30 ม.
         Vector3 CastPoint(float c) { var f = player.Forward; float d = 1.3f + c * (MaxCast - 1.3f); return new Vector3(player.Pos.x + f.x * d, 0, player.Pos.z + f.z * d); }
 
         void Cast()
@@ -256,7 +256,8 @@ namespace CozyFishing
             if (o.HasValue) { fish = o.Value; return; }
             RollNormal();
         }
-        void RollNormal() => fish = Story.S.dead && rng.NextDouble() < 0.85
+        void RollNormal() => fish = Story.S.caught == 0 ? FishRoller.Roll(world.StageId, false, 1f, 0f, Story.S.time, rng)   // ตัวแรก: ปลาจริงเสมอ
+            : Story.S.dead && rng.NextDouble() < 0.85
             ? FishRoller.Roll(world.StageId, false, 0, 1f, Story.S.time, rng)
             : FishRoller.Roll(world.StageId, NearSpecial, world.DepthAt(bob.x, bob.z), Story.JunkChance, Story.S.time, rng, Haunt);
 
@@ -264,6 +265,7 @@ namespace CozyFishing
         {
             bob = target;
             if (!onWater) { hud.Toast("เหวี่ยงไม่ถึงน้ำ ลองใหม่นะ"); Set(FishState.Landed); return; }
+            Sfx.Plop();
             WaterFx.AddRipple(bob.x, bob.z, 1.2f);
             Roll(); NewBite();
             Set(FishState.Waiting);
@@ -272,7 +274,7 @@ namespace CozyFishing
 
         void NewBite()
         {
-            biteAt = t + (Bot && Application.absoluteURL.Contains("fastcatch") ? 1.5f : (2.2f + (float)rng.NextDouble() * 5.5f) * Story.BiteMul);
+            biteAt = t + (Bot && Application.absoluteURL.Contains("fastcatch") ? 1.5f : (Story.S.caught == 0 ? 1.2f + (float)rng.NextDouble() * 1.3f : (2.2f + (float)rng.NextDouble() * 5.5f) * Story.BiteMul * Shop.BiteMul));   // ตัวแรกของเกม: กินเร็ว ติดใจตั้งแต่เหวี่ยงแรก
             nibbles.Clear();
             int n = rng.Next(3);
             for (int i = 0; i < n; i++) nibbles.Add(biteAt - 0.6f - (float)rng.NextDouble() * 1.8f);
@@ -296,10 +298,10 @@ namespace CozyFishing
                 else hud.Toast($"ได้{fish.junk} …เก็บไปทิ้งให้น้ำสะอาด");
                 Roll(); StartRetrieve(); return;
             }
-            fight = new FightModel(fish.species, false, rng);
+            fight = new FightModel(fish.species, false, rng, Shop.RodTension, Shop.ReelSpeed);
             fight.OnDash += () => WaterFx.AddRipple(bob.x, bob.z, 1.2f);
             from = bob;
-            Set(FishState.Fight);
+            Set(FishState.Fight); Sfx.Strike();
         }
 
         float nextSplash;
@@ -318,7 +320,7 @@ namespace CozyFishing
             switch (r)
             {
                 case FightResult.Caught: OnCaught(); break;
-                case FightResult.Snapped: hud.Toast("สายขาด! ปลาหนีไปแล้ว "); Roll(); Set(FishState.Snapped); from = bob; flight = 0; break;
+                case FightResult.Snapped: hud.Toast("สายขาด! ปลาหนีไปแล้ว "); Sfx.Snap(); Roll(); Set(FishState.Snapped); from = bob; flight = 0; break;
                 case FightResult.Slack: hud.Toast("สายหย่อนเกินไป ปลาหลุด…"); Roll(); StartRetrieve(); break;
                 case FightResult.Escaped: hud.Toast("ปลาว่ายหนีไปได้…"); Roll(); StartRetrieve(); break;
             }
@@ -331,12 +333,13 @@ namespace CozyFishing
             caughtGo.transform.position = bob;
             from = bob;
             caughtIsNew = FishDex.Record(fish.species.id, fish.kg);
+            if (Shop.ActiveBait != "worm" && Shop.UseBait()) hud.Toast("เหยื่อหมดแล้ว กลับไปใช้ไส้เดือน");
             caughtClue = Mystery.OnCatch(world.StageId, fish.species.id, Story.S.time, NearSpecial, NearDock, rng);
             caughtSecret = Mystery.CheckCatchSecret(fish.species.id, fish.kg, Story.S.time, Story.S.luck);
             // ข้องเต็ม → ยังไม่ใส่ รอให้ผู้เล่นเลือกแลกหรือปล่อยในการ์ด
             var f = new BasketFish { id = fish.species.id, kg = fish.kg, cm = fish.cm };
             pending = f;   // ยังไม่ใส่ข้อง รอผู้เล่นกด "เก็บ" หรือ "ปล่อย" ในการ์ด
-            Set(FishState.Caught);
+            Set(FishState.Caught); Sfx.Splash();
         }
 
         BasketFish pending;
