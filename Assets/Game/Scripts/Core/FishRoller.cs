@@ -11,7 +11,8 @@ namespace CozyFishing
 
         public static string Period(float hour) => hour < 9.5f ? "morning" : hour >= 18.5f ? "night" : hour >= 15.5f ? "evening" : "day";
 
-        public static Catch Roll(string stage, bool nearSpecial, float depth, float junkChance, float hour, Random rng)
+        /// haunt 0..1 = มีวิญญาณปรากฏอยู่ → ปลา 3–4 ดาวและปลาตำนาน (อาถรรพ์) กินเบ็ดบ่อยขึ้นมาก
+        public static Catch Roll(string stage, bool nearSpecial, float depth, float junkChance, float hour, Random rng, float haunt = 0)
         {
             if (rng.NextDouble() < junkChance) return new Catch { junk = Junk[rng.Next(Junk.Length)] };
             var pool = FishDatabase.ForStage(stage).ToArray();
@@ -22,7 +23,8 @@ namespace CozyFishing
                 * (s.rare ? (nearSpecial ? 5f : 0.6f) : 1f)
                 * (s.stars >= 3 ? 0.6f + d * 0.5f : 1f)
                 * (nearSpecial && s.stars >= 2 ? 1.4f : 1f)
-                * (s.time == "any" ? 1f : s.time == per ? 2.2f : 0.6f)).ToArray();
+                * (s.time == "any" ? 1f : s.time == per ? 2.2f : 0.6f)
+                * (s.stars >= 3 ? 1f + haunt * (s.rare ? 6f : 3f) : 1f)).ToArray();
             var r = rng.NextDouble() * w.Sum();
             var sp = pool[0];
             for (int i = 0; i < w.Length; i++) { r -= w[i]; if (r <= 0) { sp = pool[i]; break; } }

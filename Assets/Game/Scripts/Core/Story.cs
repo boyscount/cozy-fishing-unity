@@ -35,6 +35,7 @@ namespace CozyFishing
         public string stage = "paddy";                     // ด่านที่กำลังตกปลาอยู่
         public List<string> unlocked = new List<string>();  // ด่านที่ซื้อทางไปแล้ว (บ่อทุ่งนาเปิดเสมอ)
         public int caught, junk, sold, grilled, empty, earned;
+        public int amulets;                                  // สายสิญจน์/เหรียญขวัญถุง (ตกได้กลางคืน) กันผี
     }
 
     public class EveningResult

@@ -58,17 +58,22 @@ public static class ProjectTools
         var scenes = new[] { MakeBootScene() };
         var outDir = Path.GetFullPath(Path.Combine(Application.dataPath, "..", "Builds", "WebGL"));
         var bundleDir = Path.Combine(outDir, "Bundles");
-        if (!BuildStageBundles(all, bundleDir)) { EditorApplication.Exit(1); return; }
+        // สร้าง bundle ในโฟลเดอร์แคชถาวร (Library/StageBundles) → ครั้งต่อไปสร้างใหม่เฉพาะด่านที่เปลี่ยน (แก้แค่โค้ด/UI แทบไม่เสียเวลา)
+        var cacheDir = Path.GetFullPath(Path.Combine(Application.dataPath, "..", "Builds", "BundleCache"));
+        if (!BuildStageBundles(all, cacheDir)) { EditorApplication.Exit(1); return; }
+        if (Directory.Exists(bundleDir)) Directory.Delete(bundleDir, true);
+        Directory.CreateDirectory(bundleDir);
+        foreach (var f in Directory.GetFiles(cacheDir))
+            if (!f.EndsWith(".manifest") && Path.GetFileName(f) != "BundleCache") File.Copy(f, Path.Combine(bundleDir, Path.GetFileName(f)), true);
         var report = BuildPipeline.BuildPlayer(new BuildPlayerOptions
         {
-            assetBundleManifestPath = Path.Combine(bundleDir, "Bundles.manifest"),   // อย่าตัดคลาส engine ที่ฉากใน bundle ใช้ (เช่น Avatar/Animator)
+            assetBundleManifestPath = Path.Combine(cacheDir, "BundleCache.manifest"),   // อย่าตัดคลาส engine ที่ฉากใน bundle ใช้ (เช่น Avatar/Animator)
             scenes = scenes,
             locationPathName = outDir,
             target = BuildTarget.WebGL,
             options = System.Environment.GetEnvironmentVariable("CLEAN_BUILD") == "1" ? BuildOptions.CleanBuildCache : BuildOptions.None,
         });
         var s = report.summary;
-        foreach (var f in Directory.GetFiles(bundleDir).Where(f => f.EndsWith(".manifest") || Path.GetFileName(f) == "Bundles")) File.Delete(f);
         Debug.Log($"[ProjectTools] build {s.result} size={s.totalSize / 1024 / 1024}MB time={s.totalTime} out={outDir}");
         // ขนาดแยกตามไฟล์ต้นทาง (ไว้หาว่าอะไรกินที่ใน .data)
         var top = report.packedAssets.SelectMany(p => p.contents).GroupBy(c => c.sourceAssetPath).Select(g => (path: g.Key, kb: g.Sum(c => (long)c.packedSize) / 1024)).OrderByDescending(t => t.kb).Take(60);
@@ -79,7 +84,7 @@ public static class ProjectTools
     // ด่านละหนึ่ง bundle (ชื่อ = ชื่อฉากตัวเล็ก) + index.json เก็บแฮชไว้ให้เบราว์เซอร์แคช/โหลดใหม่เมื่อด่านเปลี่ยน
     static bool BuildStageBundles(string[] scenePaths, string dir)
     {
-        if (Directory.Exists(dir)) Directory.Delete(dir, true);
+        if (System.Environment.GetEnvironmentVariable("CLEAN_BUILD") == "1" && Directory.Exists(dir)) Directory.Delete(dir, true);
         Directory.CreateDirectory(dir);
         // ของที่ใช้ตั้งแต่ 2 ฉากขึ้นไป → bundle "common" (โหลดครั้งเดียว) ไม่งั้นแต่ละด่านจะก๊อปตัวละคร/ฟ้า/พื้นผิวไปเองทั้งชุด
         var uses = new System.Collections.Generic.Dictionary<string, int>();
@@ -123,9 +128,23 @@ public static class ProjectTools
     }
 
     // ถ่ายภาพฉากจากมุมกล้องเกม (แนวนอน + แนวตั้ง) ด้วยคุณภาพระดับเดียวกับ WebGL — ใช้เทียบภาพโดยไม่ต้อง build
+    // ถ่ายภาพทุกด่าน (มุมกว้าง + มุมต่ำ) → Builds/snaps/<ด่าน>_land.png / _close.png
+    static string snapScene, snapPrefix = "snap_";
+    public static void SnapAll()
+    {
+        Directory.CreateDirectory("Builds/snaps");
+        foreach (var n in new[] { "Paddy", "Rapids", "Temple", "Marsh", "Houseboat", "Bend", "Cave", "Mangrove", "Headman" })
+        {
+            if (!File.Exists($"Assets/Game/Scenes/{n}.unity")) continue;
+            snapScene = n; snapPrefix = $"snaps/{n}_";
+            try { Snapshot(); } catch (System.Exception e) { Debug.LogError($"[ProjectTools] snap {n}: {e.Message}"); }
+        }
+        snapScene = null; snapPrefix = "snap_";
+    }
+
     public static void Snapshot()
     {
-        var sceneName = System.Environment.GetEnvironmentVariable("SNAP_SCENE");
+        var sceneName = snapScene ?? System.Environment.GetEnvironmentVariable("SNAP_SCENE");
         EditorSceneManager.OpenScene(string.IsNullOrEmpty(sceneName) ? EditorBuildSettings.scenes[0].path : $"Assets/Game/Scenes/{sceneName}.unity");
         QualitySettings.SetQualityLevel(0, true);
         ShaderUtil.allowAsyncCompilation = false;
@@ -147,7 +166,7 @@ public static class ProjectTools
         Shader.SetGlobalFloat("_CozyDim", 1);
         // รูปปลาจากกล้อง FishPreview (ปกติ + เงาดำ) ไว้ตรวจมุม/ขนาด
         var pv = Object.FindAnyObjectByType<CozyFishing.FishPreview>();
-        if (pv != null)
+        if (pv != null && snapScene == null)
         {
             typeof(CozyFishing.FishPreview).GetMethod("Awake", flags)?.Invoke(pv, null);
             Directory.CreateDirectory("Builds");
@@ -173,6 +192,7 @@ public static class ProjectTools
         Directory.CreateDirectory("Builds");
         foreach (var (name, w, h, k) in new[] { ("land", 1600, 900, 1f), ("port", 900, 1600, 1.6f), ("close", 1600, 900, 0f) })
         {
+            if (snapScene != null && name == "port") continue;
             if (k > 0) { cam.transform.position = focus + new Vector3(0, 10.5f * k, -15f * k); cam.transform.LookAt(focus + Vector3.up * 1.4f); }
             else if (iw != null && iw.StageId != "paddy") { var sp = iw.Spawn; cam.transform.position = sp + new Vector3(-7f, 3.2f, -4.5f); cam.transform.LookAt(sp + new Vector3(3f, 1.2f, 6f)); }   // มุมต่ำมองข้ามแม่น้ำ
             else if (System.Environment.GetEnvironmentVariable("SNAP_CLOSE") == "fisher") { cam.transform.position = new Vector3(5.5f, 2.6f, -12.2f); cam.transform.LookAt(new Vector3(1.5f, 1.2f, -7.4f)); }   // ซูมดูตัวละคร
@@ -185,7 +205,7 @@ public static class ProjectTools
             RenderTexture.active = rt;
             var tex = new Texture2D(w, h, TextureFormat.RGB24, false);
             tex.ReadPixels(new Rect(0, 0, w, h), 0, 0); tex.Apply();
-            File.WriteAllBytes($"Builds/snap_{name}.png", tex.EncodeToPNG());
+            File.WriteAllBytes($"Builds/{snapPrefix}{name}.png", tex.EncodeToPNG());
             cam.targetTexture = null; RenderTexture.active = null;
             Debug.Log($"[ProjectTools] snapshot Builds/snap_{name}.png");
         }

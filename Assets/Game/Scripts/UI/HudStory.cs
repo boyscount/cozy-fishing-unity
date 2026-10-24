@@ -22,7 +22,7 @@ namespace CozyFishing
         Action<bool[]> onEveningDone;
         bool[] eveGrill;
         bool dialogNext;
-        public bool ModalOpen => Shown(ask) || Shown(fadeEl) || Shown(dialogEl) || Shown(morning) || Shown(evening) || Shown(bag) || Shown(casePanel) || Shown(cluePop) || Shown(title) || Shown(settings);
+        public bool ModalOpen => Shown(ask) || Shown(fadeEl) || Shown(dialogEl) || Shown(morning) || Shown(evening) || Shown(bag) || Shown(casePanel) || Shown(cluePop) || Shown(title) || Shown(settings) || Shown(bed);
         VisualElement caseBtn, casePanel, caseBody, cluePop, clueBody;
         Label caseBtnTxt;
 
@@ -34,7 +34,7 @@ namespace CozyFishing
             Skin(cb, "clipboard", 40); cb.style.paddingTop = 76; cb.style.paddingBottom = 40; cb.style.paddingLeft = 58; cb.style.paddingRight = 58;
             var clip = new VisualElement { pickingMode = PickingMode.Ignore }; clip.style.width = 230; clip.style.height = 96;
             clip.style.backgroundImage = Resources.Load<Texture2D>("UI/Frames/clip"); Abs(clip, null, null, -18); clip.style.left = Length.Percent(50); clip.style.marginLeft = -115; cb.Add(clip);
-            var cs = new ScrollView(ScrollViewMode.Vertical); cs.style.flexGrow = 1; cs.style.flexShrink = 1; cb.Add(cs);
+            var cs = new ScrollView(ScrollViewMode.Vertical); cs.horizontalScrollerVisibility = ScrollerVisibility.Hidden; cs.style.flexGrow = 1; cs.style.flexShrink = 1; cb.Add(cs);
             caseBody = new VisualElement(); cs.Add(caseBody);
             var row = Row(cb); row.style.marginTop = 12;
             var solve = new Button(() => { Hide(casePanel); director?.TrySolve(); }) { text = "ไขคดี!", name = "solve" }; WoodButton(solve, true); solve.style.unityBackgroundImageTintColor = new Color(1f, 0.62f, 0.32f); row.Add(solve);
@@ -124,7 +124,7 @@ namespace CozyFishing
             // ข้องปลา
             bag = Overlay(out var bagBox, 760);
             bagTitle = L(bagBox, "", 32, Ink);
-            var bs = new ScrollView(ScrollViewMode.Vertical); bs.style.flexGrow = 1; bs.style.flexShrink = 1; bs.style.marginTop = 10; bagBox.Add(bs);
+            var bs = new ScrollView(ScrollViewMode.Vertical); bs.horizontalScrollerVisibility = ScrollerVisibility.Hidden; bs.style.flexGrow = 1; bs.style.flexShrink = 1; bs.style.marginTop = 10; bagBox.Add(bs);
             bagList = new VisualElement(); bs.Add(bagList);
             var bclose = new Button(() => Hide(bag)) { text = "ปิด" }; StyleButton(bclose, Gray); bclose.style.alignSelf = Align.Center; bclose.style.marginTop = 12; bagBox.Add(bclose);
 
@@ -132,19 +132,10 @@ namespace CozyFishing
             morning = Overlay(out var mBox, 900);
             morning.style.backgroundImage = Resources.Load<Texture2D>("UI/Frames/backdrop"); morning.style.backgroundSize = new BackgroundSize(BackgroundSizeType.Cover);
             mBox.style.backgroundColor = new Color(0, 0, 0, 0.18f); mBox.style.borderTopWidth = mBox.style.borderBottomWidth = mBox.style.borderLeftWidth = mBox.style.borderRightWidth = 0;
-            var ms = new ScrollView(ScrollViewMode.Vertical); ms.style.flexGrow = 1; ms.style.flexShrink = 1; mBox.Add(ms);
+            var ms = new ScrollView(ScrollViewMode.Vertical); ms.horizontalScrollerVisibility = ScrollerVisibility.Hidden; ms.style.flexGrow = 1; ms.style.flexShrink = 1; mBox.Add(ms);
             morningBody = new VisualElement(); ms.Add(morningBody);
 
-            // มื้อเย็น
-            evening = Overlay(out var eBox, 820);
-            L(eBox, "มื้อเย็นที่บ้าน · ปลาตัวไหนจะปิ้ง ตัวไหนจะขาย?", 30, Ink);
-            var es = new ScrollView(ScrollViewMode.Vertical); es.style.flexGrow = 1; es.style.flexShrink = 1; es.style.marginTop = 10; eBox.Add(es);
-            eveList = new VisualElement(); es.Add(eveList);
-            eveSum = new VisualElement { pickingMode = PickingMode.Ignore }; eveSum.style.flexShrink = 0; eveSum.style.marginTop = 10; eBox.Add(eveSum);
-            var eb = Row(eBox); eb.style.marginTop = 12;
-            var ga = new Button(() => { for (int i = 0; i < eveGrill.Length; i++) eveGrill[i] = true; FillEvening(); }) { text = "ปิ้งหมด" }; StyleButton(ga, new Color(0.85f, 0.45f, 0.2f)); eb.Add(ga);
-            var sa = new Button(() => { for (int i = 0; i < eveGrill.Length; i++) eveGrill[i] = false; FillEvening(); }) { text = "ขายหมด" }; StyleButton(sa, new Color(0.62f, 0.5f, 0.15f)); sa.style.marginLeft = 10; eb.Add(sa);
-            var ok = new Button(() => { Hide(evening); onEveningDone?.Invoke(eveGrill); }) { text = "ตกลง" }; StyleButton(ok, Green); ok.style.marginLeft = 10; eb.Add(ok);
+            BuildEvening();
 
             // กล่องบทสนทนา (ล่างจอ แตะ/กด Space ไปต่อ)
             dialogEl = new VisualElement { pickingMode = PickingMode.Position }; Abs(dialogEl, 0, 0, 0, 0); dialogEl.style.justifyContent = Justify.FlexEnd; dialogEl.style.alignItems = Align.Center; root.Add(dialogEl);
@@ -264,7 +255,7 @@ namespace CozyFishing
         // ---------- จอมืด: มืดลง → ทำงานระหว่างมืด → สว่างขึ้น ----------
         public IEnumerator Fade(string text, Action during, Texture2D art = null, bool fromBlack = false)
         {
-            fadeTxt.text = text;
+            fadeTxt.text = Loc.T(text);
             fadeArt.style.backgroundImage = art; fadeArt.style.display = art != null ? DisplayStyle.Flex : DisplayStyle.None;
             fadeEl.style.display = DisplayStyle.Flex; fadeEl.BringToFront();
             GameInput.Blocked = true;
@@ -320,13 +311,19 @@ namespace CozyFishing
         };
 
         // ---------- Quest Tracker (กระดาษเก่ามุมขวาบน · แตะเพื่อเปิดสมุดคดี) ----------
+        VisualElement questChev;
+        bool testCase;
         void BuildQuest()
         {
+            if (Application.absoluteURL.Contains("opencase"))
+                root.schedule.Execute(() => { if (!testCase && Time.time > 6 && !CardOpen && !ModalOpen) { testCase = true; OpenCase(); } }).Every(500);
             quest = new VisualElement { pickingMode = PickingMode.Position }; Abs(quest, null, 22, 136);
             quest.style.width = 250; Skin(quest, "parchment", 20); quest.style.paddingTop = 10; quest.style.paddingBottom = 12; quest.style.paddingLeft = 16; quest.style.paddingRight = 14;
             quest.style.opacity = 0.86f;
             root.Add(quest);
-            var title = L(quest, "บันทึกภารกิจ ▾", 24, new Color(0.3f, 0.18f, 0.08f)); title.style.unityFontDefinition = fontTitle; questTitle = title;
+            var qhead = new VisualElement { pickingMode = PickingMode.Ignore }; qhead.style.flexDirection = FlexDirection.Row; qhead.style.alignItems = Align.Center; qhead.style.justifyContent = Justify.Center; quest.Add(qhead);
+            var title = L(qhead, "บันทึกภารกิจ", 24, new Color(0.3f, 0.18f, 0.08f)); title.style.unityFontDefinition = fontTitle; questTitle = title;
+            questChev = Ico(qhead, "chev_down", 18); questChev.style.marginLeft = 6; questChev.style.unityBackgroundImageTintColor = new Color(0.3f, 0.18f, 0.08f);
             VisualElement QRow(string icon, out Label head, out Label body)
             {
                 var r = new VisualElement { pickingMode = PickingMode.Ignore }; r.style.flexDirection = FlexDirection.Row; r.style.alignItems = Align.FlexStart; r.style.marginTop = 6; quest.Add(r);
@@ -361,9 +358,10 @@ namespace CozyFishing
                 else
                 {
                     Clue next = null; foreach (var x in c.clues) if (!Mystery.HasClue(x.id)) { next = x; break; }
-                    var where = c.stage != Story.S.stage ? $"ไปที่{Stages.Get(c.stage).name} · " : "";
-                    var hint = next?.hint ?? "";
-                    if (hint.Length > 46) hint = hint.Substring(0, 44) + "…";   // สั้นพอ 2 บรรทัด · รายละเอียดเต็มอยู่ในสมุดคดี
+                    var where = c.stage != Story.S.stage ? Loc.T($"ไปที่{Stages.Get(c.stage).name}") + " · " : "";
+                    var hint = Loc.T(next?.hint ?? "");   // แปลก่อนตัด (ข้อความที่ตัดแล้วจับคู่คำแปลไม่ได้)
+                    int max = Loc.English ? 90 : 46;
+                    if (hint.Length > max) hint = hint.Substring(0, max - 2) + "…";   // สั้นพอ 2 บรรทัด · รายละเอียดเต็มอยู่ในสมุดคดี
                     clue = $"{where}{hint} ({Mystery.CluesFound}/{c.clues.Length})";
                 }
             }
@@ -371,7 +369,7 @@ namespace CozyFishing
             if (key == lastQuest) return;
             lastQuest = key;
             questMain.text = main;
-            questTitle.text = questFolded ? "บันทึกภารกิจ ▸" : "บันทึกภารกิจ ▾";
+            SetIco(questChev, questFolded ? "chev_right" : "chev_down");
             questMainRow.style.display = questFolded ? DisplayStyle.None : DisplayStyle.Flex;
             questClueRow.style.display = clue != null && !questFolded ? DisplayStyle.Flex : DisplayStyle.None;
             questClue.text = clue ?? "";
@@ -425,7 +423,8 @@ namespace CozyFishing
                 L(gr, $"{Story.Baht(s.money)} / {Story.Baht(g.cost)}", 24, brown);
                 if (Story.CanPayGoal) { var pb = new Button(() => onMorningPay?.Invoke()) { text = s.goal == 0 ? "จ่ายค่าซ่อมหลังคา" : "จ่ายเลย" }; WoodButton(pb, true); gr.Add(pb); }
                 else if (s.goal >= 2 && !Mystery.AllSolved) L(gr, "(ตามรอยแผนที่ยายอิ่มให้ครบทุกคดีก่อน)", 20, new Color(0.45f, 0.3f, 0.18f), false);
-                var sk = new VisualElement { pickingMode = PickingMode.Ignore }; sk.style.width = 180; sk.style.height = 120; sk.style.flexShrink = 0; sk.style.marginLeft = 12;
+                var sk = new VisualElement { pickingMode = PickingMode.Ignore }; sk.style.width = Narrow ? 110 : 180; sk.style.height = Narrow ? 74 : 120; sk.style.flexShrink = 0; sk.style.marginLeft = 12;
+                sk.style.backgroundSize = new BackgroundSize(BackgroundSizeType.Contain);
                 sk.style.backgroundImage = Resources.Load<Texture2D>("UI/Icons/" + (s.goal == 0 ? "goal_roof" : s.goal == 1 ? "goal_bike" : "goal_fair")); gb.Add(sk);
             }
             else L(gcol, "ทำครบทุกเป้าหมายแล้ว! ตกปลาสบาย ๆ ได้ตลอดไป", 26, brown);
@@ -438,14 +437,17 @@ namespace CozyFishing
                 bool open = Stages.Unlocked(st.id);
                 var row = new VisualElement { pickingMode = PickingMode.Ignore }; Skin(row, "parchment", 20); Pad(row, 14, 20);
                 row.style.flexDirection = FlexDirection.Row; row.style.alignItems = Align.Center; row.style.marginTop = 10; morningBody.Add(row);
+                bool narrow = Narrow;   // จอแคบ: รูปเล็กลง · ปุ่มลงไปอยู่แถวล่างเต็มกว้าง ชื่อด่านไม่ถูกบีบ
+                if (narrow) row.style.flexWrap = Wrap.Wrap;
                 var polaroid = new VisualElement { pickingMode = PickingMode.Ignore }; polaroid.style.backgroundColor = new Color(0.97f, 0.95f, 0.9f); Pad(polaroid, 6, 6); polaroid.style.paddingBottom = 16;
                 polaroid.style.flexShrink = 0; polaroid.style.marginRight = 14; polaroid.style.rotate = new Rotate(si % 2 == 0 ? -3 : 2); row.Add(polaroid);
-                var art = new VisualElement { pickingMode = PickingMode.Ignore }; art.style.width = 168; art.style.height = 108;
+                var art = new VisualElement { pickingMode = PickingMode.Ignore }; art.style.width = narrow ? 130 : 168; art.style.height = narrow ? 84 : 108;
                 art.style.backgroundImage = st.Art; art.style.backgroundSize = new BackgroundSize(BackgroundSizeType.Cover);
                 art.style.unityBackgroundImageTintColor = open ? Color.white : new Color(0.45f, 0.42f, 0.4f); polaroid.Add(art);
                 var pin = Ico(polaroid, "pin", 30); Abs(pin, 78, null, -14);
                 var info = new VisualElement { pickingMode = PickingMode.Ignore }; info.style.flexGrow = 1; info.style.flexShrink = 1; info.style.marginRight = 10; row.Add(info);
-                var nm = L(info, st.name, 32, open ? brown : new Color(0.45f, 0.36f, 0.28f)); nm.style.unityTextAlign = TextAnchor.MiddleLeft; nm.style.unityFontDefinition = fontTitle;
+                if (narrow) info.style.flexBasis = 0;
+                var nm = L(info, st.name, narrow ? 28 : 32, open ? brown : new Color(0.45f, 0.36f, 0.28f)); nm.style.unityTextAlign = TextAnchor.MiddleLeft; nm.style.unityFontDefinition = fontTitle; nm.style.whiteSpace = WhiteSpace.NoWrap;
                 var ds = L(info, open ? st.desc : $"{st.desc} · ค่าเดินทางครั้งแรก {Story.Baht(st.price)}", 18, new Color(0.32f, 0.22f, 0.12f), false); ds.style.unityTextAlign = TextAnchor.MiddleLeft;
                 var tags = new VisualElement { pickingMode = PickingMode.Ignore }; tags.style.flexDirection = FlexDirection.Row; tags.style.alignItems = Align.Center; tags.style.marginTop = 4; info.Add(tags);
                 int lvl = 1 + Mathf.RoundToInt(si * 4f / Mathf.Max(1, Stages.All.Length - 1));
@@ -461,12 +463,14 @@ namespace CozyFishing
                 {
                     var bt = new Button(() => { Hide(morning); onMorningGo?.Invoke(id); }) { text = "ไปตกที่นี่" };
                     WoodButton(bt, true); row.Add(bt);
+                    if (narrow) { bt.style.width = Length.Percent(100); bt.style.marginTop = 10; }
                 }
                 else
                 {
                     bool can = s.money >= st.price;
                     var bt = new Button(() => { if (Stages.Buy(id)) { Toast($"เปิดทางไป{Stages.Get(id).name}แล้ว!"); RefreshMorning(); } }) { text = $"ซื้อทาง {Story.Baht(st.price)}" };
                     WoodButton(bt, can); bt.SetEnabled(can); row.Add(bt);
+                    if (narrow) { bt.style.width = Length.Percent(100); bt.style.marginTop = 10; }
                 }
             }
             MorningBackButton();
@@ -488,11 +492,87 @@ namespace CozyFishing
             Pad(b, 14, 30); b.style.fontSize = 26;
         }
 
-        // ---------- มื้อเย็น ----------
+        // ---------- มื้อเย็น: ภาพครอบครัวล้อมเตาปิ้งปลาหน้าบ้านยามค่ำ · ซ้าย = ปลาในข้อง (ป้ายไม้) + ความอิ่ม · ขวา = เป้าหมายครอบครัว · ล่างขวา = ปุ่ม ----------
+        VisualElement eveTitle, eveLeft, eveGoals, eveBtns;
+        void BuildEvening()
+        {
+            evening = new VisualElement { pickingMode = PickingMode.Position }; Abs(evening, 0, 0, 0, 0); root.Add(evening);
+            evening.style.backgroundColor = new Color(0.03f, 0.04f, 0.05f);
+            evening.style.backgroundImage = Resources.Load<Texture2D>("UI/Frames/evening_bg"); evening.style.backgroundSize = new BackgroundSize(BackgroundSizeType.Cover);
+            evening.style.display = DisplayStyle.None;
+            var cream = new Color(1f, 0.93f, 0.78f);
+            // หัวเรื่อง: ป้ายไม้แขวนกลางบน
+            var tr = new VisualElement { pickingMode = PickingMode.Ignore }; Abs(tr, 0, 0, 18); tr.style.alignItems = Align.Center; evening.Add(tr);
+            eveTitle = new VisualElement { pickingMode = PickingMode.Ignore }; Skin(eveTitle, "wood", 18); Pad(eveTitle, 10, 30); tr.Add(eveTitle);
+            var tl = L(eveTitle, "มื้อเย็นที่บ้าน · ปลาตัวไหนจะปิ้ง ตัวไหนจะขาย?", 30, cream); tl.style.unityFontDefinition = fontTitle; Shadow(tl);
+            // ซ้าย: รายการปลา + สรุปความอิ่ม
+            eveLeft = new VisualElement { pickingMode = PickingMode.Ignore }; evening.Add(eveLeft);
+            var es = new ScrollView(ScrollViewMode.Vertical); es.horizontalScrollerVisibility = ScrollerVisibility.Hidden; es.style.flexGrow = 1; es.style.flexShrink = 1; eveLeft.Add(es);
+            eveList = new VisualElement(); es.Add(eveList);
+            eveSum = new VisualElement { pickingMode = PickingMode.Ignore }; eveSum.style.flexShrink = 0; eveSum.style.marginTop = 10; Skin(eveSum, "wood", 18); Pad(eveSum, 14, 22); eveLeft.Add(eveSum);
+            // ขวา: กระดาษเป้าหมายครอบครัว
+            eveGoals = new VisualElement { pickingMode = PickingMode.Ignore }; Skin(eveGoals, "parchment", 20); evening.Add(eveGoals);
+            eveGoals.style.paddingTop = 18; eveGoals.style.paddingBottom = 20; eveGoals.style.paddingLeft = 24; eveGoals.style.paddingRight = 22;
+            // ปุ่ม: ปิ้งทั้งหมด (ส้ม) · ขายทั้งหมด (มัสตาร์ด) · ตกลง (เขียว) บนแผ่นไม้
+            eveBtns = new VisualElement { pickingMode = PickingMode.Ignore }; eveBtns.style.flexDirection = FlexDirection.Row; eveBtns.style.flexWrap = Wrap.Wrap; evening.Add(eveBtns);
+            Button Plank(string text, Color tint, Action click)
+            {
+                var b = new Button(click) { text = text }; WoodButton(b, true); b.style.unityBackgroundImageTintColor = tint;
+                b.style.fontSize = 30; b.style.unityFontDefinition = fontTitle; Pad(b, 12, 30); b.style.marginLeft = 10; b.style.marginTop = 8; eveBtns.Add(b); return b;
+            }
+            Plank("ปิ้งทั้งหมด", new Color(1f, 0.6f, 0.3f), () => { for (int i = 0; i < eveGrill.Length; i++) eveGrill[i] = true; FillEvening(); });
+            Plank("ขายทั้งหมด", new Color(0.95f, 0.8f, 0.35f), () => { for (int i = 0; i < eveGrill.Length; i++) eveGrill[i] = false; FillEvening(); });
+            Plank("ตกลง", new Color(0.55f, 0.95f, 0.55f), () => { Hide(evening); onEveningDone?.Invoke(eveGrill); });
+        }
+
+        // จอกว้าง: รายการปลาซ้าย · เป้าหมายขวา · ปุ่มล่างขวา · จอแคบ (แนวตั้ง): ซ้อนเต็มกว้าง ซ่อนเป้าหมาย (ดูได้ที่หน้าเช้า)
+        void LayoutEvening()
+        {
+            bool n = Narrow;
+            var ls = eveLeft.style; ls.position = Position.Absolute; ls.left = n ? 16 : 28; ls.top = n ? 96 : 104; ls.bottom = n ? 130 : 28;
+            ls.right = n ? 16 : StyleKeyword.Auto; ls.width = n ? StyleKeyword.Auto : Length.Percent(36); ls.maxWidth = n ? StyleKeyword.None : 580;
+            eveGoals.style.display = n ? DisplayStyle.None : DisplayStyle.Flex;
+            Abs(eveGoals, null, 28, 104); eveGoals.style.width = Length.Percent(30); eveGoals.style.maxWidth = 440;
+            ((Label)eveTitle.ElementAt(0)).style.fontSize = n ? 24 : 30; ls.top = n ? 130 : 104;
+            var bs = eveBtns.style; bs.position = Position.Absolute; bs.bottom = n ? 24 : 28; bs.right = n ? 16 : 28; bs.left = n ? 16 : StyleKeyword.Auto;
+            bs.justifyContent = n ? Justify.Center : Justify.FlexEnd;
+            eveTitle.style.maxWidth = n ? root.layout.width - 32 : StyleKeyword.None;
+        }
+
+        void FillGoals()
+        {
+            eveGoals.Clear();
+            var brown = new Color(0.26f, 0.15f, 0.06f);
+            var h = L(eveGoals, "เป้าหมายครอบครัว", 32, brown); h.style.unityFontDefinition = fontTitle;
+            string[] icons = { "goal_roof", "goal_bike", "goal_fair" };
+            for (int i = 0; i < Story.Goals.Length; i++)
+            {
+                var g = Story.Goals[i]; bool done = Story.S.goal > i, now = Story.S.goal == i;
+                var row = new VisualElement { pickingMode = PickingMode.Ignore }; row.style.flexDirection = FlexDirection.Row; row.style.alignItems = Align.Center; row.style.marginTop = 12;
+                row.style.opacity = done || now ? 1 : 0.55f; eveGoals.Add(row);
+                var ic = Ico(row, i < icons.Length ? icons[i] : "coin", 64); ic.style.height = 46; ic.style.backgroundSize = new BackgroundSize(BackgroundSizeType.Contain);
+                var col = new VisualElement { pickingMode = PickingMode.Ignore }; col.style.flexGrow = 1; col.style.flexShrink = 1; col.style.marginLeft = 10; row.Add(col);
+                var t = L(col, g.text, 22, brown); t.style.unityTextAlign = TextAnchor.MiddleLeft;
+                if (done) { var d = L(col, "สำเร็จแล้ว!", 18, new Color(0.25f, 0.5f, 0.15f)); d.style.unityTextAlign = TextAnchor.MiddleLeft; }
+                else
+                {
+                    var d = L(col, now ? $"{Story.Baht(Story.S.money)} / {Story.Baht(g.cost)}" : $"ต้องใช้ {Story.Baht(g.cost)}", 18, new Color(0.45f, 0.3f, 0.16f), false); d.style.unityTextAlign = TextAnchor.MiddleLeft;
+                    if (now)
+                    {
+                        var bar = Bar(col, 12, new Color(0.3f, 0.22f, 0.14f, 0.35f)); bar.style.marginTop = 4;
+                        var f = Box(bar, new Color(0.9f, 0.5f, 0.15f), 6, false); f.style.height = Length.Percent(100); f.style.width = Length.Percent(Mathf.Clamp01((float)Story.S.money / g.cost) * 100);
+                    }
+                }
+                Ico(row, done ? "stamp_on" : "stamp_off", 40).style.marginLeft = 6;
+            }
+            var hp = L(eveGoals, $"ความสุขครอบครัว {Story.S.happy}%", 20, brown); hp.style.marginTop = 14;
+        }
+
         public void ShowEvening(Action<bool[]> done)
         {
             onEveningDone = done;
             eveGrill = Story.DefaultGrill();
+            LayoutEvening(); FillGoals();
             FillEvening();
             Show(evening);
             if (FishingController.Bot) StartCoroutine(BotClick(evening, 2.5f, () => { Hide(evening); onEveningDone?.Invoke(eveGrill); }));
@@ -502,28 +582,38 @@ namespace CozyFishing
         {
             eveList.Clear();
             var b = Story.S.basket;
-            if (b.Count == 0) L(eveList, "วันนี้ข้องว่างเปล่า…", 28, Sub);
+            var cream = new Color(1f, 0.93f, 0.78f);
+            if (b.Count == 0) { var em = new VisualElement { pickingMode = PickingMode.Ignore }; Skin(em, "wood", 18); Pad(em, 16, 22); eveList.Add(em); L(em, "วันนี้ข้องว่างเปล่า…", 28, cream); }
             float fed = 0; int earn = 0;
             for (int i = 0; i < b.Count; i++)
             {
                 int idx = i;
                 var f = b[i]; var sp = FishDatabase.Get(f.id);
                 if (eveGrill[i]) fed += f.kg; else earn += Story.Value(f);
-                var row = Box(eveList, Glass2, 20, false); Pad(row, 6, 12); row.style.flexDirection = FlexDirection.Row; row.style.alignItems = Align.Center; row.style.marginBottom = 8;
-                FishThumb(row, sp, 120, 70);
-                var info = new VisualElement { pickingMode = PickingMode.Ignore }; info.style.flexGrow = 1; info.style.marginLeft = 8; row.Add(info);
-                var n = L(info, sp?.name ?? f.id, 26, Ink); n.style.unityTextAlign = TextAnchor.MiddleLeft;
-                var d = L(info, $"{f.kg:0.00} กก. · ขายได้ {Story.Baht(Story.Value(f))}{(Story.S.hot == f.id ? " (ราคาพิเศษ)" : "")}", 20, Sub, false); d.style.unityTextAlign = TextAnchor.MiddleLeft;
-                var g = new Button(() => { eveGrill[idx] = true; FillEvening(); }) { text = "ปิ้ง" }; StyleButton(g, eveGrill[i] ? new Color(0.85f, 0.45f, 0.2f) : Gray); g.style.fontSize = 24; row.Add(g);
-                var s = new Button(() => { eveGrill[idx] = false; FillEvening(); }) { text = "ขาย" }; StyleButton(s, !eveGrill[i] ? new Color(0.62f, 0.5f, 0.15f) : Gray); s.style.fontSize = 24; s.style.marginLeft = 6; row.Add(s);
+                var row = new VisualElement { pickingMode = PickingMode.Ignore }; Skin(row, "wood", 18); Pad(row, 10, 16); row.style.flexDirection = FlexDirection.Row; row.style.alignItems = Align.Center; row.style.marginBottom = 8; eveList.Add(row);
+                FishThumb(row, sp, 120, 66);
+                var info = new VisualElement { pickingMode = PickingMode.Ignore }; info.style.flexGrow = 1; info.style.flexShrink = 1; info.style.marginLeft = 10; row.Add(info);
+                var n = L(info, sp?.name ?? f.id, 28, cream); n.style.unityTextAlign = TextAnchor.MiddleLeft; n.style.unityFontDefinition = fontTitle;
+                var d = L(info, $"{f.kg:0.00} กก. · ขายได้ {Story.Baht(Story.Value(f))}{(Story.S.hot == f.id ? " (ราคาพิเศษ)" : "")}", 19, new Color(0.92f, 0.84f, 0.7f), false); d.style.unityTextAlign = TextAnchor.MiddleLeft;
+                var bc = new VisualElement { pickingMode = PickingMode.Ignore }; bc.style.flexShrink = 0; bc.style.marginLeft = 8; row.Add(bc);
+                Button Pick(string text, bool on, Color onCol, bool grill)
+                {
+                    var bt = new Button(() => { eveGrill[idx] = grill; FillEvening(); }) { text = text };
+                    StyleButton(bt, on ? onCol : new Color(0.12f, 0.08f, 0.05f, 0.85f)); bt.style.fontSize = 22; Pad(bt, 4, 18); bt.style.minWidth = 96; bt.style.flexShrink = 0; bt.style.minHeight = 34;
+                    bt.style.color = on ? new Color(0.2f, 0.08f, 0.02f) : new Color(0.95f, 0.88f, 0.75f); bc.Add(bt); return bt;
+                }
+                var pg = Pick("ปิ้ง", eveGrill[i], new Color(0.98f, 0.55f, 0.2f), true);
+                ButtonIcon(pg, "fire", 20, eveGrill[i] ? new Color(0.35f, 0.1f, 0.02f) : new Color(1f, 0.6f, 0.3f));
+                var ps = Pick("ขาย", !eveGrill[i], new Color(0.92f, 0.75f, 0.3f), false); ps.style.marginTop = 6;
+                ButtonIcon(ps, "coin", 20, Color.white);
             }
             eveSum.Clear();
             var r1 = Row(eveSum); r1.style.justifyContent = Justify.SpaceBetween;
-            L(r1, "ความอิ่มของครอบครัว", 24, Ink); L(r1, $"{fed:0.00} / {Story.NeedKg} กก.", 24, Ink);
-            var bar = Bar(eveSum, 20, Track); var fill = Box(bar, new Color(0.85f, 0.45f, 0.2f), 10, false); fill.style.height = Length.Percent(100);
+            L(r1, "ความอิ่มของครอบครัว", 24, cream); L(r1, $"{fed:0.00} / {Story.NeedKg} กก.", 24, new Color(1f, 0.75f, 0.4f));
+            var bar = Bar(eveSum, 20, new Color(0.1f, 0.06f, 0.03f, 0.8f)); var fill = Box(bar, new Color(0.95f, 0.52f, 0.18f), 10, false); fill.style.height = Length.Percent(100);
             fill.style.width = Length.Percent(Mathf.Clamp01(fed / Story.NeedKg) * 100);
             var r2 = Row(eveSum); r2.style.justifyContent = Justify.SpaceBetween; r2.style.marginTop = 6;
-            L(r2, "ขายตลาดได้", 24, Ink); L(r2, Story.Baht(earn), 24, Money);
+            L(r2, "ขายตลาดได้", 24, cream); L(r2, Story.Baht(earn), 24, Money);
         }
 
         void FishThumb(VisualElement parent, FishSpecies sp, float w, float h)

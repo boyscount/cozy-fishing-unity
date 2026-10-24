@@ -142,15 +142,34 @@ public static partial class SceneBuilder
             g.AddComponent<MeshFilter>().sharedMesh = mesh; g.AddComponent<MeshRenderer>().sharedMaterials = mats; return g;
         }
         var wood = SurfMat("ShrineWood", Hex("#8a6a4c"), 0.2f, smooth: 0.15f, tex: "weathered_brown_planks", tiles: 1.2f);
-        var redLacquer = SurfMat("ShrineRed", Hex("#8c2a1e"), 0.1f, smooth: 0.45f);
+        var redLacquer = SurfMat("ShrinePlaster", Hex("#d9d0bc"), 0.15f, smooth: 0.2f, tex: "weathered_brown_planks", tiles: 0.6f);   // ปูนขาวหม่นคราบฝน
+        var plasterPost = SurfMat("ShrinePost", Hex("#c9c1ad"), 0.1f, smooth: 0.15f);
         var gold = SurfMat("TempleGold", Hex("#c8a050"), 0.2f, smooth: 0.55f, cull: CullMode.Off);
         var tileRed = SurfMat("ShrineTile", Hex("#b04a2e"), 0.15f, smooth: 0.3f, tex: "clay_roof_tiles", tiles: 1.6f, cull: CullMode.Off);
         float sx = ShrinePos.x, sz = ShrinePos.y, top = MW + 1.6f;
-        var pole = Prim(PrimitiveType.Cylinder, "ShrinePost", new Vector3(sx, (top + MW - 1.8f) * 0.5f, sz), new Vector3(0.18f, (top - MW + 1.8f) * 0.5f, 0.18f), wood);
+        var pole = Prim(PrimitiveType.Cylinder, "ShrinePost", new Vector3(sx, (top + MW - 1.8f) * 0.5f, sz), new Vector3(0.2f, (top - MW + 1.8f) * 0.5f, 0.2f), plasterPost);
+        // หัวเสารูปบัวหงายรองแท่น
+        var cap = Prim(PrimitiveType.Cylinder, "LotusCap", new Vector3(sx, top - 0.08f, sz), new Vector3(0.42f, 0.06f, 0.42f), plasterPost); cap.transform.SetParent(shrine, true);
+        var cap2 = Prim(PrimitiveType.Cylinder, "LotusCapGold", new Vector3(sx, top - 0.16f, sz), new Vector3(0.3f, 0.03f, 0.3f), gold); cap2.transform.SetParent(shrine, true);
         pole.transform.rotation = Quaternion.Euler(2.5f, 0, -3f); pole.transform.SetParent(shrine, true);
         SBox("Platform", new Vector3(sx, top + 0.03f, sz), new Vector3(1.0f, 0.07f, 1.0f), wood);
         SBox("Body", new Vector3(sx, top + 0.33f, sz), new Vector3(0.56f, 0.52f, 0.62f), redLacquer);
         SBox("Door", new Vector3(sx, top + 0.3f, sz - 0.315f), new Vector3(0.2f, 0.32f, 0.02f), gold);
+        SBox("DoorDark", new Vector3(sx, top + 0.28f, sz - 0.328f), new Vector3(0.13f, 0.24f, 0.01f), SurfMat("ShrineInner", Hex("#2a1a10"), smooth: 0.3f));
+        SBox("TrimTop", new Vector3(sx, top + 0.6f, sz), new Vector3(0.6f, 0.035f, 0.66f), gold);
+        SBox("TrimBase", new Vector3(sx, top + 0.08f, sz), new Vector3(0.62f, 0.04f, 0.68f), gold);
+        // เครื่องเซ่น: กระถางธูป ธูปปลายแดง · น้ำแดงสองขวด · ตุ๊กตาช้างม้าเล็ก ๆ บนแท่น
+        SBox("IncensePot", new Vector3(sx, top + 0.1f, sz - 0.42f), new Vector3(0.14f, 0.1f, 0.14f), SurfMat("Brass", Hex("#8a6a30"), 0, smooth: 0.5f));
+        var emb = SurfMat("IncenseTip", Hex("#ff5a20"), smooth: 0.2f); emb.EnableKeyword("_EMISSION"); emb.SetColor("_EmissionColor", new Color(2.2f, 0.5f, 0.1f));
+        for (int k = -1; k <= 1; k++)
+        {
+            SBox("Incense", new Vector3(sx + k * 0.03f, top + 0.24f, sz - 0.42f + k * 0.01f), new Vector3(0.008f, 0.2f, 0.008f), SurfMat("IncenseStick", Hex("#b0402a")));
+            SBox("IncenseTip", new Vector3(sx + k * 0.03f, top + 0.345f, sz - 0.42f + k * 0.01f), new Vector3(0.012f, 0.015f, 0.012f), emb);
+        }
+        var soda = SurfMat("RedSoda", Hex("#c0141e"), smooth: 0.85f);
+        foreach (var dx in new[] { -0.3f, 0.3f }) { var b = Prim(PrimitiveType.Cylinder, "RedSoda", new Vector3(sx + dx, top + 0.13f, sz - 0.38f), new Vector3(0.05f, 0.08f, 0.05f), soda); b.transform.SetParent(shrine, true); }
+        var figure = SurfMat("Figurine", Hex("#e8e2d4"), smooth: 0.6f);
+        foreach (var (dx, dz) in new[] { (-0.36f, 0.1f), (0.36f, 0.1f), (-0.36f, 0.3f) }) SBox("Figurine", new Vector3(sx + dx, top + 0.1f, sz + dz), new Vector3(0.07f, 0.08f, 0.1f), figure);
         foreach (var (dx, dz) in new[] { (-0.38f, -0.4f), (0.38f, -0.4f), (-0.38f, 0.4f), (0.38f, 0.4f) })
         {
             var c = Prim(PrimitiveType.Cylinder, "ShrineColumn", new Vector3(sx + dx, top + 0.33f, sz + dz), new Vector3(0.045f, 0.3f, 0.045f), gold); c.transform.SetParent(shrine, true);
@@ -163,6 +182,7 @@ public static partial class SceneBuilder
         // ผ้าแพรผูกรอบเสา + ชายผ้าห้อยปลิว · พวงมาลัยดาวเรืองคล้องเสา
         var ribbonMat = SurfMat("Ribbon", Color.white, sway: 0.12f, swayStart: 0f, vertexColor: true, smooth: 0.5f, cull: CullMode.Off);
         var cloth = new[] { Hex("#d8262a"), Hex("#2e8a3a"), Hex("#e8a020"), Hex("#d84a9a"), Hex("#2a5ac0"), Hex("#f0e8d8"), Hex("#7a2a9a") };
+        for (int k = 0; k < cloth.Length; k++) cloth[k] = Color.Lerp(cloth[k], Hex("#9a9284"), 0.38f);   // ผ้าเก่าซีดแดด
         for (int k = 0; k < cloth.Length; k++)
         {
             float y = top - 0.25f - k * 0.075f;

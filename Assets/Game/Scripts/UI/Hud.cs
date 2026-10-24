@@ -35,7 +35,7 @@ namespace CozyFishing
             font = FontDefinition.FromFont(Resources.Load<Font>("Fonts/Mali-SemiBold"));
             fontBold = FontDefinition.FromFont(Resources.Load<Font>("Fonts/Mali-Bold"));
             var charm = Resources.Load<Font>("Fonts/Charm-Bold");   // หัวข้อ/ชื่อคน: ฟอนต์ไทยแบบตัวเขียนโบราณ อ่านง่าย
-            fontTitle = charm != null ? FontDefinition.FromFont(charm) : fontBold;
+            fontTitle = fontBold;   // ใช้ฟอนต์ Mali ชุดเดียวทั้งเกม (ไทย/อังกฤษหน้าตาเหมือนกันหมด) · Charm เก็บไว้เผื่อใช้ภายหลัง
             // PanelSettings สร้างไว้เป็น asset (SceneBuilder) — build จะได้ธีม + ข้อมูล ICU ตัดคำภาษาไทย
             var panel = Resources.Load<PanelSettings>("UI/HudPanel");
             if (panel == null)
@@ -55,6 +55,20 @@ namespace CozyFishing
             root.style.position = Position.Absolute; root.style.left = root.style.top = root.style.right = root.style.bottom = 0;
             TouchUi = Application.isMobilePlatform || Touchscreen.current != null;
             Build();
+            gameObject.AddComponent<TextLocalizer>().Init(root);   // แปลข้อความบนจอเป็นภาษาที่เลือก (ไทย/อังกฤษ)
+            // หมุนจอ/เปลี่ยนขนาด: จัดหน้าแรกใหม่ · หน้าเช้าวาดใหม่ตามความกว้าง
+            root.RegisterCallback<GeometryChangedEvent>(e =>
+            {
+                bool n = Narrow; if (n == lastNarrow) return; lastNarrow = n;
+                // สมุดปลา: จอแคบปุ่มด่านเล็กลง เรียงได้หลายปุ่มต่อแถว (เดิมแถวละปุ่ม กินครึ่งจอ)
+                if (dexTabs != null) foreach (var tb in dexTabs.Children()) { tb.style.fontSize = n ? 18 : 24; Pad(tb, n ? 6 : 10, n ? 14 : 30); tb.style.marginRight = n ? 5 : 8; tb.style.marginBottom = n ? 5 : 6; tb.style.minHeight = n ? 38 : 0; }
+                if (iconBar != null) { iconBar.style.scale = new Scale(Vector3.one * (n ? 0.78f : 1f)); iconBar.style.transformOrigin = new TransformOrigin(Length.Percent(100), 0); }
+                if (hintBox != null) hintBox.style.maxWidth = n ? Length.Percent(74) : new StyleLength(TouchUi ? 680 : 780);
+                if (cardName != null) cardName.style.fontSize = n ? 44 : 62;
+                LayoutCard(n);
+                LayoutTitle();
+                if (Shown(morning)) RefreshMorning();
+            });
         }
 
         // ---------- สร้างหน้าจอ ----------
@@ -108,6 +122,9 @@ namespace CozyFishing
             return row;
         }
         static void MaxW(VisualElement e, float w) { e.style.maxWidth = w; e.style.width = Length.Percent(92); }
+        /// จอแคบ (มือถือแนวตั้ง · iPad แนวตั้ง): ความกว้างหน้าจอ UI น้อยกว่า 1000 หน่วย → จัดแบบซ้อนแนวตั้ง
+        bool Narrow => root != null && root.layout.width > 0 && root.layout.width < 1000;
+        bool lastNarrow;
 
         VisualElement Bar(VisualElement parent, float height, Color bg)
         {
@@ -129,7 +146,7 @@ namespace CozyFishing
                 card.style.justifyContent = value ? Justify.FlexEnd : Justify.Center;
                 card.style.alignItems = value ? Align.FlexEnd : Align.Center;        // การ์ดชิดขวา เว้นซ้ายให้มือกับปลา
                 card.style.paddingRight = value ? 18 : 0;
-                card.ElementAt(0).style.maxWidth = value ? Length.Percent(58) : new StyleLength(980);
+                card.ElementAt(0).style.maxWidth = value ? Length.Percent(Narrow ? 96 : 58) : new StyleLength(980);   // จอแคบ: การ์ดเต็มกว้างด้านล่าง ปลาอยู่ครึ่งบน
                 card.style.paddingBottom = value ? 24 : 0;
                 card.style.backgroundColor = new Color(0.02f, 0.03f, 0.04f, value ? 0.12f : 0.55f);
                 if (value) cardImg.style.display = DisplayStyle.None;
@@ -144,6 +161,12 @@ namespace CozyFishing
             e.style.backgroundImage = Resources.Load<Texture2D>("UI/Icons/" + name);
             parent.Add(e);
             return e;
+        }
+        /// ไอคอนด้านซ้ายในปุ่ม (ย้อมสีเดียวกับตัวหนังสือ) · เว้นที่ให้ข้อความ
+        static VisualElement ButtonIcon(Button b, string name, float size, Color tint)
+        {
+            var ic = Ico(b, name, size); ic.style.position = Position.Absolute; ic.style.left = 12; ic.style.top = Length.Percent(50); ic.style.marginTop = -size / 2;
+            ic.style.unityBackgroundImageTintColor = tint; b.style.paddingLeft = size + 20; return ic;
         }
         static void SetIco(VisualElement e, string name) => e.style.backgroundImage = Resources.Load<Texture2D>("UI/Icons/" + name);
         // ผิวกรอบจากภาพ (Resources/UI/Frames/<name>) แบบ 9 ส่วน: ขอบไม่ยืด ตรงกลางยืดตามขนาดกล่อง
@@ -241,7 +264,7 @@ namespace CozyFishing
             if (!show) return;
             lineNum.text = deep ? m.ToString("0.0") : Mathf.RoundToInt(m).ToString();
             lineNum.style.fontSize = deep ? 40 : 56;
-            lineUnit.text = deep ? "ม. ลึก" : "ม.";
+            lineUnit.text = Loc.T(deep ? "ม. ลึก" : "ม.");   // ตั้งทุกเฟรม → แปลตรงนี้เลย (ตัวแปลอัตโนมัติไล่ตามไม่ทัน ไทยจะกะพริบ)
         }
         /// UnderwaterView ตั้งตอนดำลงใต้น้ำ (ความลึกน้ำตรงทุ่น) · -1 = แสดงระยะสายตามปกติ
         public float DepthReading = -1;
@@ -264,13 +287,14 @@ namespace CozyFishing
             cb.Add(cardImg);
             cardNew = Box(cardImg, Gold, 6, false); Abs(cardNew, null, 12, 12); Pad(cardNew, 4, 14);
             L(cardNew, "ใหม่! บันทึกลงสมุด", 20, Color.white);
-            var head = new VisualElement { pickingMode = PickingMode.Ignore }; head.style.flexDirection = FlexDirection.Row; head.style.alignItems = Align.FlexEnd; head.style.marginTop = 12; head.style.flexShrink = 0; cb.Add(head);
+            var head = cardHead = new VisualElement { pickingMode = PickingMode.Ignore }; head.style.flexDirection = FlexDirection.Row; head.style.alignItems = Align.FlexEnd; head.style.marginTop = 12; head.style.flexShrink = 0; cb.Add(head);
             var names = new VisualElement { pickingMode = PickingMode.Ignore }; names.style.flexGrow = 1; head.Add(names);
             var rarRow = new VisualElement { pickingMode = PickingMode.Ignore }; rarRow.style.flexDirection = FlexDirection.Row; rarRow.style.alignItems = Align.Center; names.Add(rarRow);
-            cardStars = L(rarRow, "", 24, new Color(0.62f, 0.32f, 0.08f)); cardStars.style.unityTextAlign = TextAnchor.MiddleLeft;
+            cardStars = L(rarRow, "", 24, new Color(0.62f, 0.32f, 0.08f)); cardStars.style.unityTextAlign = TextAnchor.MiddleLeft; cardStars.style.whiteSpace = WhiteSpace.NoWrap;
             cardStarIco = new VisualElement[4];   // ดาวไม้ (ฟอนต์ไทยไม่มีตัว ★)
             for (int i = 0; i < 4; i++) { cardStarIco[i] = Ico(rarRow, "star_off", 26); cardStarIco[i].style.marginLeft = i == 0 ? 10 : 2; }
             cardName = L(names, "", 62, new Color(0.2f, 0.11f, 0.04f)); cardName.style.unityTextAlign = TextAnchor.MiddleLeft; cardName.style.unityFontDefinition = fontTitle;
+            cardName.style.whiteSpace = WhiteSpace.NoWrap;
             var stats = new VisualElement { pickingMode = PickingMode.Ignore }; stats.style.flexDirection = FlexDirection.Row; stats.style.flexShrink = 0; head.Add(stats);
             var kgBox = Stat(stats); Skin(kgBox, "wood", 18); var prBox = Stat(stats); Skin(prBox, "wood", 18);
             cardKg = L(kgBox, "", 30, new Color(1f, 0.93f, 0.78f)); cardPrice = L(prBox, "", 30, Money);
@@ -291,7 +315,22 @@ namespace CozyFishing
             card.style.display = DisplayStyle.None;
         }
 
-        VisualElement cardNote; Label cardNoteTxt; VisualElement[] cardStarIco;
+        VisualElement cardNote, cardHead; Label cardNoteTxt; VisualElement[] cardStarIco;
+        // จอแคบ: น้ำหนัก/ราคาลงไปอยู่ใต้ชื่อปลา (ไม่ทับชื่อ)
+        void LayoutCard(bool n)
+        {
+            if (cardHead == null) return;
+            cardHead.style.flexDirection = n ? FlexDirection.Column : FlexDirection.Row;
+            cardHead.style.alignItems = n ? Align.FlexStart : Align.FlexEnd;
+            var stats = cardHead.ElementAt(cardHead.childCount - 1); stats.style.marginTop = n ? 6 : 0; stats.ElementAt(0).style.marginLeft = n ? 0 : 10;
+            // ปุ่มปล่อย/เก็บ: จอแคบตัวเล็กลง ไม่ให้ข้อความยาว (อังกฤษ) ล้นไปทับไอคอนข้อง
+            cardAlt.style.fontSize = cardOk.style.fontSize = n ? 24 : 30;
+            cardAlt.style.minWidth = n ? 150 : 240; cardOk.style.minWidth = n ? 220 : 300;
+            // ความกว้างตายตัวบนจอแคบ (ขนาดที่วัดจากข้อความไทยก่อนแปลเล็กเกิน ข้อความอังกฤษล้นปุ่ม)
+            cardAlt.style.width = n ? 190 : StyleKeyword.Auto; cardOk.style.width = n ? 370 : StyleKeyword.Auto;
+            cardAlt.style.paddingRight = cardOk.style.paddingRight = n ? 18 : 30; cardAlt.style.paddingLeft = n ? 18 : 30;
+            cardAlt.style.flexShrink = cardOk.style.flexShrink = 0;
+        }
         VisualElement Stat(VisualElement parent)
         {
             var b = Box(parent, Glass3, 10, false); Pad(b, 8, 18); b.style.marginLeft = 10;
@@ -416,7 +455,7 @@ namespace CozyFishing
             var close = new VisualElement { pickingMode = PickingMode.Position }; close.style.width = close.style.height = 84;   // ตราครั่งแดง "ปิด"
             close.style.backgroundImage = Resources.Load<Texture2D>("UI/Icons/seal"); head.Add(close);
             close.RegisterCallback<PointerUpEvent>(e => { dex.style.display = DisplayStyle.None; GameInput.Blocked = false; });
-            var tabs = new VisualElement { pickingMode = PickingMode.Ignore }; tabs.style.flexDirection = FlexDirection.Row; tabs.style.flexWrap = Wrap.Wrap; tabs.style.marginTop = 10; tabs.style.flexShrink = 0; book.Add(tabs);
+            var tabs = dexTabs = new VisualElement { pickingMode = PickingMode.Ignore }; tabs.style.flexDirection = FlexDirection.Row; tabs.style.flexWrap = Wrap.Wrap; tabs.style.marginTop = 10; tabs.style.flexShrink = 0; book.Add(tabs);
             foreach (var (id, name) in DexStages)
             {
                 var tab = new Button(() => { dexStage = id; FillDex(); }) { text = name, name = "tab-" + id };
@@ -424,12 +463,13 @@ namespace CozyFishing
                 Skin(tab, "tab_bamboo", 8); tab.style.color = new Color(0.24f, 0.15f, 0.06f);
                 tabs.Add(tab);
             }
-            var scroll = new ScrollView(ScrollViewMode.Vertical); scroll.style.flexGrow = 1; scroll.style.flexShrink = 1; scroll.style.marginTop = 8; book.Add(scroll);
+            var scroll = new ScrollView(ScrollViewMode.Vertical); scroll.horizontalScrollerVisibility = ScrollerVisibility.Hidden; scroll.style.flexGrow = 1; scroll.style.flexShrink = 1; scroll.style.marginTop = 8; book.Add(scroll);
             dexGrid = new VisualElement(); dexGrid.style.flexDirection = FlexDirection.Row; dexGrid.style.flexWrap = Wrap.Wrap; dexGrid.style.justifyContent = Justify.Center;
             scroll.Add(dexGrid);
             dex.style.display = DisplayStyle.None;
         }
 
+        VisualElement dexTabs;
         void StyleButton(Button b, Color bg)
         {
             b.style.unityFontDefinition = fontBold; b.style.unityTextGenerator = TextGeneratorType.Advanced;
@@ -486,7 +526,7 @@ namespace CozyFishing
                 photo.Add(img);
                 if (!has) { var lk = Ico(cell, "lock", 44); Abs(lk, null, 10, 96); lk.style.height = 56; }
                 var ink = new Color(0.24f, 0.14f, 0.06f);
-                var nm = L(cell, has ? sp.name : "???", 32, ink); nm.style.unityFontDefinition = fontTitle; nm.style.marginTop = 6;
+                var nm = L(cell, has ? sp.name : "???", 32, ink); nm.style.unityFontDefinition = fontTitle; nm.style.marginTop = 6; nm.style.whiteSpace = WhiteSpace.NoWrap;
                 var rr = new VisualElement { pickingMode = PickingMode.Ignore }; rr.style.flexDirection = FlexDirection.Row; rr.style.justifyContent = Justify.Center; rr.style.alignItems = Align.Center; cell.Add(rr);
                 L(rr, FishDatabase.Rarity[sp.stars], 20, new Color(0.6f, 0.32f, 0.08f)).style.marginRight = 6;
                 for (int k = 0; k < 4; k++) Ico(rr, k < sp.stars ? "star_on" : "star_off", 20);

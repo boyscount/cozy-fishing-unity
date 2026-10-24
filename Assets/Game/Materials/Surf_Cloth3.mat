@@ -42,7 +42,7 @@ Material:
     - _UseTriplanar: 0
     - _UseVertexColor: 0
     m_Colors:
-    - _BaseColor: {r: 0.84705883, g: 0.2901961, b: 0.6039216, a: 1}
+    - _BaseColor: {r: 0.7546667, g: 0.3974902, b: 0.5711373, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 0}
     - _MossColor: {r: 0.29999998, g: 0.41999996, b: 0.15999997, a: 1}
   m_BuildTextureStacks: []
