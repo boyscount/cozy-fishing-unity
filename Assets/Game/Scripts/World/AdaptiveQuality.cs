@@ -16,6 +16,7 @@ namespace CozyFishing
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         static void Create()
         {
+            if (!string.IsNullOrEmpty(System.Environment.GetEnvironmentVariable("COZY_PROMO"))) return;   // อัดคลิปทีละเฟรม: เฟรมเรตจริงต่ำเสมอ ไม่ต้องลดความละเอียด
             var go = new GameObject("AdaptiveQuality"); DontDestroyOnLoad(go);
             go.AddComponent<AdaptiveQuality>();
         }

@@ -69,7 +69,7 @@ namespace CozyFishing
             }
             var clip = AudioClip.Create("Heartbeat", sr, 1, sr, false); clip.SetData(data, 0); heart.clip = clip;
             sting = gameObject.AddComponent<AudioSource>(); sting.playOnAwake = false; sting.spatialBlend = 0; sting.volume = 0.8f; sting.clip = StingClip(w.StageId == "cave");
-            if (FishingController.Bot && Application.absoluteURL.Contains("ghost")) cooldown = 2;   // ทดสอบ: ผีโผล่เร็ว
+            if (FishingController.Bot && GameUrl.Value.Contains("ghost")) cooldown = 2;   // ทดสอบ: ผีโผล่เร็ว
             if (def == null) return;
             mat = new Material(Shader.Find("CozyFishing/Ghost")); mat.SetColor("_Color", def.color); mat.SetFloat("_Dark", def.dark); mat.SetFloat("_Alpha", 0);
             mat.SetFloat("_FeetFade", def.kind == GhostBodies.Kind.MudWraith || def.kind == GhostBodies.Kind.Hanging ? 0 : def.kind == GhostBodies.Kind.Preta ? 3f : 0.9f);
@@ -421,6 +421,7 @@ namespace CozyFishing
 
         // คัตซีนผีปรากฏ (Timeline: Resources/Cutscenes/GhostReveal) — ดันกล้องเข้าหาผี → ใกล้หน้า → มุมข้ามไหล่ผู้เล่น → คืนกล้องเกม
         bool revealCut;
+        public static bool Revealing => instance != null && (instance.revealCut || instance.cineT >= 0);   // ถ่ายคลิปโปรโมต: อัดช่วงผีปรากฏ
         System.Collections.IEnumerator RevealCutscene(Transform cam)
         {
             revealCut = true;

@@ -22,7 +22,7 @@ namespace CozyFishing
                 {
                     try { lang = PlayerPrefs.GetString(PrefKey, ""); } catch (Exception) { lang = ""; }
                     if (lang == "") lang = Application.systemLanguage == SystemLanguage.Thai ? "th" : "en";
-                    try { var u = Application.absoluteURL ?? ""; if (u.Contains("lang=en")) lang = "en"; else if (u.Contains("lang=th")) lang = "th"; } catch (Exception) { }   // ทดสอบ: ?lang=en
+                    try { var u = GameUrl.Value ?? ""; if (u.Contains("lang=en")) lang = "en"; else if (u.Contains("lang=th")) lang = "th"; } catch (Exception) { }   // ทดสอบ: ?lang=en
                 }
                 return lang;
             }

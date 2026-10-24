@@ -62,7 +62,11 @@ namespace CozyFishing
                 bool n = Narrow; if (n == lastNarrow) return; lastNarrow = n;
                 // สมุดปลา: จอแคบปุ่มด่านเล็กลง เรียงได้หลายปุ่มต่อแถว (เดิมแถวละปุ่ม กินครึ่งจอ)
                 if (dexTabs != null) foreach (var tb in dexTabs.Children()) { tb.style.fontSize = n ? 18 : 24; Pad(tb, n ? 6 : 10, n ? 14 : 30); tb.style.marginRight = n ? 5 : 8; tb.style.marginBottom = n ? 5 : 6; tb.style.minHeight = n ? 38 : 0; }
-                if (iconBar != null) { iconBar.style.scale = new Scale(Vector3.one * (n ? 0.78f : 1f)); iconBar.style.transformOrigin = new TransformOrigin(Length.Percent(100), 0); }
+                if (iconBar != null)
+                {   // จอแคบ: จอสัมผัสไม่ย่อปุ่ม (นิ้วกดยาก) แต่ขึ้นแถวใหม่แทน · เมาส์ย่อลงนิดหน่อยเหมือนเดิม
+                    iconBar.style.scale = new Scale(Vector3.one * (n && !TouchUi ? 0.78f : 1f)); iconBar.style.transformOrigin = new TransformOrigin(Length.Percent(100), 0);
+                    iconBar.style.flexWrap = n ? Wrap.Wrap : Wrap.NoWrap; iconBar.style.maxWidth = n ? new StyleLength(Length.Percent(62)) : new StyleLength(StyleKeyword.None);
+                }
                 if (hintBox != null) hintBox.style.maxWidth = n ? Length.Percent(74) : new StyleLength(TouchUi ? 680 : 780);
                 if (cardName != null) cardName.style.fontSize = n ? 44 : 62;
                 LayoutCard(n);
@@ -430,12 +434,13 @@ namespace CozyFishing
         VisualElement IconButton(string icon, Color ring, System.Action click, out Label badge)
         {
             var col = new VisualElement { pickingMode = PickingMode.Position };
-            col.style.alignItems = Align.Center; col.style.marginLeft = 14; col.style.width = 84;
+            float d = TouchUi ? 100 : 80;   // จอสัมผัส: ปุ่มใหญ่ขึ้นให้นิ้วกดโดนง่าย
+            col.style.alignItems = Align.Center; col.style.marginLeft = TouchUi ? 8 : 14; col.style.width = d + 4; col.style.marginBottom = 4;
             var disc = Box(col, new Color(0.08f, 0.1f, 0.09f, 0.72f), 38, false);
-            disc.style.width = disc.style.height = 80; disc.style.alignItems = Align.Center; disc.style.justifyContent = Justify.Center;
+            disc.style.width = disc.style.height = d; disc.style.alignItems = Align.Center; disc.style.justifyContent = Justify.Center;
             Skin(disc, "btn_wood", 0);   // แผ่นไม้กลมขอบทองเหลือง (สีวงเดิมไม่ใช้แล้ว)
             var img = new VisualElement { pickingMode = PickingMode.Ignore };
-            img.style.width = img.style.height = 46; img.style.backgroundImage = Resources.Load<Texture2D>("UI/Icons/" + icon);
+            img.style.width = img.style.height = TouchUi ? 58 : 46; img.style.backgroundImage = Resources.Load<Texture2D>("UI/Icons/" + icon);
             disc.Add(img);
             badge = L(col, "", 19, Color.white); Shadow(badge); badge.style.marginTop = 3; badge.style.whiteSpace = WhiteSpace.NoWrap;
             col.RegisterCallback<PointerDownEvent>(e => click());
@@ -657,7 +662,9 @@ namespace CozyFishing
             fightRow.style.top = portrait ? 260 : 150;   // เกจแนวตั้งด้านขวา ใต้ปุ่มสมุด
             bool panelUp = strikeBox.style.display == DisplayStyle.Flex;
             bool narrow = !float.IsNaN(root.layout.width) && root.layout.width < 1500;   // จอแคบ: ข้อความแจ้งเลื่อนลงใต้แผงเวลา/อากาศ
-            toastRow.style.top = panelUp ? (portrait ? 420 : 250) : narrow ? 170 : 96;
+            toastRow.style.top = panelUp ? (portrait ? 420 : 250) : narrow ? (portrait ? 250 : 170) : 96;   // แนวตั้ง: ใต้แผงเวลา/อากาศ ไม่ทับกัน
+            toastBox.style.maxWidth = portrait ? new StyleLength(Length.Percent(62)) : new StyleLength(820);   // แนวตั้ง: ไม่ล้นไปทับเกจสายเบ็ดด้านขวา
+            if (nightWarn != null) nightWarn.style.maxWidth = Length.Percent(portrait ? 62 : 88);
             // ตกปลาอยู่และไม่มีหน้าต่างเปิด → แสดงปุ่มควบคุม · อยู่บ้าน/มีการ์ด/หน้าต่าง → ซ่อน
             bool play = !CardOpen && !ModalOpen && Story.Phase == StoryPhase.Fishing;
             var hide = play ? DisplayStyle.Flex : DisplayStyle.None;

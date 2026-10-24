@@ -18,7 +18,7 @@ namespace CozyFishing
         // ตัวละครยืนข้างบ้าน (ไม่บังกล้อง) · กล้องถอยสูงมองเห็นทั้งบ้าน หลังคารั่ว และตัวละคร
         public Vector3 homeStand = new Vector3(-7.3f, 0, -7.4f), homeCam = new Vector3(-3.2f, 4.6f, -1.6f), homeLook = new Vector3(-9.6f, 1.2f, -8.0f);
 
-        readonly System.Random rng = new System.Random();
+        readonly System.Random rng = GameUrl.Rng();
         bool warned, fullAsked, busy, nightAsked;
         static bool sneaked; int prayDay = -1;   // แอบออกไปตกปลาตอนดึก (กลับมาเข้านอนเลย · static: ข้ามฉากไปด่านอื่นแล้วยังจำได้) · สวดมนต์ได้คืนละครั้ง
         public static bool NightMode;   // เลือกตกปลากลางคืนต่อ (ถึงเที่ยงคืน)
@@ -33,13 +33,14 @@ namespace CozyFishing
             world = w;
             if (!TitleDone && !FishingController.Bot) { StartCoroutine(Title()); return; }
             // ทดสอบ: ?bot&day2 ข้ามไปเช้าวันที่ 2 (เปิดคดี) ทันทีเมื่อเริ่มเซฟใหม่
-            if (FishingController.Bot && Application.absoluteURL.Contains("day2") && Story.S.day == 1 && Story.Phase == StoryPhase.New) { Story.S.day = 2; Story.Phase = StoryPhase.Morning; }
+            if (FishingController.Bot && GameUrl.Value.Contains("day2") && Story.S.day == 1 && Story.Phase == StoryPhase.New) { Story.S.day = 2; Story.Phase = StoryPhase.Morning; }
             // หลายด่าน: บ้านอยู่ในฉากบ่อทุ่งนา · ตกปลาด่านอื่นโหลดฉากของด่านนั้น
             bool home = roofLeak != null;
-            if (home && FishingController.Bot && !sneaked && Application.absoluteURL.Contains("sneakpick")) { Story.S.unlocked.Clear(); foreach (var t in Stages.All) Story.S.unlocked.Add(t.id); StartCoroutine(SneakOut()); return; }   // ทดสอบ: เปิดกระดานเลือกด่านตอนดึกทันที
-            if (home && FishingController.Bot && !sneaked && Application.absoluteURL.Contains("sneakto="))
-                foreach (var t in Stages.All) if (Application.absoluteURL.Contains("sneakto=" + t.id)) { if (!Stages.Unlocked(t.id)) Story.S.unlocked.Add(t.id); StartCoroutine(SneakTo(t.id)); return; }
-            if (home && FishingController.Bot && Application.absoluteURL.Contains("ending")) { fishing.Paused = true; StartCoroutine(TestEnding()); return; }   // ทดสอบ: เล่นฉากจบอย่างเดียว
+            if (home && FishingController.Bot && !sneaked && GameUrl.Value.Contains("sneakpick")) { Story.S.unlocked.Clear(); foreach (var t in Stages.All) Story.S.unlocked.Add(t.id); StartCoroutine(SneakOut()); return; }   // ทดสอบ: เปิดกระดานเลือกด่านตอนดึกทันที
+            if (home && FishingController.Bot && !sneaked && GameUrl.Value.Contains("sneakto="))
+                foreach (var t in Stages.All) if (GameUrl.Value.Contains("sneakto=" + t.id)) { if (!Stages.Unlocked(t.id)) Story.S.unlocked.Add(t.id); StartCoroutine(SneakTo(t.id)); return; }
+            if (home && FishingController.Bot && GameUrl.Value.Contains("askdemo")) StartCoroutine(AskDemo());   // ทดสอบ: เปิดกล่องถามค้างไว้ดูหน้าตา
+            if (home && FishingController.Bot && GameUrl.Value.Contains("ending")) { fishing.Paused = true; StartCoroutine(TestEnding()); return; }   // ทดสอบ: เล่นฉากจบอย่างเดียว
             if (Story.Phase == StoryPhase.Fishing && Story.S.stage != w.StageId)
             {
                 var st = Stages.Current;
@@ -66,8 +67,8 @@ namespace CozyFishing
                 string pick = null;
                 string info = Story.HasStorySave ? $"คดีที่ {Mystery.M.chapter + 1} · วันที่ {Story.S.day}" : null;
                 hud.ShowTitle(info, k => pick = k);
-                if (!testDex && Application.absoluteURL.Contains("opendex")) { testDex = true; pick = "dex"; }
-                if (!testDex && Application.absoluteURL.Contains("openfree")) { testDex = true; pick = "free"; }   // ทดสอบ: เข้าหน้าเลือกที่ตกปลาเอง
+                if (!testDex && GameUrl.Value.Contains("opendex")) { testDex = true; pick = "dex"; }
+                if (!testDex && GameUrl.Value.Contains("openfree")) { testDex = true; pick = "free"; }   // ทดสอบ: เข้าหน้าเลือกที่ตกปลาเอง
                 while (pick == null) yield return null;
                 if (pick == "dex") { hud.OpenDexFromTitle(); continue; }
                 if (pick == "settings") { hud.ShowSettings(); continue; }
@@ -87,7 +88,7 @@ namespace CozyFishing
             Begin(world);
         }
 
-        float Speed => FishingController.Bot ? 10f : 1f;    // โหมดทดสอบ: วันผ่านเร็ว 10 เท่า
+        float Speed => FishingController.Bot ? (GameUrl.Value.Contains("slowclock") ? 1.5f : 10f) : 1f;    // โหมดทดสอบ: วันผ่านเร็ว 10 เท่า (ถ่ายคลิป slowclock: ช้า ๆ ให้แสงสวยนาน)    // โหมดทดสอบ: วันผ่านเร็ว 10 เท่า
 
         void Update()
         {
@@ -100,7 +101,7 @@ namespace CozyFishing
             {
                 nightAsked = true;
                 Story.S.time = Story.DayEnd;
-                if (FishingController.Bot && !Application.absoluteURL.Contains("night")) { hud.Toast("หกโมงเย็นแล้ว กลับบ้านกันเถอะ"); GoHome(); return; }
+                if (FishingController.Bot && !GameUrl.Value.Contains("night")) { hud.Toast("หกโมงเย็นแล้ว กลับบ้านกันเถอะ"); GoHome(); return; }
                 hud.Ask("หกโมงเย็นแล้ว… กลับบ้าน หรือจะตกปลากลางคืนต่อ? กลางคืนปลาอาถรรพ์กินเบ็ด แต่ระวังวิญญาณที่สิงอยู่แถวนี้!",
                     ("กลับบ้าน", GoHome), ("ตกปลากลางคืน (ถึงเที่ยงคืน)", () => { NightMode = true; hud.Toast("กดปุ่มไฟฉาย (หรือ F) ส่องไล่ผี · สติหมดจะหมดสติ!"); }));
                 return;
@@ -161,7 +162,7 @@ namespace CozyFishing
             busy = true;
             yield return hud.Fade(Stages.Get(world.StageId).name + " · " + Story.FmtTime(Story.S.time), () => SetupFishing(false), Stages.Get(world.StageId).Art, true);
             // เพิ่งเดินทางมาถึงด่าน (เช้า) ครั้งแรก → ฉากเปิดด่านแบบตัวอย่างหนัง
-            if (Story.S.time <= Story.DayStart + 0.4f && StageIntro.ShouldPlay(world.StageId)) yield return PlayIntro();
+            if ((Story.S.time <= Story.DayStart + 0.4f || GameUrl.Value.Contains("intro")) && StageIntro.ShouldPlay(world.StageId)) yield return PlayIntro();
             hud.Toast(sneaked ? $"{Stages.Get(world.StageId).name} ยามดึก… กดปุ่มไฟฉาย (หรือ F) ส่องไล่ผี · สติหมดจะหมดสติ!" : $"{Stages.Get(world.StageId).name}\n{Story.CurrentLuck.text}");
             busy = false;
         }
@@ -172,7 +173,9 @@ namespace CozyFishing
             fishing.ResetLine();
             if (reset) { player.Pos = world.Spawn; player.Pos.y = world.StandY(player.Pos.x, player.Pos.z); player.Yaw = world.SpawnYaw; }
             if (reset) { NightMode = false; nightAsked = false; }
-            if (FishingController.Bot && Application.absoluteURL.Contains("night") && Story.S.time < 19) { Story.S.time = 19.5f; NightMode = true; nightAsked = true; }
+            if (FishingController.Bot && GameUrl.Value.Contains("night") && Story.S.time < 19) { Story.S.time = 19.5f; NightMode = true; nightAsked = true; }
+            var hm = System.Text.RegularExpressions.Regex.Match(GameUrl.Value, @"hour=([0-9.]+)");   // ถ่ายคลิป: เริ่มที่เวลานี้ (เช่น hour=16.8 แดดเย็นสีทอง)
+            if (FishingController.Bot && hm.Success && float.TryParse(hm.Groups[1].Value, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var hh)) Story.S.time = hh;
             rig.ClearOverride();
             rig.Snap();
             if (roofLeak) roofLeak.SetActive(!Story.RoofFixed);
@@ -290,6 +293,11 @@ namespace CozyFishing
             Destroy(go);
             sky.Apply(Story.S.time, Story.CurrentLuck.sun);
             GameInput.Blocked = hud.ModalOpen || hud.CardOpen;
+        }
+        IEnumerator AskDemo()
+        {
+            yield return new WaitForSeconds(4f);
+            hud.Ask("ได้ปลาเต็มข้อง 8 ตัวแล้ว (ขายได้ราว ฿449) จะทำอะไรต่อดี?", ("กลับบ้าน", null), ("ตกต่อ (ได้ตัวใหม่แลกตัวที่ถูกสุดได้)", null));
         }
         IEnumerator TestEnding()   // ทดสอบ: ?bot&ending เล่นฉากจบหลังเข้าบ้าน
         {

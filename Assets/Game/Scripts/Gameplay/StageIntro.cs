@@ -13,15 +13,17 @@ namespace CozyFishing
         static string Key(string id) => "abot.intro." + id;
         public static bool ShouldPlay(string id)
         {
-            var url = Application.absoluteURL ?? "";
+            var url = GameUrl.Value ?? "";
             if (url.Contains("intro")) return true;            // ทดสอบ / อัดวิดีโอโปรโมต: ?intro
             if (FishingController.Bot) return false;
             try { return PlayerPrefs.GetInt(Key(id), 0) == 0; } catch (System.Exception) { return false; }
         }
         static void MarkSeen(string id) { try { PlayerPrefs.SetInt(Key(id), 1); PlayerPrefs.Save(); } catch (System.Exception) { } }
 
+        public static bool Playing;   // ถ่ายคลิปโปรโมต: อัดช่วงฉากเปิดด่าน
         public static IEnumerator Play(IWorld w, CameraRig rig, Hud hud, FishingController fishing)
         {
+            Playing = true;
             var st = Stages.Get(w.StageId);
             MarkSeen(w.StageId);
             var all = FishDatabase.ForStage(w.StageId).ToList();
@@ -103,6 +105,7 @@ namespace CozyFishing
             if (music != null) { music.Stop(); Object.Destroy(music.gameObject); }
             rig.ClearOverride(); rig.Snap();
             GameInput.Blocked = hud.ModalOpen || hud.CardOpen;
+            Playing = false;
         }
     }
 }

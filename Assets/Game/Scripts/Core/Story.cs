@@ -100,7 +100,7 @@ namespace CozyFishing
             }
             catch (Exception) { /* เซฟเสีย → เริ่มใหม่ */ }
             var s = new StoryState();
-            RollMarket(s, new Random());
+            RollMarket(s, GameUrl.Rng());
             return s;
         }
         const string FreeKey = "cozy.free.v1";
@@ -113,13 +113,13 @@ namespace CozyFishing
             FreePlay = true;
             StoryState f = null;
             try { var json = PlayerPrefs.GetString(FreeKey, ""); if (!string.IsNullOrEmpty(json)) f = JsonUtility.FromJson<StoryState>(json); } catch (Exception) { }
-            if (f == null) { f = new StoryState(); RollMarket(f, new Random()); }
+            if (f == null) { f = new StoryState(); RollMarket(f, GameUrl.Rng()); }
             f.unlocked = Stages.All.Select(st => st.id).ToList();
             f.phase = StoryPhase.Morning.ToString(); f.basket.Clear(); f.time = DayStart; f.bigBasket = true;
             S = f; Save();
         }
         public static void ExitFreePlay() { if (!FreePlay) return; Save(); FreePlay = false; S = Load(); }
-        public static void Reset(Random rng = null) { S = new StoryState(); RollMarket(S, rng ?? new Random()); Save(); }
+        public static void Reset(Random rng = null) { S = new StoryState(); RollMarket(S, rng ?? GameUrl.Rng()); Save(); }
         public static void UseForTests(StoryState s) => S = s;
         public static StoryPhase Phase { get => Enum.TryParse<StoryPhase>(S.phase, out var p) ? p : StoryPhase.New; set { S.phase = value.ToString(); Save(); } }
 

@@ -45,7 +45,7 @@ namespace CozyFishing
         }
 
         IWorld world;
-        readonly System.Random rng = new System.Random();
+        readonly System.Random rng = GameUrl.Rng();
         float t, charge, flight, flightDur, biteAt, biteEnd;
         Vector3 target, from, bob;
         bool onWater, prevHeld, nibbling;
@@ -61,7 +61,7 @@ namespace CozyFishing
         public void Init(IWorld w)
         {
             world = w;
-            Bot = Application.absoluteURL.Contains("bot") || System.Environment.CommandLine.Contains("-bot");
+            Bot = GameUrl.Value.Contains("bot") || System.Environment.CommandLine.Contains("-bot");
             line.positionCount = linePts.Length; lineW0 = line.widthMultiplier;
             aimRenderer = aim.GetComponentInChildren<Renderer>();
             aimMpb = new MaterialPropertyBlock();
@@ -256,7 +256,7 @@ namespace CozyFishing
             if (o.HasValue) { fish = o.Value; return; }
             RollNormal();
         }
-        void RollNormal() => fish = Bot && Application.absoluteURL.Contains("rarefish") ? FishRoller.Roll(world.StageId, true, 3f, 0f, Story.S.time, rng, 1f)   // ทดสอบ/ถ่ายคลิป: ปลาหายากขึ้นบ่อย
+        void RollNormal() => fish = Bot && GameUrl.Value.Contains("rarefish") ? FishRoller.Roll(world.StageId, true, 3f, 0f, Story.S.time, rng, 1f)   // ทดสอบ/ถ่ายคลิป: ปลาหายากขึ้นบ่อย
             : Story.S.caught == 0 ? FishRoller.Roll(world.StageId, false, 1f, 0f, Story.S.time, rng)   // ตัวแรก: ปลาจริงเสมอ
             : Story.S.dead && rng.NextDouble() < 0.85
             ? FishRoller.Roll(world.StageId, false, 0, 1f, Story.S.time, rng)
@@ -275,7 +275,7 @@ namespace CozyFishing
 
         void NewBite()
         {
-            biteAt = t + (Bot && Application.absoluteURL.Contains("fastcatch") ? 1.5f : (Story.S.caught == 0 ? 1.2f + (float)rng.NextDouble() * 1.3f : (2.2f + (float)rng.NextDouble() * 5.5f) * Story.BiteMul * Shop.BiteMul));   // ตัวแรกของเกม: กินเร็ว ติดใจตั้งแต่เหวี่ยงแรก
+            biteAt = t + (Bot && GameUrl.Value.Contains("fastcatch") ? 1.5f : (Story.S.caught == 0 ? 1.2f + (float)rng.NextDouble() * 1.3f : (2.2f + (float)rng.NextDouble() * 5.5f) * Story.BiteMul * Shop.BiteMul));   // ตัวแรกของเกม: กินเร็ว ติดใจตั้งแต่เหวี่ยงแรก
             nibbles.Clear();
             int n = rng.Next(3);
             for (int i = 0; i < n; i++) nibbles.Add(biteAt - 0.6f - (float)rng.NextDouble() * 1.8f);
@@ -286,7 +286,7 @@ namespace CozyFishing
 
         void StartFight()
         {
-            if (Bot && !fish.IsJunk && Application.absoluteURL.Contains("fastcatch")) { OnCaught(); return; }   // ทดสอบ: ข้ามมินิเกมดึงปลา ดูฉากยกปลาโชว์เร็ว ๆ
+            if (Bot && !fish.IsJunk && GameUrl.Value.Contains("fastcatch")) { OnCaught(); return; }   // ทดสอบ: ข้ามมินิเกมดึงปลา ดูฉากยกปลาโชว์เร็ว ๆ
             if (fish.IsJunk)
             {
                 var bottle = fish.junk == Mystery.BottleJunk ? Mystery.OnBottle() : null;

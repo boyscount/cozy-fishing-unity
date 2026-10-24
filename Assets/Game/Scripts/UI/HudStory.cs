@@ -118,9 +118,17 @@ namespace CozyFishing
             hl.text = "กลับบ้าน";
 
             // หน้าต่างถาม (ปุ่มตอบได้หลายปุ่ม)
-            ask = Overlay(out askBox, 640);
-            askTxt = L(askBox, "", 30, Ink);
-            askBtns = new VisualElement { pickingMode = PickingMode.Ignore }; askBtns.style.marginTop = 18; askBtns.style.flexShrink = 0; askBox.Add(askBtns);
+            //   ป้ายไม้ตอกตะปู มีเชือกมัดมุม ตะกร้าปลาบนหัวป้าย · ปุ่มเป็นแผ่นไม้ (ปุ่มแรกไม้เขียว = ทางที่แนะนำ)
+            ask = Overlay(out askBox, 900);
+            askBox.style.backgroundColor = Color.clear;
+            askBox.style.borderTopWidth = askBox.style.borderBottomWidth = askBox.style.borderLeftWidth = askBox.style.borderRightWidth = 0;
+            askBox.style.backgroundImage = Resources.Load<Texture2D>("UI/Frames/ask_board");
+            askBox.style.unitySliceTop = 130; askBox.style.unitySliceBottom = 80; askBox.style.unitySliceLeft = 80; askBox.style.unitySliceRight = 80;
+            askBox.style.paddingTop = 118; askBox.style.paddingBottom = 78; askBox.style.paddingLeft = 96; askBox.style.paddingRight = 96;
+            askBox.style.width = Length.Percent(94); askBox.style.minHeight = 380;
+            askTxt = L(askBox, "", 34, new Color(0.95f, 0.9f, 0.77f)); Shadow(askTxt);
+            askTxt.style.unityTextAlign = TextAnchor.MiddleCenter; askTxt.style.whiteSpace = WhiteSpace.Normal;
+            askBtns = new VisualElement { pickingMode = PickingMode.Ignore }; askBtns.style.marginTop = 22; askBtns.style.flexShrink = 0; askBox.Add(askBtns);
 
             // ข้องปลา
             bag = Overlay(out var bagBox, 760);
@@ -241,6 +249,8 @@ namespace CozyFishing
         public void Ask(string text, params (string label, Action act)[] buttons)
         {
             askTxt.text = text;
+            bool nw = Narrow;   // จอแคบ: ขอบป้ายบางลง ตัวหนังสือเล็กลง
+            askBox.style.paddingLeft = askBox.style.paddingRight = nw ? 52 : 96; askTxt.style.fontSize = nw ? 28 : 34;
             askBtns.Clear();
             bool grid = buttons.Length > 4;
             askBtns.style.flexDirection = grid ? FlexDirection.Row : FlexDirection.Column; askBtns.style.flexWrap = grid ? Wrap.Wrap : Wrap.NoWrap;
@@ -249,19 +259,42 @@ namespace CozyFishing
             {
                 var (label, act) = buttons[i];
                 var b = new Button(() => { Hide(ask); act?.Invoke(); }) { text = label };
-                StyleButton(b, i == 0 ? Green : Gray);
-                b.style.marginTop = 8; b.style.alignSelf = Align.Stretch;
-                if (grid) { b.style.width = Length.Percent(49); b.style.flexShrink = 0; if (Narrow) b.style.fontSize = 20; }
+                StyleButton(b, Color.clear);
+                PlankButton(b, i == 0, label);
+                b.style.marginTop = i == 0 ? 4 : 10; b.style.alignSelf = Align.Stretch;
+                if (grid) { b.style.width = Length.Percent(49); b.style.flexShrink = 0; b.style.fontSize = Narrow ? 24 : 28; b.style.height = 84; }
                 askBtns.Add(b);
             }
             Show(ask);
-            if (FishingController.Bot) StartCoroutine(BotClick(ask, 1.2f, () => { Hide(ask); buttons[0].act?.Invoke(); }));
+            if (FishingController.Bot && !GameUrl.Value.Contains("askdemo")) StartCoroutine(BotClick(ask, 1.2f, () => { Hide(ask); buttons[0].act?.Invoke(); }));
+        }
+
+        // ปุ่มแผ่นไม้: ปุ่มหลักไม้เขียวตัวใหญ่ · ปุ่มรองไม้สีเข้ม · มีรูปบ้าน/เบ็ดตามความหมายของปุ่ม
+        void PlankButton(Button b, bool main, string label)
+        {
+            b.style.backgroundColor = Color.clear;
+            b.style.backgroundImage = Resources.Load<Texture2D>(main ? "UI/Frames/ask_btn_main" : "UI/Frames/ask_btn_alt");
+            b.style.unitySliceLeft = 60; b.style.unitySliceRight = 60; b.style.unitySliceTop = 24; b.style.unitySliceBottom = 24;
+            bool n = Narrow;   // จอแคบ (มือถือแนวตั้ง): ตัวเล็กลง ปุ่มสูงตามข้อความ (ข้อความยาวขึ้นสองบรรทัดได้ ไม่ล้นแผ่นไม้)
+            b.style.height = StyleKeyword.Auto; b.style.minHeight = main ? (n ? 96 : 112) : (n ? 84 : 96);
+            b.style.paddingTop = b.style.paddingBottom = 12; b.style.fontSize = main ? (n ? 34 : 42) : (n ? 24 : 32);
+            b.style.color = main ? new Color(0.97f, 0.93f, 0.8f) : new Color(0.9f, 0.86f, 0.76f);
+            b.style.unityTextAlign = TextAnchor.MiddleCenter; b.style.whiteSpace = WhiteSpace.Normal;
+            b.style.textShadow = new TextShadow { offset = new Vector2(0, 2), blurRadius = 4, color = new Color(0, 0, 0, 0.7f) };
+            string icon = label.Contains("กลับบ้าน") || label.Contains("Home") || label.Contains("home") ? "ask_home" : label.StartsWith("ตก") || label.Contains("Keep fishing") || label.Contains("fish") ? "ask_hook" : null;
+            if (icon == null) { b.style.paddingLeft = b.style.paddingRight = 30; return; }
+            var ic = new VisualElement { pickingMode = PickingMode.Ignore }; b.Add(ic);
+            ic.style.position = Position.Absolute; ic.style.left = 26; ic.style.top = Length.Percent(50);
+            float w = icon == "ask_home" ? (n ? 76 : 96) : (n ? 42 : 52), h = icon == "ask_home" ? (n ? 68 : 86) : (n ? 55 : 68);
+            ic.style.width = w; ic.style.height = h; ic.style.marginTop = -h / 2;
+            ic.style.backgroundImage = Resources.Load<Texture2D>("UI/Icons/" + icon);
+            b.style.paddingLeft = w + (n ? 24 : 34); b.style.paddingRight = n ? 18 : 30;
         }
 
         // โหมดทดสอบ: ?bot&stage=rapids เปิดทางและไปด่านนั้นทันที
         static string BotStage()
         {
-            var url = Application.absoluteURL;
+            var url = GameUrl.Value;
             foreach (var st in Stages.All)
                 if (url.Contains("stage=" + st.id)) { if (!Stages.Unlocked(st.id)) Story.S.unlocked.Add(st.id); return st.id; }
             return "paddy";
@@ -336,7 +369,7 @@ namespace CozyFishing
         bool testCase;
         void BuildQuest()
         {
-            if (Application.absoluteURL.Contains("opencase"))
+            if (GameUrl.Value.Contains("opencase"))
                 root.schedule.Execute(() => { if (!testCase && Time.time > 6 && !CardOpen && !ModalOpen) { testCase = true; OpenCase(); } }).Every(500);
             quest = new VisualElement { pickingMode = PickingMode.Position }; Abs(quest, null, 22, 136);
             quest.style.width = 250; Skin(quest, "parchment", 20); quest.style.paddingTop = 10; quest.style.paddingBottom = 12; quest.style.paddingLeft = 16; quest.style.paddingRight = 14;
@@ -402,7 +435,7 @@ namespace CozyFishing
             onMorningGo = go; onMorningPay = pay;
             RefreshMorning();
             Show(morning);
-            if (FishingController.Bot && Application.absoluteURL.Contains("openshop")) { Story.S.money = Mathf.Max(Story.S.money, 6000); RefreshMorning(); ShowShop(); return; }   // ทดสอบ: เปิดร้านโชห่วยทันที
+            if (FishingController.Bot && GameUrl.Value.Contains("openshop")) { Story.S.money = Mathf.Max(Story.S.money, 6000); RefreshMorning(); ShowShop(); return; }   // ทดสอบ: เปิดร้านโชห่วยทันที
             if (FishingController.Bot) StartCoroutine(BotClick(morning, 2.5f, () => { Hide(morning); onMorningGo?.Invoke(BotStage()); }));
         }
 

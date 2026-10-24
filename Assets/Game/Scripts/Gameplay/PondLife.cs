@@ -19,7 +19,7 @@ namespace CozyFishing
         readonly List<Swimmer> school = new List<Swimmer>();
         Swimmer biter;
         FishState lastState;
-        readonly System.Random rng = new System.Random();
+        readonly System.Random rng = GameUrl.Rng();
         float R(float a, float b) => a + (float)rng.NextDouble() * (b - a);
         public Vector3 BaitPos => fishing.BobberPos + Vector3.down * 0.45f;   // เหยื่อห้อยใต้ทุ่น
 

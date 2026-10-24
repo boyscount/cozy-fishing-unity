@@ -27,7 +27,7 @@ namespace CozyFishing
         {
             current = this; world = w; cam = c; cave = w.StageId == "cave"; inCave = cave;
             Sfx.Echo = cave;
-            if (Application.absoluteURL.Contains("rain") && !Application.absoluteURL.Contains("norain")) Story.S.luck = "bad";
+            if (GameUrl.Value.Contains("rain") && !GameUrl.Value.Contains("norain")) Story.S.luck = "bad";
             baseFogStart = RenderSettings.fogStartDistance; baseFogEnd = RenderSettings.fogEndDistance;
             if (cave) InitCave(); else InitRain();
         }
