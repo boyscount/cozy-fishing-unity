@@ -242,12 +242,16 @@ namespace CozyFishing
         {
             askTxt.text = text;
             askBtns.Clear();
+            bool grid = buttons.Length > 4;
+            askBtns.style.flexDirection = grid ? FlexDirection.Row : FlexDirection.Column; askBtns.style.flexWrap = grid ? Wrap.Wrap : Wrap.NoWrap;
+            askBtns.style.justifyContent = Justify.SpaceBetween;
             for (int i = 0; i < buttons.Length; i++)
             {
                 var (label, act) = buttons[i];
                 var b = new Button(() => { Hide(ask); act?.Invoke(); }) { text = label };
                 StyleButton(b, i == 0 ? Green : Gray);
                 b.style.marginTop = 8; b.style.alignSelf = Align.Stretch;
+                if (grid) { b.style.width = Length.Percent(49); b.style.flexShrink = 0; if (Narrow) b.style.fontSize = 20; }
                 askBtns.Add(b);
             }
             Show(ask);

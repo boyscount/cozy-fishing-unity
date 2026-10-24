@@ -20,7 +20,7 @@ namespace CozyFishing
 
         readonly System.Random rng = new System.Random();
         bool warned, fullAsked, busy, nightAsked;
-        bool sneaked; int prayDay = -1;   // แอบออกไปตกปลาตอนดึก (กลับมาเข้านอนเลย) · สวดมนต์ได้คืนละครั้ง
+        static bool sneaked; int prayDay = -1;   // แอบออกไปตกปลาตอนดึก (กลับมาเข้านอนเลย · static: ข้ามฉากไปด่านอื่นแล้วยังจำได้) · สวดมนต์ได้คืนละครั้ง
         public static bool NightMode;   // เลือกตกปลากลางคืนต่อ (ถึงเที่ยงคืน)
         // ตกกลางคืนจากด่าน: ถึงเที่ยงคืน · แอบออกจากบ้าน: ตกได้ทั้งคืนจนฟ้าสาง (เวลาเดินต่อเลย 24 = ตี 1, 2, … ถึงตี 5 ครึ่ง)
         float NightEnd => sneaked ? 29.5f : 23.9f;
@@ -36,6 +36,8 @@ namespace CozyFishing
             if (FishingController.Bot && Application.absoluteURL.Contains("day2") && Story.S.day == 1 && Story.Phase == StoryPhase.New) { Story.S.day = 2; Story.Phase = StoryPhase.Morning; }
             // หลายด่าน: บ้านอยู่ในฉากบ่อทุ่งนา · ตกปลาด่านอื่นโหลดฉากของด่านนั้น
             bool home = roofLeak != null;
+            if (home && FishingController.Bot && !sneaked && Application.absoluteURL.Contains("sneakto="))
+                foreach (var t in Stages.All) if (Application.absoluteURL.Contains("sneakto=" + t.id)) { if (!Stages.Unlocked(t.id)) Story.S.unlocked.Add(t.id); StartCoroutine(SneakTo(t.id)); return; }
             if (Story.Phase == StoryPhase.Fishing && Story.S.stage != w.StageId)
             {
                 var st = Stages.Current;
@@ -158,7 +160,7 @@ namespace CozyFishing
             yield return hud.Fade(Stages.Get(world.StageId).name + " · " + Story.FmtTime(Story.S.time), () => SetupFishing(false), Stages.Get(world.StageId).Art, true);
             // เพิ่งเดินทางมาถึงด่าน (เช้า) ครั้งแรก → ฉากเปิดด่านแบบตัวอย่างหนัง
             if (Story.S.time <= Story.DayStart + 0.4f && StageIntro.ShouldPlay(world.StageId)) yield return PlayIntro();
-            hud.Toast($"{Stages.Get(world.StageId).name}\n{Story.CurrentLuck.text}");
+            hud.Toast(sneaked ? $"{Stages.Get(world.StageId).name} ยามดึก… กดปุ่มไฟฉาย (หรือ F) ส่องไล่ผี · สติหมดจะหมดสติ!" : $"{Stages.Get(world.StageId).name}\n{Story.CurrentLuck.text}");
             busy = false;
         }
 
@@ -350,18 +352,45 @@ namespace CozyFishing
             StartCoroutine(Morning($"ราตรีสวัสดิ์…  เช้าวันที่ {Story.S.day}", false));
         }
 
-        // แอบออกจากบ้านตอนดึก: ตกปลาบ่อหลังบ้าน 3 ทุ่มครึ่ง–ตี 5 ครึ่ง (ตกได้ทั้งคืน · ผีออกเต็มที่)
+        // แอบออกจากบ้านตอนดึก: เลือกด่านที่เปิดทางแล้ว ตก 3 ทุ่มครึ่ง–ตี 5 ครึ่ง (ตกได้ทั้งคืน · ผีประจำด่านออกเต็มที่)
         IEnumerator SneakOut()
         {
-            busy = true;
-            yield return hud.Fade("แอบย่องออกจากบ้านตอนทุกคนหลับ… ระวังตัวด้วย", () =>
+            string dest = null;
+            var opts = new System.Collections.Generic.List<(string, System.Action)>();
+            foreach (var st in Stages.All)
             {
-                Story.S.stage = world.StageId; Story.S.time = 21.5f;
-                SetupFishing(true);
-                NightMode = true; nightAsked = true; warned = true; fullAsked = false; sneaked = true;
-            }, Stages.Get(world.StageId).Art);
-            hud.Toast("กดปุ่มไฟฉาย (หรือ F) ส่องไล่ผี · สติหมดจะหมดสติ!");
-            busy = false;
+                if (!Stages.Unlocked(st.id)) continue;
+                int hz = GhostSystem.NightHazard(st.id); string id = st.id;
+                opts.Add(($"{st.name} · {(hz >= 3 ? "ผีดุมาก" : hz == 2 ? "ผีดุ" : "ผีดุน้อย")}", () => dest = id));
+            }
+            opts.Add(("ไม่ไปแล้ว นอนดีกว่า", () => dest = ""));
+            hud.Ask("แอบไปตกปลาที่ไหนดี? (ตกได้ถึงตี 5 ครึ่ง)", opts.ToArray());
+            while (dest == null) yield return null;
+            if (dest == "") { Story.Sleep(rng); StartCoroutine(Morning($"ราตรีสวัสดิ์…  เช้าวันที่ {Story.S.day}", false)); yield break; }
+            yield return SneakTo(dest);
+        }
+
+        IEnumerator SneakTo(string dest)
+        {
+            busy = true;
+            var st = Stages.Get(dest);
+            NightMode = true; nightAsked = true; warned = true; fullAsked = false; sneaked = true;
+            if (dest == world.StageId)   // บ่อหลังบ้าน: ย่องออกไปตกในฉากนี้เลย
+            {
+                yield return hud.Fade("แอบย่องออกจากบ้านตอนทุกคนหลับ… ระวังตัวด้วย", () =>
+                {
+                    Story.S.stage = world.StageId; Story.S.time = 21.5f;
+                    SetupFishing(true);
+                    NightMode = true; nightAsked = true;
+                }, st.Art);
+                hud.Toast("กดปุ่มไฟฉาย (หรือ F) ส่องไล่ผี · สติหมดจะหมดสติ!");
+                busy = false;
+                yield break;
+            }
+            // ด่านอื่น: ย่องออกไปตามทางมืด ๆ แล้วโหลดฉากด่านนั้น (ฉากใหม่เริ่มตกปลาต่อจากเวลา 3 ทุ่มครึ่ง)
+            Story.S.stage = dest; Story.S.time = 21.5f; Story.Phase = StoryPhase.Fishing; Story.Save();
+            string go = $"แอบย่องออกจากบ้านตอนทุกคนหลับ… มุ่งหน้าไป{st.name}กลางความมืด";
+            yield return hud.Fade(go, () => StageLoader.Go(st.scene, p => hud.FadeProgress(go, p), _ => { Story.S.stage = world.StageId; StartCoroutine(SneakTo(world.StageId)); }), st.Art);
         }
 
         // ตัวละครยืนหน้าบ้าน กล้องมองบ้านไม้ (เห็นหลังคารั่ว) แสงตามช่วงเวลา

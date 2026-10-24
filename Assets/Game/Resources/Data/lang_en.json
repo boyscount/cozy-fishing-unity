@@ -1,6 +1,34 @@
 {
 "items": [
 {
+"th": "แอบไปตกปลาที่ไหนดี? (ตกได้ถึงตี 5 ครึ่ง)",
+"en": "Where shall we sneak off to fish? (you can stay until 5:30 AM)"
+},
+{
+"th": "ไม่ไปแล้ว นอนดีกว่า",
+"en": "Never mind, better get some sleep"
+},
+{
+"th": "{0} · ผีดุมาก",
+"en": "{0} · very fierce ghost"
+},
+{
+"th": "{0} · ผีดุ",
+"en": "{0} · fierce ghost"
+},
+{
+"th": "{0} · ผีดุน้อย",
+"en": "{0} · mild ghost"
+},
+{
+"th": "แอบย่องออกจากบ้านตอนทุกคนหลับ… มุ่งหน้าไป{0}กลางความมืด",
+"en": "Sneaking out while everyone sleeps… heading for {0} through the dark"
+},
+{
+"th": "{0} ยามดึก… กดปุ่มไฟฉาย (หรือ F) ส่องไล่ผี · สติหมดจะหมดสติ!",
+"en": "{0} at night… tap the flashlight (or F) to drive ghosts away · run out of nerve and you'll faint!"
+},
+{
 "th": "วันนี้แม่ค้ารับซื้อ{0}ราคาพิเศษ {1}/กก.",
 "en": "Today the vendor pays a special price for {0}: {1}/kg"
 },
