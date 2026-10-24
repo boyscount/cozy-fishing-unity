@@ -1,6 +1,8 @@
 // ด่าน: ถ้ำลอดรอยจารึก — ลำธารใต้ดินไหลลอดภูเขาหินปูน อุโมงค์หินโค้งสูง หินย้อยห้อยจากเพดาน เสาหินกลางน้ำ
 //      ผนังสองข้างสลักอักษรโบราณกับภาพปลา/ดวงตา/คน · ราเรืองแสงสีเขียวเกาะผนัง · แสงสีฟ้าวิบวับบนผิวน้ำ · หยดน้ำจากเพดาน
 //      ผู้เล่นยืนบนเรือไม้ลำเล็กหันหัวเข้าไปในถ้ำ มีตะเกียงดวงเดียวส่องรอยจารึก
+//      หินงอกหินย้อยรูปทรงบิดเบี้ยวเป็นกลุ่ม ม่านหินปูนย้อยถึงน้ำ ผิวเปียกมันสะท้อนไฟ · รอยจารึกเป็นภาพเขียนสีดินแดง/รอยขูดที่หลุดร่อน มีเขม่าคบเพลิง
+//      น้ำใสลึก ระลอกจากหยดน้ำ · หนอนเรืองแสงสีฟ้าตามซอกและเพดาน · แสงจากปากถ้ำไกล ๆ ลำแสงลอดรอยแยกเพดาน · ค้างคาว · ซากหินสลักจมน้ำ
 using System.Collections.Generic;
 using System.IO;
 using CozyFishing;
@@ -120,8 +122,8 @@ public static partial class SceneBuilder
         var water = new GameObject("CaveWater");
         water.AddComponent<MeshFilter>().sharedMesh = SaveMesh(Grid(40, 90, 120, new Vector3(0, CW, 25)), "CaveWater");
         var wm = LoadOrCreate($"{MatDir}/Water_Cave.mat", waterShader);
-        wm.SetColor("_Shallow", Hex("#5ab0a8")); wm.SetColor("_Deep", Hex("#0a2a32"));
-        wm.SetFloat("_DepthScale", 2.2f); wm.SetFloat("_Clarity", 0.8f); wm.SetFloat("_Glint", 0f); wm.SetFloat("_Refraction", 0.03f);
+        wm.SetColor("_Shallow", Hex("#3c8c8a")); wm.SetColor("_Deep", Hex("#071e26"));
+        wm.SetFloat("_DepthScale", 2.6f); wm.SetFloat("_Clarity", 0.92f); wm.SetFloat("_Glint", 0.12f); wm.SetFloat("_Refraction", 0.03f);
         wm.SetFloat("_Reflect", 1f); wm.SetFloat("_Waves", 0.012f); wm.SetFloat("_FoamWidth", 0.04f); wm.SetVector("_Flow", new Vector4(0f, 0.08f, 0, 0));
         wm.SetVector("_RapidZone", Vector4.zero);
         var wr = water.AddComponent<MeshRenderer>(); wr.sharedMaterial = wm; wr.shadowCastingMode = ShadowCastingMode.Off;
@@ -145,7 +147,7 @@ public static partial class SceneBuilder
             gm.SetTexture("_BaseMap", AssetDatabase.LoadAssetAtPath<Texture2D>($"Assets/Game/Textures/Cave/glyphs_{id}.png"));
             gm.SetColor("_BaseColor", Color.white); gm.SetFloat("_Smoothness", 0.15f); gm.SetFloat("_Metallic", 0);
             gm.SetFloat("_AlphaClip", 1); gm.SetFloat("_Cutoff", 0.5f); gm.EnableKeyword("_ALPHATEST_ON");
-            gm.EnableKeyword("_EMISSION"); gm.SetTexture("_EmissionMap", gm.GetTexture("_BaseMap")); gm.SetColor("_EmissionColor", new Color(0.32f, 0.24f, 0.12f));   // อักษรเรืองจาง ๆ สีทอง
+            gm.EnableKeyword("_EMISSION"); gm.SetTexture("_EmissionMap", gm.GetTexture("_BaseMap")); gm.SetColor("_EmissionColor", new Color(0.16f, 0.09f, 0.05f));   // ภาพเขียนสีดิน: เรืองแค่นิดเดียวพอมองเห็นในความมืด
             gm.globalIlluminationFlags = MaterialGlobalIlluminationFlags.None;
             gm.renderQueue = (int)RenderQueue.AlphaTest; gm.SetOverrideTag("RenderType", "TransparentCutout");
             EditorUtility.SetDirty(gm); return gm;
@@ -163,16 +165,21 @@ public static partial class SceneBuilder
 
         // ---------- หินย้อย หินงอก เสาหิน ----------
         var spikeRoot = new GameObject("Speleothems").transform;
-        var spikeMat = SurfMat("CaveSpike", Color.white, 0f, vertexColor: true, smooth: 0.2f, tex: "rock_face_04", tiles: 0.6f);
+        var spikeMat = SurfMat("CaveSpike", Color.white, 0f, vertexColor: true, smooth: 0.55f, tex: "rock_face_04", tiles: 0.6f, cull: CullMode.Off);   // ผิวเปียกมันสะท้อนไฟ
+        int spikeSeed = 0;
         void Spike(Vector3 at, float len, bool down, float r0, Color c)
         {
-            float s = down ? -1 : 1;
-            var prof = new[] { new Vector2(r0 * 1.15f, -0.4f * s), new Vector2(r0, 0), new Vector2(r0 * 0.62f, len * 0.35f * s), new Vector2(r0 * 0.3f, len * 0.75f * s), new Vector2(0.015f, len * s) };
-            if (down) System.Array.Reverse(prof);   // ให้หน้าหันออกด้านนอกเสมอ
-            var g = new GameObject("Spike"); g.transform.SetParent(spikeRoot, false);
-            g.transform.SetPositionAndRotation(at, Quaternion.Euler(Rf(-6, 6), Rf(0, 360), Rf(-6, 6)));
-            g.AddComponent<MeshFilter>().sharedMesh = ProceduralMeshes.Lathe(prof, 9, c, Rf(0, 1));
-            g.AddComponent<MeshRenderer>().sharedMaterial = spikeMat;
+            // กลุ่มหิน: แท่งหลัก + แท่งเล็ก 1–3 แท่งเกาะข้าง ๆ (ไม่เรียงเป็นระเบียบ)
+            int extra = rnd.Next(0, 4);
+            for (int e = 0; e <= extra; e++)
+            {
+                float k = e == 0 ? 1 : Rf(0.3f, 0.65f);
+                var off = e == 0 ? Vector3.zero : new Vector3(Rf(-1, 1), 0, Rf(-1, 1)).normalized * r0 * Rf(1.1f, 2.2f);
+                var g = new GameObject("Spike"); g.transform.SetParent(spikeRoot, false);
+                g.transform.SetPositionAndRotation(at + off, Quaternion.Euler(Rf(-5, 5), Rf(0, 360), Rf(-5, 5)));
+                g.AddComponent<MeshFilter>().sharedMesh = ProceduralMeshes.Speleothem(1000 + spikeSeed++, len * k, r0 * Mathf.Sqrt(k), down, c, Color.Lerp(c, Hex("#f4ecd8"), 0.4f));
+                g.AddComponent<MeshRenderer>().sharedMaterial = spikeMat;
+            }
         }
         for (int t = 0, n = 0; t < 600 && n < 170; t++)
         {
@@ -201,6 +208,19 @@ public static partial class SceneBuilder
             g.AddComponent<MeshRenderer>().sharedMaterial = spikeMat;
             world.colliders.Add(new Vector4(x, z, 1f, 99));
         }
+        foreach (var (z, side) in new[] { (12f, -1f), (20f, 1f), (27f, -1f), (-5f, 1f), (35f, 1f) })
+        {
+            float p = side > 0 ? 0.42f : Mathf.PI - 0.42f; var top = ShellP(z, p) + Vector3.up * 0.3f;
+            float len = top.y - CW + 0.2f;
+            for (int k = 0; k < 4; k++)
+            {
+                var g = new GameObject("Flowstone"); g.transform.SetParent(spikeRoot, false);
+                g.transform.SetPositionAndRotation(top + new Vector3(0, 0, (k - 1.5f) * 0.45f), Quaternion.Euler(0, Rf(-15, 15), 0));
+                g.transform.localScale = new Vector3(0.45f, 1, 1.6f);
+                g.AddComponent<MeshFilter>().sharedMesh = ProceduralMeshes.Speleothem(2000 + spikeSeed++, len * Rf(0.75f, 1f), Rf(0.35f, 0.55f), true, Hex("#d8ccb0"), Hex("#a89c80"));
+                g.AddComponent<MeshRenderer>().sharedMaterial = spikeMat;
+            }
+        }
         CombineGroup(spikeRoot, "CaveSpeleothems");
         foreach (var r in spikeRoot.GetComponentsInChildren<MeshRenderer>()) r.shadowCastingMode = ShadowCastingMode.Off;
 
@@ -209,7 +229,7 @@ public static partial class SceneBuilder
             var gv = new List<Vector3>(); var gt = new List<int>(); var gc = new List<Color>();
             for (int t = 0, n = 0; t < 60000 && n < 4500; t++)
             {
-                float z = Rf(-14, 45), p = rnd.NextDouble() < 0.5 ? Rf(-0.02f, 0.85f) : Rf(Mathf.PI - 0.85f, Mathf.PI + 0.02f);
+                float z = Rf(-14, 45), u = (float)rnd.NextDouble(), p = u < 0.35 ? Rf(-0.02f, 0.85f) : u < 0.7 ? Rf(Mathf.PI - 0.85f, Mathf.PI + 0.02f) : Rf(1.0f, Mathf.PI - 1.0f);   // ผนังล่าง + เพดาน (หนอนเรืองแสงห้อย)
                 if (Mathf.PerlinNoise(z * 0.35f + 4, p * 3.2f + 1) < 0.6f) continue;
                 var pos = ShellP(z, p); var nrm = ShellN(z, p);
                 if (pos.y < CW + 0.05f) continue;
@@ -219,7 +239,7 @@ public static partial class SceneBuilder
                 float s = Rf(0.008f, 0.028f);
                 int b = gv.Count;
                 gv.Add(pos - t1 * s - t2 * s); gv.Add(pos + t1 * s - t2 * s); gv.Add(pos + t1 * s + t2 * s); gv.Add(pos - t1 * s + t2 * s);
-                var c = Color.Lerp(new Color(0.5f, 1f, 0.55f), new Color(0.75f, 1f, 0.5f), Rf(0, 1)); for (int k = 0; k < 4; k++) gc.Add(c);
+                var c = Color.Lerp(new Color(0.35f, 0.8f, 1f), new Color(0.55f, 1f, 0.8f), Rf(0, 1)); for (int k = 0; k < 4; k++) gc.Add(c);
                 gt.AddRange(new[] { b, b + 1, b + 2, b, b + 2, b + 3, b, b + 2, b + 1, b, b + 3, b + 2 });   // สองหน้า
                 n++;
             }
@@ -227,7 +247,7 @@ public static partial class SceneBuilder
             gm.SetVertices(gv); gm.SetColors(gc); gm.SetTriangles(gt, 0); gm.RecalculateNormals(); gm.RecalculateBounds();
             var g = new GameObject("GlowMoss");
             g.AddComponent<MeshFilter>().sharedMesh = SaveMesh(gm, "CaveGlowMoss");
-            var r = g.AddComponent<MeshRenderer>(); r.sharedMaterial = UnlitMat("CaveGlow", new Color(0.5f, 1.35f, 0.6f)); r.shadowCastingMode = ShadowCastingMode.Off;
+            var r = g.AddComponent<MeshRenderer>(); r.sharedMaterial = UnlitMat("CaveGlow", new Color(0.45f, 1.1f, 1.5f)); r.shadowCastingMode = ShadowCastingMode.Off;
         }
 
         // ---------- เรือไม้ลำเล็กของผู้เล่น + ตะเกียง ----------
@@ -248,6 +268,8 @@ public static partial class SceneBuilder
         }
         var box = Prim(PrimitiveType.Cube, "SupplyBox", new Vector3(boatX + 0.05f, deckY + 0.14f, -1.15f), new Vector3(0.5f, 0.26f, 0.36f), plank); box.transform.SetParent(root, true);
         box.transform.rotation = Quaternion.Euler(0, 8, 0);
+        Obj("FishBasket", SaveMesh(ProceduralMeshes.FishBasket(), "CaveFishBasket"), new[] { SurfMat("CaveBasket", Color.white, 0.1f, vertexColor: true, smooth: 0.2f) }, new Vector3(boatX + 0.25f, deckY, 0.6f), 30);
+        Obj("Bucket", SaveMesh(ProceduralMeshes.Bucket(), "CaveBucket"), new[] { SurfMat("CaveBucketMat", Color.white, 0f, vertexColor: true, smooth: 0.55f) }, new Vector3(boatX - 0.22f, deckY, -0.55f), 0);
         var lanternPos = new Vector3(boatX - 0.25f, deckY + 0.02f, 1.25f);
         var lsrc = AssetDatabase.LoadAssetAtPath<GameObject>($"{NatureDir}/brass_diya_lantern.glb");
         if (lsrc != null) { var l = Object.Instantiate(lsrc); l.transform.position = lanternPos; l.transform.localScale = Vector3.one * 1.7f; }
@@ -255,10 +277,57 @@ public static partial class SceneBuilder
         lg.type = LightType.Point; lg.range = 14f; lg.intensity = 12f; lg.color = Hex("#ffb060"); lg.shadows = LightShadows.None;
         lg.transform.position = lanternPos + Vector3.up * 1.2f;
         // แสงเรืองจากกลุ่มราบนผนัง + แสงฟ้าจากน้ำลึกปลายอุโมงค์
-        foreach (var (p, c, range, inten) in new[] { (new Vector3(CXc(10) - 5.5f, CW + 1.8f, 10), "#60ff90", 8f, 1.6f), (new Vector3(CXc(4) + 6f, CW + 2.2f, 4), "#80ffa0", 7f, 1.2f), (new Vector3(CXc(22), CW + 0.4f, 22), "#40c8ff", 12f, 1.8f) })
+        foreach (var (p, c, range, inten) in new[] { (new Vector3(CXc(10) - 5.5f, CW + 1.8f, 10), "#58c8ff", 8f, 1.3f), (new Vector3(CXc(4) + 6f, CW + 2.2f, 4), "#70e0d0", 7f, 1.0f), (new Vector3(CXc(22), CW + 0.4f, 22), "#40c8ff", 12f, 1.8f) })
         {
             var gl = new GameObject("GlowLight").AddComponent<Light>();
             gl.type = LightType.Point; gl.range = range; gl.intensity = inten; gl.color = Hex(c); gl.shadows = LightShadows.None; gl.transform.position = p;
+        }
+
+        // ---------- แสงจากปากถ้ำปลายอุโมงค์ (ไกล ๆ ลอดไอหมอก) ----------
+        {
+            float ez = 64f; var ec = new Vector3(CXc(ez), CW + 3f, ez);
+            var mouth = Prim(PrimitiveType.Quad, "CaveMouthLight", ec, new Vector3(9f, 7f, 1f), UnlitMat("CaveMouth", new Color(1.6f, 1.75f, 1.8f)));
+            mouth.transform.rotation = Quaternion.LookRotation(Vector3.forward); mouth.GetComponent<Renderer>().shadowCastingMode = ShadowCastingMode.Off;
+            var el = new GameObject("MouthLight").AddComponent<Light>(); el.type = LightType.Spot; el.transform.position = ec + Vector3.back * 2; el.transform.rotation = Quaternion.LookRotation(Vector3.back + Vector3.down * 0.15f);
+            el.range = 40; el.spotAngle = 50; el.intensity = 6; el.color = Hex("#cfe6ff"); el.shadows = LightShadows.None;
+        }
+        // ลำแสงลอดรอยแยกเพดาน: กรวยโปร่งแสงจางลงล่าง ตกกระทบผิวน้ำเป็นจุด
+        Material shaftMat = ParticleMat("CaveShaft", new Color(0.85f, 0.95f, 1f, 0.16f));
+        foreach (var (sx, sz) in new[] { (CXc(13f) - 1.5f, 13f), (CXc(24f) + 1.2f, 24f) })
+        {
+            float topY = CBase + CRy(sz) - 1.2f, h = topY - CW;
+            var cv = new List<Vector3>(); var cc = new List<Color>(); var ct = new List<int>();
+            const int seg = 16;
+            for (int k = 0; k <= seg; k++)
+            {
+                float a = k / (float)seg * Mathf.PI * 2;
+                cv.Add(new Vector3(Mathf.Cos(a) * 0.5f, h, Mathf.Sin(a) * 0.5f)); cc.Add(new Color(1, 1, 1, 0.9f));
+                cv.Add(new Vector3(Mathf.Cos(a) * 1.9f + 0.6f, 0, Mathf.Sin(a) * 1.9f)); cc.Add(new Color(1, 1, 1, 0f));
+                if (k < seg) { int i0 = k * 2; ct.AddRange(new[] { i0, i0 + 2, i0 + 1, i0 + 1, i0 + 2, i0 + 3, i0, i0 + 1, i0 + 2, i0 + 1, i0 + 3, i0 + 2 }); }
+            }
+            var sm = new Mesh(); sm.SetVertices(cv); sm.SetColors(cc); sm.SetTriangles(ct, 0); sm.RecalculateBounds();
+            var sg = new GameObject("LightShaft"); sg.transform.position = new Vector3(sx, CW, sz);
+            sg.AddComponent<MeshFilter>().sharedMesh = SaveMesh(sm, "CaveShaft" + (int)sz);
+            var srr = sg.AddComponent<MeshRenderer>(); srr.sharedMaterial = shaftMat; srr.shadowCastingMode = ShadowCastingMode.Off;
+            var spot = new GameObject("ShaftLight").AddComponent<Light>(); spot.type = LightType.Spot; spot.transform.position = new Vector3(sx, topY, sz); spot.transform.rotation = Quaternion.LookRotation(Vector3.down);
+            spot.range = h + 3; spot.spotAngle = 40; spot.intensity = 5; spot.color = Hex("#d8ecff"); spot.shadows = LightShadows.None;
+        }
+        // ซากหินสลักโบราณจมน้ำ: แท่นหิน ก้อนกลองเสาหักล้ม แผ่นหินสลัก
+        {
+            var ruin = SurfMat("CaveRuin", Hex("#8a8270"), 0.35f, smooth: 0.35f, tex: "rock_face_04", tiles: 0.8f);
+            var ruinRoot = new GameObject("SunkenRuins").transform;
+            foreach (var (z, side) in new[] { (17f, -1f), (22f, 1f), (30f, -1f), (38f, 1f), (6f, -1f) })
+            {
+                float x = CXc(z) + side * CHw(z) * Rf(0.55f, 0.8f), gy = CaveGround(x, z);
+                for (int k = 0; k < 3; k++)
+                {
+                    var d = Prim(PrimitiveType.Cylinder, "ColumnDrum", new Vector3(x + k * 0.7f * side, gy + 0.25f, z + Rf(-0.4f, 0.4f)), new Vector3(0.7f, 0.3f, 0.7f), ruin);
+                    d.transform.rotation = Quaternion.Euler(Rf(60, 95), Rf(0, 360), 0); d.transform.SetParent(ruinRoot, true);
+                }
+                var slab = Prim(PrimitiveType.Cube, "CarvedSlab", new Vector3(x - side * 0.6f, gy + 0.35f, z + 0.9f), new Vector3(1.2f, 0.9f, 0.18f), ruin);
+                slab.transform.rotation = Quaternion.Euler(Rf(-25, -8), Rf(0, 360), Rf(-12, 12)); slab.transform.SetParent(ruinRoot, true);
+            }
+            foreach (var r in ruinRoot.GetComponentsInChildren<MeshRenderer>()) r.shadowCastingMode = ShadowCastingMode.Off;
         }
 
         // ---------- ก้อนหินริมลำธาร ----------
@@ -288,10 +357,18 @@ public static partial class SceneBuilder
         Particles("Drips", new Vector3(CXc(16), CBase + 8.5f, 16), new Vector3(9f, 40f, 0.1f), ParticleMat("CaveDrip", new Color(0.85f, 0.95f, 1f, 0.8f)), 7, new Vector2(0.02f, 0.035f), new Vector2(1.1f, 1.5f), new Vector2(0f, 0f), new Color(0.8f, 0.95f, 1f, 0.9f), 1f);
         var wg = Particles("WaterGlow", new Vector3(CXc(14), CW + 0.04f, 14), new Vector3(8f, 40f, 0.02f), ParticleMat("CaveWaterGlow", new Color(0.4f, 1.4f, 1.9f, 1)), 22, new Vector2(0.04f, 0.1f), new Vector2(3f, 6f), new Vector2(0f, 0.02f), new Color(0.5f, 1f, 1f, 1));
         var noise = wg.noise; noise.enabled = true; noise.strength = 0.15f; noise.frequency = 0.3f;
-        Particles("CaveMist", new Vector3(CXc(12), CW + 0.3f, 12), new Vector3(10f, 40f, 0.1f), ParticleMat("Spray", new Color(1, 1, 1, 0.5f)), 14, new Vector2(3f, 6f), new Vector2(7f, 10f), new Vector2(0.02f, 0.08f), new Color(0.7f, 0.85f, 0.9f, 0.07f));
+        Particles("CaveMist", new Vector3(CXc(12), CW + 0.5f, 12), new Vector3(12f, 44f, 1.2f), ParticleMat("Spray", new Color(1, 1, 1, 0.5f)), 30, new Vector2(3f, 7f), new Vector2(7f, 11f), new Vector2(0.02f, 0.08f), new Color(0.62f, 0.78f, 0.86f, 0.1f));
+        var rippleMat = ParticleMat("CaveRipple", new Color(0.8f, 0.92f, 1f, 0.55f)); rippleMat.SetTexture("_BaseMap", AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Game/Textures/Cave/ripple.png"));
+        var rip = Particles("DripRipples", new Vector3(CXc(12), CW + 0.015f, 12), new Vector3(8f, 34f, 0.01f), rippleMat, 9, new Vector2(0.25f, 0.5f), new Vector2(1f, 1.6f), new Vector2(0f, 0f), new Color(0.85f, 0.95f, 1f, 0.6f));
+        rip.GetComponent<ParticleSystemRenderer>().renderMode = ParticleSystemRenderMode.HorizontalBillboard;
+        var rsz = rip.sizeOverLifetime; rsz.size = new ParticleSystem.MinMaxCurve(1, AnimationCurve.Linear(0, 0.2f, 1, 1.6f));
+        var batMat = ParticleMat("CaveBat", new Color(0.12f, 0.1f, 0.1f, 1f)); batMat.SetTexture("_BaseMap", AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Game/Textures/Cave/bat.png"));
+        var bats = Particles("Bats", new Vector3(CXc(18), CBase + 7f, 18), new Vector3(8f, 30f, 2f), batMat, 2.2f, new Vector2(0.22f, 0.4f), new Vector2(4f, 7f), new Vector2(1.5f, 3.2f), Color.white);
+        var bn = bats.noise; bn.enabled = true; bn.strength = 1.8f; bn.frequency = 0.6f; var bsz = bats.sizeOverLifetime; bsz.enabled = false;
+        var bcol = bats.colorOverLifetime; var bg = new Gradient(); bg.SetKeys(new[] { new GradientColorKey(Color.white, 0), new GradientColorKey(Color.white, 1) }, new[] { new GradientAlphaKey(0, 0), new GradientAlphaKey(1, 0.1f), new GradientAlphaKey(1, 0.9f), new GradientAlphaKey(0, 1) }); bcol.color = bg;
 
         // ---------- ตัวละคร กล้อง แสง ระบบเกม ----------
-        var look = new Look { sun = "#a8c8d4", sunIntensity = 1.3f, sunRot = new Vector2(70, 170), fog = "#1a2c34", fogStart = 16, fogEnd = 58, exposure = 0.9f, ambient = 1.2f, skyId = "Overcast", skyTint = "#3e5660" };
+        var look = new Look { sun = "#a8c8d4", sunIntensity = 1.2f, sunRot = new Vector2(70, 170), fog = "#122028", fogStart = 14, fogEnd = 56, exposure = 1.0f, ambient = 1.15f, skyId = "Overcast", skyTint = "#2a3c44" };
         BuildGameplay(world, model, world.spawn, look, world);
         var foliage = Object.FindFirstObjectByType<FoliageRenderer>(); if (foliage != null) foliage.maxGrass = 0;   // ในถ้ำไม่มีหญ้า
         RenderSettings.reflectionIntensity = 0.15f;   // ผนังถ้ำไม่สะท้อนฟ้า (บนเว็บหินออกขาวเหมือนน้ำแข็ง)

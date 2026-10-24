@@ -46,6 +46,7 @@ public static class ProjectTools
         PlayerSettings.WebGL.compressionFormat = WebGLCompressionFormat.Gzip;   // Brotli ใช้แรมตอน build มากเกิน (เครื่องเหลือแรมน้อยแล้ว build ล้ม)
         PlayerSettings.WebGL.decompressionFallback = true;
         PlayerSettings.WebGL.dataCaching = true;
+        PlayerSettings.WebGL.nameFilesAsHashes = true;   // ชื่อไฟล์เกมเปลี่ยนทุกครั้งที่เนื้อหาเปลี่ยน: มือถือที่ยังถือ index.html เก่าในแคชจะไม่ดึงไฟล์ใหม่มาปนกับไฟล์เก่าจนเปิดไม่ขึ้น
         PlayerSettings.WebGL.showDiagnostics = false;
         PlayerSettings.SplashScreen.show = false;   // ไม่ใช้โลโก้ Unity ตอนเปิด (มีจอโหลดของเกมเองแล้ว · ลดไฟล์ ~2.7MB)
         PlayerSettings.WebGL.template = "PROJECT:Cozy";   // หน้าเว็บเต็มจอ รองรับมือถือ (Assets/WebGLTemplates/Cozy)
