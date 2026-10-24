@@ -231,13 +231,14 @@ namespace CozyFishing
             {
                 var p = fishing.player.Pos; lantern.transform.position = p + Vector3.up * 1.3f + fishing.player.Forward * 0.35f;
                 float fl = 1 - Fear * 0.7f * Mathf.PerlinNoise(Time.time * 9, 0.3f);   // ผีใกล้ = ตะเกียงวูบวาบ
+                fl *= 1 - Cutscene.Flicker * 0.85f * Mathf.PerlinNoise(Time.unscaledTime * 25, 1.7f);   // คัตซีนผีโผล่: ตะเกียงวูบดับ ๆ ติด ๆ
                 lantern.intensity = 2.6f * fl;   // ตะเกียงกลางคืนสว่างพอเห็นรอบตัวบนจอมือถือ
             }
             if (!IsNight) FlashOn = false;
             if (UnityEngine.InputSystem.Keyboard.current != null && UnityEngine.InputSystem.Keyboard.current.fKey.wasPressedThisFrame && IsNight) FlashOn = !FlashOn;
             if (FlashOn && Battery <= 0) { FlashOn = false; hud.Toast("ไฟฉายแบตหมด…"); }
             flash.enabled = FlashOn && cam != null;
-            if (flash.enabled) { flash.transform.SetPositionAndRotation(cam.position, cam.rotation); Battery = Mathf.Max(0, Battery - dt * 4f * Shop.BatteryDrainMul); flash.range = Shop.FlashRange; }
+            if (flash.enabled) { flash.transform.SetPositionAndRotation(HeadLampPos(cam), HeadLampRot(cam)); Battery = Mathf.Max(0, Battery - dt * 4f * Shop.BatteryDrainMul); flash.range = Shop.FlashRange; }
 
             if (cineT >= 0 && (hud.ModalOpen || hud.CardOpen)) cineT = cineLen;   // มีหน้าต่างเด้งขึ้น → จบฉากผีทันที
             if (cineRestore && cineCam != null) { cineRestore = false; cineCam.transform.SetPositionAndRotation(cineBasePos, cineBaseRot); }   // คืนตำแหน่งกล้องก่อนกล้องหลักคำนวณเฟรมนี้
@@ -247,6 +248,7 @@ namespace CozyFishing
                 Story.S.glimpsed = true; Story.Save();
                 var f = cam.forward; f.y = 0; f = f.sqrMagnitude > 1e-4f ? f.normalized : Vector3.forward;
                 var gp = fishing.player.Pos + Quaternion.Euler(0, Random.Range(-25f, 25f), 0) * f * Mathf.Max(14f, def.dist * 1.4f);
+                if (world.StageId == "paddy" && BananaGrove.HasSpot) gp = BananaGrove.GhostSpot;   // ร่างซีดยืนนิ่งหน้ากอกล้วย
                 gp.y = Mathf.Max(world.GroundH(gp.x, gp.z), world.WaterY); pos = gp;
                 ghost.gameObject.SetActive(true); ghost.position = gp; glimpseT = 2.6f;
                 sting.volume = 0.35f; sting.Play(); Sfx.GhostBuzz();
@@ -335,8 +337,8 @@ namespace CozyFishing
             // ไฟฉายส่องตรงผี ~1 วิ = ไล่ไปได้
             if (FlashOn && cam != null && state != S.Leaving)
             {
-                var to = pos + Vector3.up * 1f - cam.position;
-                if (Vector3.Angle(cam.forward, to) < 20 && to.magnitude < 24) { expose += dt; if (expose > 1f) { hud.Toast($"ไล่{def.name}ไปได้แล้ว!"); Leave(40); } }
+                var to = pos + Vector3.up * 1f - flash.transform.position;
+                if (Vector3.Angle(flash.transform.forward, to) < 22 && to.magnitude < 24) { expose += dt; if (expose > 1f) { hud.Toast($"ไล่{def.name}ไปได้แล้ว!"); Leave(40); } }
                 else expose = Mathf.Max(0, expose - dt);
             }
             var want = pos + Vector3.up * (def.kind == GhostBodies.Kind.LotusMaiden ? 0.25f + Mathf.Sin(Time.time * 1.3f) * 0.06f
@@ -373,6 +375,8 @@ namespace CozyFishing
                     bool ok = def.water ? wy - g > 0.25f : g > wy - 0.3f && g < wy + 0.9f;
                     if (ok) { pos = c; break; }
                 }
+                if (world.StageId == "paddy" && BananaGrove.HasSpot)   // นางตานีโผล่จากหน้ากอกล้วยของนาง
+                { var o = Random.insideUnitCircle * 0.6f; pos = BananaGrove.GhostSpot + new Vector3(o.x, 0, o.y); }
                 pos.y = def.water ? world.WaterY - (def.kind == GhostBodies.Kind.Preta ? 0.3f : def.kind == GhostBodies.Kind.NetFiend ? 0.25f : 0) : world.GroundH(pos.x, pos.z);
             }
             ghost.gameObject.SetActive(true); ghost.position = pos;
@@ -382,8 +386,9 @@ namespace CozyFishing
 
         void StartReveal(Transform cam, bool full)
         {
-            if (cam == null || hud.ModalOpen || hud.CardOpen || cineT >= 0) return;
+            if (cam == null || hud.ModalOpen || hud.CardOpen || cineT >= 0 || revealCut) return;
             revealedTonight = true;
+            if (full && Cutscene.Has("GhostReveal")) { StartCoroutine(RevealCutscene(cam)); return; }   // ครั้งแรกของคืน: คัตซีน Timeline
             cineCam = cam.GetComponent<Camera>(); if (cineCam == null) return;
             cineLen = full ? 3.6f : 1.5f; cineT = 0; cineFov = cineCam.fieldOfView;
             alpha = 1; mat.SetFloat("_Alpha", 1); if (hairMat) hairMat.SetFloat("_Alpha", 1); ghost.position = shownPos = pos;
@@ -414,7 +419,54 @@ namespace CozyFishing
             }
         }
 
-        void OnDisable() { if (cineT >= 0) Time.timeScale = 1; }
+        // คัตซีนผีปรากฏ (Timeline: Resources/Cutscenes/GhostReveal) — ดันกล้องเข้าหาผี → ใกล้หน้า → มุมข้ามไหล่ผู้เล่น → คืนกล้องเกม
+        bool revealCut;
+        System.Collections.IEnumerator RevealCutscene(Transform cam)
+        {
+            revealCut = true;
+            alpha = 1; mat.SetFloat("_Alpha", 1); if (hairMat) hairMat.SetFloat("_Alpha", 1); ghost.position = shownPos = pos;
+            GameInput.Blocked = true;
+            hud.GhostReveal(def.name, def.legend, 3.6f, def.dark > 0 ? new Color(0.5f, 1f, 0.6f) : def.color);
+            sting.Play();
+            var go = new GameObject("GhostCutscene"); var rig = go.AddComponent<CutsceneRig>();
+            rig.cam = cam.GetComponent<Camera>(); rig.hud = hud;
+            float hgt = def.kind == GhostBodies.Kind.Preta ? 4f : def.kind == GhostBodies.Kind.Hanging ? 0.6f : 1.25f;
+            Transform head = hHead;
+            if (head == null) { head = new GameObject("GhostHeadAnchor").transform; head.SetParent(go.transform, false); }
+            var toGhost = ghost.position - cam.position; toGhost.y = 0;
+            rig.frame = Quaternion.LookRotation(toGhost.sqrMagnitude > 0.01f ? toGhost.normalized : cam.forward, Vector3.up);
+            rig.Anchor("ghost", ghost); rig.Anchor("ghostHead", head); rig.Anchor("player", fishing.player.transform);
+            rig.onEvent = e => { if (e == "shake") CameraRig.Impulse(0.45f); };
+            var run = Cutscene.Play("GhostReveal", rig, false);
+            while (true)
+            {
+                if (head != hHead && ghost != null) head.position = ghost.position + Vector3.up * hgt;
+                if (hud.ModalOpen || hud.CardOpen) break;   // มีหน้าต่างเด้งขึ้น → จบฉากผีทันที
+                if (!run.MoveNext()) break;
+                yield return run.Current;
+            }
+            (run as System.IDisposable)?.Dispose();
+            Destroy(go);
+            GameInput.Blocked = hud.ModalOpen || hud.CardOpen;
+            revealCut = false;
+        }
+
+        void OnDisable() { if (cineT >= 0 || revealCut) Time.timeScale = 1; }
+
+        // ไฟฉายคาดหัว: ส่องจากหัวตัวละครไปทางที่กล้องหันมอง (แนวราบ ก้มลงนิดเดียว) · มุมบุคคลที่หนึ่งกล้องอยู่ที่หัวอยู่แล้ว → ใช้ทิศกล้องตรง ๆ
+        //   (เดิมยิงจากตัวกล้องที่ลอยสูงแล้วก้มลง ลำแสงเลยไปตกที่ขาตัวละคร)
+        Vector3 HeadLampPos(Transform cam)
+        {
+            var head = fishing.player.Pos + Vector3.up * 1.65f + fishing.player.Forward * 0.12f;
+            return Vector3.Distance(cam.position, head) < 1.2f ? cam.position : head;
+        }
+        Quaternion HeadLampRot(Transform cam)
+        {
+            var head = fishing.player.Pos + Vector3.up * 1.65f;
+            if (Vector3.Distance(cam.position, head) < 1.2f) return cam.rotation;
+            var f = cam.forward; f.y = 0; f = f.sqrMagnitude > 1e-4f ? f.normalized : fishing.player.Forward;
+            return Quaternion.LookRotation(f, Vector3.up) * Quaternion.Euler(7f, 0, 0);
+        }
 
         // เสียงตกใจ: ตูม! ต่ำ ๆ + เสียงแหลมไถลลง + ซ่าแตก ๆ (ในถ้ำใส่เสียงก้อง)
         static AudioClip StingClip(bool echo)

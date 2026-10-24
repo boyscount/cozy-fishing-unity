@@ -3,6 +3,7 @@
     "rootNamespace": "CozyFishing",
     "references": [
         "Unity.InputSystem",
+        "Unity.Timeline",
         "Unity.RenderPipelines.Universal.Runtime",
         "Unity.RenderPipelines.Core.Runtime"
     ],

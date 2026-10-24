@@ -39,6 +39,7 @@ namespace CozyFishing
             if (home && FishingController.Bot && !sneaked && Application.absoluteURL.Contains("sneakpick")) { Story.S.unlocked.Clear(); foreach (var t in Stages.All) Story.S.unlocked.Add(t.id); StartCoroutine(SneakOut()); return; }   // ทดสอบ: เปิดกระดานเลือกด่านตอนดึกทันที
             if (home && FishingController.Bot && !sneaked && Application.absoluteURL.Contains("sneakto="))
                 foreach (var t in Stages.All) if (Application.absoluteURL.Contains("sneakto=" + t.id)) { if (!Stages.Unlocked(t.id)) Story.S.unlocked.Add(t.id); StartCoroutine(SneakTo(t.id)); return; }
+            if (home && FishingController.Bot && Application.absoluteURL.Contains("ending")) { fishing.Paused = true; StartCoroutine(TestEnding()); return; }   // ทดสอบ: เล่นฉากจบอย่างเดียว
             if (Story.Phase == StoryPhase.Fishing && Story.S.stage != w.StageId)
             {
                 var st = Stages.Current;
@@ -91,7 +92,7 @@ namespace CozyFishing
         void Update()
         {
             hud.SetStatus(Story.FmtTime(Story.S.time), Story.S.day, Story.S.basket.Count, Story.Capacity, Story.S.money, Story.Phase == StoryPhase.Fishing);
-            if (Story.Phase != StoryPhase.Fishing || busy || hud.CardOpen || hud.ModalOpen) return;
+            if (Story.Phase != StoryPhase.Fishing || busy || hud.CardOpen || hud.ModalOpen || Cutscene.Playing) return;   // คัตซีน: เวลาในเกมหยุด
             Story.S.time = Mathf.Min(Story.S.time + Time.deltaTime * Story.HoursPerSec * Speed, (NightMode ? NightEnd : Story.DayEnd) + 0.25f);   // ระหว่างสู้ปลาตอนหกโมงเย็น เวลาไม่เลยไปจนมืด
             sky.Apply(Story.S.time % 24, Story.CurrentLuck.sun);   // หลังเที่ยงคืน: ฟ้ามืดต่อ แล้วค่อย ๆ สางตอนตี 5
             if (Story.S.time >= 17 && !warned && !NightMode) { warned = true; hud.Toast("ใกล้ค่ำแล้ว อีกชั่วโมงจะมืด"); }
@@ -245,7 +246,12 @@ namespace CozyFishing
         }
         IEnumerator PaidLines(Goal g)
         {
-            if (g == Story.Goals[Story.Goals.Length - 1])
+            if (g == Story.Goals[Story.Goals.Length - 1] && Cutscene.Has("FairEnding"))
+            {   // ตอนจบ: คัตซีน Timeline งานวัดยามค่ำ (บทพูดเป็นซับไตเติลในคัตซีน)
+                yield return FairEnding();
+                yield return hud.Dialog(new[] { ("ลูก", "เย้! ขอบคุณนะพ่อ") });
+            }
+            else if (g == Story.Goals[Story.Goals.Length - 1])
                 // ตอนจบ: ทั้งครอบครัวพายายอิ่มกับผู้ใหญ่ทองไปเที่ยวงานวัด
                 yield return hud.Dialog(new[]
                 {
@@ -258,6 +264,38 @@ namespace CozyFishing
                 });
             else yield return hud.Dialog(new[] { ("แม่", g.done), ("ลูก", "เย้! ขอบคุณนะพ่อ") });
             hud.RefreshMorning();
+        }
+
+        // ---------- ฉากจบ: งานวัดยามค่ำ (Timeline: Resources/Cutscenes/FairEnding) ----------
+        //   งานวัดอยู่ไกลออกไปกลางทุ่งตรงหน้าบ้าน: ชิงช้าสวรรค์ ไฟประดับ โบสถ์ พลุ โคมลอย · ฟ้าเปลี่ยนเป็นหัวค่ำชั่วคราว
+        IEnumerator FairEnding()
+        {
+            var camRig = FindAnyObjectByType<CameraRig>();
+            var go = new GameObject("FairEnding"); var rig = go.AddComponent<CutsceneRig>();
+            rig.cam = camRig != null ? camRig.GetComponent<Camera>() : Camera.main; rig.hud = hud;
+            var dir = Quaternion.Euler(0, world.SpawnYaw, 0) * Vector3.forward; dir.y = 0; dir.Normalize();
+            var home = world.Spawn; var center = home + dir * 68f;
+            center.y = Mathf.Max(world.WaterY, world.GroundH(center.x, center.z));
+            rig.frame = Quaternion.LookRotation(dir, Vector3.up);
+            var fx = new GameObject("Fair").AddComponent<FairFx>(); fx.transform.SetParent(go.transform, false); fx.Init(center, rig.frame);
+            Transform A(string n, Vector3 p) { var t = new GameObject(n).transform; t.SetParent(go.transform, false); t.position = p; rig.Anchor(n, t); return t; }
+            A("home", home); A("fair", center); A("wheel", fx.Hub);
+            AudioSource music = null;
+            rig.onCue = c => { if (c == "music") { music = go.AddComponent<AudioSource>(); music.clip = ThaiMusic.Ranat(97, 27f); music.volume = 0.6f; music.spatialBlend = 0; music.Play(); } };
+            rig.onEvent = e => { if (e == "fw") fx.Firework(false); else if (e == "fwbig") fx.Firework(true); else if (e == "lanterns") fx.Lanterns(); };
+            sky.Apply(20.3f, 1f);
+            GameInput.Blocked = true; hud.CutsceneMode(true, true, true);
+            yield return Cutscene.Play("FairEnding", rig, true);
+            hud.CutsceneMode(false, true, false);
+            Destroy(go);
+            sky.Apply(Story.S.time, Story.CurrentLuck.sun);
+            GameInput.Blocked = hud.ModalOpen || hud.CardOpen;
+        }
+        IEnumerator TestEnding()   // ทดสอบ: ?bot&ending เล่นฉากจบหลังเข้าบ้าน
+        {
+            yield return hud.Fade("", null, null, true);   // เปิดจอจากดำ (ข้ามฉากเช้าไป)
+            yield return new WaitForSeconds(1f);
+            yield return FairEnding();
         }
 
         // ---------- ไขคดี (เรียกจากสมุดคดี) ----------
