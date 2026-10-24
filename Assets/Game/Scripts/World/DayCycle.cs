@@ -58,10 +58,10 @@ namespace CozyFishing
                 // แสงจันทร์: ส่องจากสูงทางทิศใต้ สีฟ้าเย็น จาง ๆ · ฟ้ามืด หมอกน้ำเงินเข้ม
                 sun.transform.rotation = Quaternion.Slerp(sun.transform.rotation, MoonRot, night);
                 sun.color = Color.Lerp(sun.color, new Color(0.55f, 0.66f, 0.95f), night);
-                sun.intensity = Mathf.Lerp(sun.intensity, baseIntensity * 0.16f, night);
+                sun.intensity = Mathf.Lerp(sun.intensity, baseIntensity * 0.3f, night);   // แสงจันทร์สว่างพอเห็นฉากบนจอมือถือ
                 sun.shadowStrength = Mathf.Lerp(sun.shadowStrength, 0.5f, night);
-                RenderSettings.ambientIntensity = Mathf.Lerp(RenderSettings.ambientIntensity, baseAmbient * 0.32f, night);
-                RenderSettings.fogColor = Color.Lerp(RenderSettings.fogColor, new Color(0.05f, 0.07f, 0.11f), night);
+                RenderSettings.ambientIntensity = Mathf.Lerp(RenderSettings.ambientIntensity, baseAmbient * 0.5f, night);
+                RenderSettings.fogColor = Color.Lerp(RenderSettings.fogColor, new Color(0.09f, 0.12f, 0.18f), night);
             }
             // ท้องฟ้า: กลางคืนมืดลงเป็นน้ำเงินเข้ม (เดิมฟ้ายังสว่างเมฆขาวทั้งที่สี่ทุ่ม)
             if (sky != null)

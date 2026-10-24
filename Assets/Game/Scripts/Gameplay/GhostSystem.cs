@@ -231,7 +231,7 @@ namespace CozyFishing
             {
                 var p = fishing.player.Pos; lantern.transform.position = p + Vector3.up * 1.3f + fishing.player.Forward * 0.35f;
                 float fl = 1 - Fear * 0.7f * Mathf.PerlinNoise(Time.time * 9, 0.3f);   // ผีใกล้ = ตะเกียงวูบวาบ
-                lantern.intensity = 1.6f * fl;
+                lantern.intensity = 2.6f * fl;   // ตะเกียงกลางคืนสว่างพอเห็นรอบตัวบนจอมือถือ
             }
             if (!IsNight) FlashOn = false;
             if (UnityEngine.InputSystem.Keyboard.current != null && UnityEngine.InputSystem.Keyboard.current.fKey.wasPressedThisFrame && IsNight) FlashOn = !FlashOn;

@@ -10,6 +10,8 @@ namespace CozyFishing
     public class Atmosphere : MonoBehaviour
     {
         IWorld world; Camera cam; bool cave, swamp, manor, gloom, raft;
+        Light fillLamp; Transform playerT;   // ด่านมืด: ตะเกียงติดตัวส่องรอบตัวละครเสมอ
+        SphericalHarmonicsL2 baseProbe; bool probeSaved;   // แสงรอบทิศที่อบไว้จากท้องฟ้าของฉาก (ด่านมืดอบจากฟ้ามืดจึงดำสนิท)
         Bloom bloom; SplitToning split; ColorAdjustments color; Vignette vig; FilmGrain grain; ChromaticAberration chroma; DepthOfField dof;
         Mesh beamMesh; Material beamMat, sunMat, mistMat, moteMat; Transform sun; ParticleSystem motes;
         Transform[] mist; Vector3[] mistOff;
@@ -20,7 +22,7 @@ namespace CozyFishing
 
         public void Init(IWorld w, Camera c)
         {
-            world = w; cam = c; cave = w.StageId == "cave"; swamp = w.StageId == "mangrove"; manor = w.StageId == "headman"; gloom = w.StageId == "bend"; raft = w.StageId == "houseboat";
+            probeSaved = false; world = w; cam = c; cave = w.StageId == "cave"; swamp = w.StageId == "mangrove"; manor = w.StageId == "headman"; gloom = w.StageId == "bend"; raft = w.StageId == "houseboat";
             // ---------- ปรับภาพ ----------
             var vol = gameObject.AddComponent<Volume>(); vol.isGlobal = true; vol.priority = 50;
             var prof = ScriptableObject.CreateInstance<VolumeProfile>(); vol.profile = prof;
@@ -151,6 +153,25 @@ namespace CozyFishing
             else dof.mode.Override(DepthOfFieldMode.Off);
             grain.intensity.Override(night * 0.28f + fear * 0.3f);
             chroma.intensity.Override(0.04f + fear * 0.55f);
+            // ---------- ด่านมืด/กลางคืน: เพิ่มความสว่างให้เล่นบนจอมือถือได้ (ยังคงอารมณ์หลอน) ----------
+            float lift = (cave ? 0.55f : gloom ? 0.5f : swamp ? 0.35f : manor ? 0.35f : raft ? 0.2f : 0f) + night * 0.35f;
+            color.postExposure.Override(0.35f + (under ? lift * 0.5f : lift));   // ฐาน 0.35 = ค่าเดิมของฉาก
+            // แสงจันทร์รอบทิศขั้นต่ำ: ambientIntensity ไม่มีผลหลังอบแล้ว จึงเติมสีฟ้าอ่อนลงใน ambient probe ตรง ๆ ให้เงามืดไม่ดำสนิท
+            if (!probeSaved) { baseProbe = RenderSettings.ambientProbe; probeSaved = true; }
+            float floorK = (cave || gloom ? 0.16f : swamp || manor || raft ? 0.1f : 0f) + night * 0.12f;
+            var probe = baseProbe; probe.AddAmbientLight(new Color(0.42f, 0.5f, 0.72f) * floorK); RenderSettings.ambientProbe = probe;
+            if (fillLamp == null && (cave || gloom || swamp || manor || raft))
+            {
+                fillLamp = new GameObject("FillLantern").AddComponent<Light>(); fillLamp.type = LightType.Point; fillLamp.shadows = LightShadows.None;
+                fillLamp.color = new Color(1f, 0.72f, 0.45f);
+                var pc = FindAnyObjectByType<PlayerController>(); if (pc != null) playerT = pc.transform;
+            }
+            if (fillLamp != null)
+            {
+                var pp = playerT != null ? playerT.position : cp;
+                fillLamp.transform.position = pp + Vector3.up * 1.8f;
+                fillLamp.range = cave || gloom ? 11f : 8f; fillLamp.intensity = (cave || gloom ? 2.2f : 1.4f) * (under ? 0.4f : 1f);
+            }
             if (beamMat == null) return;
             // ---------- ลำแสง: เช้า/เย็นชัดสุด กลางวันจาง กลางคืนเป็นแสงจันทร์ฟ้าจาง ๆ ----------
             float beamA = cave || under ? 0 : (0.05f + golden * 0.16f) * day * clear + night * 0.05f;
