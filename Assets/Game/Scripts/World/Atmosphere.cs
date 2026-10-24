@@ -9,7 +9,7 @@ namespace CozyFishing
     //  · ลำแสงทแยงจากทิศดวงอาทิตย์ (god rays) · ดวงอาทิตย์เรืองแสงบนฟ้า · ละอองเกสรระยิบในแดด → กลางคืนเป็นหิ่งห้อย · หมอกบางลอยเหนือน้ำตอนรุ่งสาง/กลางคืน
     public class Atmosphere : MonoBehaviour
     {
-        IWorld world; Camera cam; bool cave, swamp;
+        IWorld world; Camera cam; bool cave, swamp, manor;
         Bloom bloom; SplitToning split; ColorAdjustments color; Vignette vig; FilmGrain grain; ChromaticAberration chroma; DepthOfField dof;
         Mesh beamMesh; Material beamMat, sunMat, mistMat, moteMat; Transform sun; ParticleSystem motes;
         Transform[] mist; Vector3[] mistOff;
@@ -20,7 +20,7 @@ namespace CozyFishing
 
         public void Init(IWorld w, Camera c)
         {
-            world = w; cam = c; cave = w.StageId == "cave"; swamp = w.StageId == "mangrove";
+            world = w; cam = c; cave = w.StageId == "cave"; swamp = w.StageId == "mangrove"; manor = w.StageId == "headman";
             // ---------- ปรับภาพ ----------
             var vol = gameObject.AddComponent<Volume>(); vol.isGlobal = true; vol.priority = 50;
             var prof = ScriptableObject.CreateInstance<VolumeProfile>(); vol.profile = prof;
@@ -136,6 +136,12 @@ namespace CozyFishing
             color.saturation.Override(Mathf.Lerp(12 + golden * 8, -14, night) - fear * 25 - (swamp ? 16 : 0));
             color.colorFilter.Override(Color.Lerp(Color.Lerp(swamp ? new Color(0.9f, 0.96f, 0.84f) : Color.white, new Color(1f, 0.93f, 0.85f), golden * 0.6f), new Color(0.82f, 0.88f, 1f), night));
             if (swamp) color.contrast.Override(14);   // แสงเงาตัดกันทึม ๆ (chiaroscuro)
+            if (manor)   // ท่าน้ำผู้ใหญ่: โทนน้ำเงิน-ดำ แสงตะเกียงส้มสลัว เปียกชื้นลึกลับ
+            {
+                color.contrast.Override(10); color.colorFilter.Override(Color.Lerp(new Color(0.84f, 0.9f, 1.06f), new Color(0.78f, 0.86f, 1.05f), night));
+                split.highlights.Override(new Color(0.78f, 0.56f, 0.34f)); split.shadows.Override(new Color(0.28f, 0.38f, 0.62f)); split.balance.Override(-25);
+                vig.intensity.Override(0.32f + night * 0.12f + fear * 0.15f);
+            }
             vig.intensity.Override(0.22f + night * 0.14f + fear * 0.15f + (swamp ? (under ? 0.2f : 0.12f) : 0)); vig.smoothness.Override(swamp && under ? 0.6f : 0.45f);
             vig.color.Override(swamp && under ? new Color(0.06f, 0.05f, 0.02f) : Color.black);
             // ใต้น้ำป่าเลน: เบลอทุกอย่างที่ไกลเกินช่วงเหยื่อ (น้ำขุ่นมองเห็นได้สั้น)
@@ -209,6 +215,7 @@ namespace CozyFishing
             float hour = Story.S != null ? Story.S.time % 24 : 12;
             float mistA = under ? 0 : Mathf.Max(Mathf.Clamp01((8.2f - hour) / 2f) * (hour > 4 ? 1 : 0), night * 0.8f) * 0.07f;
             if (swamp && !under) mistA = Mathf.Max(mistA, 0.06f);   // ป่าเลนชื้นจัด หมอกลอยต่ำทั้งวัน
+            if (manor && !under) mistA = Mathf.Max(mistA, 0.05f);   // ท่าน้ำ: ไอหมอกเรี่ยผิวน้ำตลอด
             mistMat.SetFloat("_Fade", mistA);
             for (int i = 0; i < mist.Length; i++)
             {

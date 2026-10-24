@@ -1,6 +1,9 @@
 // ด่าน: ท่าน้ำบ้านผู้ใหญ่ — แม่น้ำกว้างยามพลบ ฝั่งตรงข้ามเป็นเรือนไทยใต้ถุนสูงหลังใหญ่ของผู้ใหญ่บ้าน (เรือนนอน + เรือนครัว เชื่อมด้วยชาน)
 //      หน้าต่างแสงตะเกียงอุ่น ๆ ระเบียงแขวนตะเกียง บันไดลงท่าน้ำ ศาลพระภูมิริมตลิ่ง ตาลโตนด กอไผ่
 //      ฝั่งผู้เล่น: ท่าน้ำไม้ยื่นลงแม่น้ำ ปลายท่ามีศาลาหลังคาทรงไทย โอ่งดิน ขดเชือก เรือพายผูกหลัก
+//      บรรยากาศวังเวง: หน้าต่างบางบานมืด บางบานแสงตะเกียง/นีออนสลัวลอดมู่ลี่ไม้ไผ่ เงาคนยืนนิ่งในห้อง · ใต้ถุนกองไม้ กระสอบข้าว กรงไก่
+//      เสาไฟไม้ริมตลิ่ง · ท่าน้ำไม้เก่าเสาจับตะไคร่ พวงมาลัยแห้งบูชาแม่ย่านาง โอ่งมังกรมันวาว แกลลอนน้ำมัน ข้องเก่า โซ่สนิมผูกเรือ
+//      น้ำขุ่นมืด ใบไม้เน่า ใบบัว · ตลิ่งกกรก กอไผ่ ตาลเป็นเงาตัดฟ้า · ท่าน้ำพังของเพื่อนบ้านไกล ๆ
 using System.IO;
 using CozyFishing;
 using UnityEditor;
@@ -71,8 +74,8 @@ public static partial class SceneBuilder
         var water = new GameObject("RiverWater");
         water.AddComponent<MeshFilter>().sharedMesh = SaveMesh(Grid(80, 50, 140, new Vector3(0, HMW, 5)), "HeadmanWater");
         var wm = LoadOrCreate($"{MatDir}/Water_Headman.mat", waterShader);
-        wm.SetColor("_Shallow", Hex("#6a7a80")); wm.SetColor("_Deep", Hex("#1a2632"));
-        wm.SetFloat("_DepthScale", 1.6f); wm.SetFloat("_Clarity", 0.3f); wm.SetFloat("_Glint", 0.05f); wm.SetFloat("_Refraction", 0.02f);
+        wm.SetColor("_Shallow", Hex("#66705e")); wm.SetColor("_Deep", Hex("#1e2a30"));
+        wm.SetFloat("_DepthScale", 1.2f); wm.SetFloat("_Clarity", 0.12f); wm.SetFloat("_Glint", 0.05f); wm.SetFloat("_Refraction", 0.02f);
         wm.SetFloat("_Reflect", 1f); wm.SetFloat("_Waves", 0.014f); wm.SetFloat("_FoamWidth", 0.05f); wm.SetVector("_Flow", new Vector4(0.05f, 0f, 0, 0));
         wm.SetVector("_RapidZone", Vector4.zero);
         var wr = water.AddComponent<MeshRenderer>(); wr.sharedMaterial = wm; wr.shadowCastingMode = ShadowCastingMode.Off;
@@ -89,6 +92,17 @@ public static partial class SceneBuilder
         var rope = SurfMat("HeadRope", Hex("#b89a6a"), 0f, smooth: 0.05f, tex: "reed_roof_04", tiles: 3f);
         var glow = UnlitMat("HeadWindowGlow", new Color(2.2f, 1.25f, 0.5f));
         var white = SurfMat("TemplePlaster", Hex("#f4ecd8"), 0.15f, smooth: 0.08f, tex: "worn_mossy_plasterwall", tiles: 0.3f);
+        var moss = SurfMat("HeadMoss", Hex("#2e4a26"), 0.6f, smooth: 0.35f);
+        var dragonJar = SurfMat("HeadDragonJar", Hex("#4a2c1c"), 0.05f, smooth: 0.7f);
+        var dimGlow = UnlitMat("HeadWindowDim", new Color(0.9f, 0.45f, 0.16f));
+        var neonGlow = UnlitMat("HeadWindowNeon", new Color(0.75f, 1.05f, 0.95f));
+        var darkPane = SurfMat("HeadWindowDark", Hex("#0c0e10"), 0f, smooth: 0.6f);
+        var sack = SurfMat("HeadSack", Hex("#b8a888"), 0.05f, smooth: 0.05f, tex: "reed_roof_04", tiles: 2f);
+        var bambooMat = SurfMat("HeadBambooSlat", Hex("#a08a58"), 0.05f, smooth: 0.2f);
+        var rust = SurfMat("HeadRust", Hex("#6a3a1c"), 0f, smooth: 0.3f);
+        var gallon = SurfMat("HeadGallon", Hex("#c8a830"), 0.1f, smooth: 0.45f);
+        var garland = SurfMat("HeadGarland", Hex("#a87a30"), 0f, smooth: 0.2f);
+        var ribbon = SurfMat("HeadRibbon", Hex("#b02a20"), 0f, smooth: 0.3f);
         var root = new GameObject("Waterfront").transform;
         GameObject Box(string name, Vector3 c, Vector3 s, Material mat, float yaw = 0)
         {
@@ -96,7 +110,12 @@ public static partial class SceneBuilder
         }
         GameObject Post(Vector3 bottom, float h, float r, Material mat)
         {
-            var g = Prim(PrimitiveType.Cylinder, "Post", bottom + Vector3.up * h * 0.5f, new Vector3(r * 2, h * 0.5f, r * 2), mat); g.transform.SetParent(root, true); return g;
+            var g = Prim(PrimitiveType.Cylinder, "Post", bottom + Vector3.up * h * 0.5f, new Vector3(r * 2, h * 0.5f, r * 2), mat); g.transform.SetParent(root, true);
+            if (bottom.y < HMW && bottom.y + h > HMW)   // คราบตะไคร่เขียวเข้มรอบเสาช่วงปริ่มน้ำ
+            {
+                var mo = Prim(PrimitiveType.Cylinder, "Moss", new Vector3(bottom.x, HMW + 0.12f, bottom.z), new Vector3(r * 2.3f, 0.28f, r * 2.3f), moss); mo.transform.SetParent(root, true);
+            }
+            return g;
         }
         GameObject MeshAt(string name, Mesh mesh, Material[] mats, Vector3 pos, float yaw, float scale = 1)
         {
@@ -136,9 +155,38 @@ public static partial class SceneBuilder
         Lantern(new Vector3(px + 1.3f, deckY + 1.55f, -1.4f), 1.3f);
         Lamp(new Vector3(px + 1.6f, deckY + 1.9f, -1.7f), 8f, 5f);
         var jar = SaveMesh(ProceduralMeshes.Lathe(new[] { new Vector2(0.12f, 0), new Vector2(0.2f, 0.12f), new Vector2(0.23f, 0.28f), new Vector2(0.2f, 0.45f), new Vector2(0.13f, 0.55f), new Vector2(0.14f, 0.6f), new Vector2(0.11f, 0.6f) }, 16, Color.white), "HBJar");
-        MeshAt("Jar", jar, new[] { clay }, new Vector3(px + 3.1f, deckY, -3.5f), 0, 1.7f);
-        MeshAt("Jar", jar, new[] { clay }, new Vector3(px + 2.5f, deckY, -3.6f), 40, 1.35f);
+        MeshAt("DragonJar", jar, new[] { dragonJar }, new Vector3(px + 3.1f, deckY, -3.5f), 0, 1.7f);
+        MeshAt("DragonJar", jar, new[] { dragonJar }, new Vector3(px + 2.5f, deckY, -3.6f), 40, 1.35f);
         MeshAt("Jar", jar, new[] { clay }, new Vector3(px - 1.2f, deckY, -3.6f), 80, 1.5f);
+        // แกลลอนน้ำมันสีเหลืองซีด + หูจับ
+        Box("OilGallon", new Vector3(px + 1.9f, deckY + 0.18f, -3.45f), new Vector3(0.22f, 0.36f, 0.15f), gallon, 12);
+        Box("GallonCap", new Vector3(px + 1.95f, deckY + 0.39f, -3.45f), new Vector3(0.05f, 0.05f, 0.05f), rust, 12);
+        Box("GallonHandle", new Vector3(px + 1.85f, deckY + 0.4f, -3.45f), new Vector3(0.12f, 0.03f, 0.04f), gallon, 12);
+        // ข้องเก่าวางข้างโอ่ง
+        MeshAt("OldFishBasket", SaveMesh(ProceduralMeshes.FishBasket(), "HeadFishBasket"), new[] { SurfMat("HeadBasket", Color.white, 0.2f, vertexColor: true, smooth: 0.15f) }, new Vector3(px - 0.9f, deckY, -3.3f), 20, 1.2f);
+        // พวงมาลัยแห้งบูชาแม่ย่านาง ห้อยเสาศาลา (ดอกเหี่ยวสีน้ำตาลเหลือง + ริบบิ้นแดง)
+        {
+            var gp = new Vector3(px + 1.3f, deckY + 1.25f, -1.38f);
+            for (int k = 0; k < 14; k++)
+            {
+                float a = k / 14f * Mathf.PI * 2;
+                var b = Prim(PrimitiveType.Sphere, "GarlandBead", gp + new Vector3(Mathf.Cos(a) * 0.09f, Mathf.Sin(a) * 0.14f - 0.14f, -0.07f), Vector3.one * 0.045f, garland); b.transform.SetParent(root, true);
+            }
+            for (int k = 0; k < 3; k++) Box("GarlandRibbon", gp + new Vector3(-0.03f + k * 0.03f, -0.4f, -0.07f), new Vector3(0.015f, 0.2f, 0.005f), ribbon, k * 8 - 8);
+        }
+        // โซ่เหล็กขึ้นสนิมจากเสาศาลาไปผูกหัวเรือ
+        {
+            Vector3 c0 = new Vector3(px - 1.55f, deckY + 0.3f, -3.85f), c1 = new Vector3(px - 2.5f, HMW + 0.35f, -4.4f);
+            for (int k = 0; k <= 16; k++)
+            {
+                float t = k / 16f; var pt = Vector3.Lerp(c0, c1, t) + Vector3.down * Mathf.Sin(t * Mathf.PI) * 0.18f;
+                var l = Prim(PrimitiveType.Cube, "ChainLink", pt, new Vector3(0.025f, 0.04f, 0.075f), rust); l.transform.SetParent(root, true);
+                l.transform.rotation = Quaternion.LookRotation(c1 - c0) * Quaternion.Euler(0, 0, k % 2 * 90);
+            }
+        }
+        // ตะเกียงรั้ววางบนพื้นท่าข้างตัวพรานปลา: วงแสงอุ่นท่ามกลางความมืด
+        Lantern(new Vector3(px - 0.6f, deckY + 0.02f, -1.75f), 1.1f);
+        Lamp(new Vector3(px - 0.6f, deckY + 0.5f, -1.8f), 5f, 3.5f, "#ffa850");
         for (int k = 0; k < 4; k++)
         {
             var c = Prim(PrimitiveType.Cylinder, "RopeCoil", new Vector3(px - 1.1f, deckY + 0.02f + k * 0.035f, -1.75f), new Vector3(0.55f - k * 0.08f, 0.018f, 0.55f - k * 0.08f), rope);
@@ -158,6 +206,7 @@ public static partial class SceneBuilder
         // ---------- เรือนไทยผู้ใหญ่บ้าน (ฝั่งตรงข้าม) ----------
         float hx = -3f, bankZ = HMZc(hx) + HMHw(hx);
         float hz = bankZ + 3.7f, gy = HeadmanGround(hx, hz), fy = gy + 2.1f;    // พื้นเรือนสูงจากดิน 2.1 ม. (ใต้ถุนสูง)
+        int winSeq = 0;
         void Wall(Vector3 c, float w, float h, bool alongX, int windows)
         {
             Box("Wall", c, alongX ? new Vector3(w, h, 0.12f) : new Vector3(0.12f, h, w), teak);
@@ -172,8 +221,24 @@ public static partial class SceneBuilder
             {
                 float t = (k + 0.5f) / windows * w - w * 0.5f;
                 var o = alongX ? new Vector3(t, 0.1f, -0.075f) : new Vector3(-0.075f, 0.1f, t);
-                var g = Box("Window", c + o, alongX ? new Vector3(0.6f, 0.95f, 0.02f) : new Vector3(0.02f, 0.95f, 0.6f), glow);
+                int kind = (winSeq++ * 7 + 3) % 5;   // 0 ตะเกียงอุ่น · 1 มืด · 2 สลัว · 3 นีออนซีด · 4 มืด
+                var paneMat = kind == 0 ? glow : kind == 2 ? dimGlow : kind == 3 ? neonGlow : darkPane;
+                var g = Box("Window", c + o, alongX ? new Vector3(0.6f, 0.95f, 0.02f) : new Vector3(0.02f, 0.95f, 0.6f), paneMat);
                 g.GetComponent<Renderer>().shadowCastingMode = ShadowCastingMode.Off;
+                if (kind == 0 || kind == 2 || kind == 3)
+                {
+                    for (int sl = 0; sl < 7; sl++)   // มู่ลี่ไม้ไผ่ลดลงครึ่งบาน
+                    {
+                        var so = o + new Vector3(0, 0.42f - sl * 0.07f, 0) + (alongX ? new Vector3(0, 0, -0.02f) : new Vector3(-0.02f, 0, 0));
+                        Box("BlindSlat", c + so, alongX ? new Vector3(0.62f, 0.025f, 0.015f) : new Vector3(0.015f, 0.025f, 0.62f), bambooMat);
+                    }
+                    if (winSeq == 2)   // เงาคนยืนนิ่งหลังหน้าต่าง
+                    {
+                        var so = o + new Vector3(0.05f, -0.12f, 0) + (alongX ? new Vector3(0, 0, 0.01f) : new Vector3(0.01f, 0, 0));
+                        Box("Silhouette", c + so, alongX ? new Vector3(0.2f, 0.5f, 0.005f) : new Vector3(0.005f, 0.5f, 0.2f), darkPane);
+                        Box("SilhouetteHead", c + so + Vector3.up * 0.33f, alongX ? new Vector3(0.12f, 0.14f, 0.005f) : new Vector3(0.005f, 0.14f, 0.12f), darkPane);
+                    }
+                }
                 Box("WindowFrame", c + o + (alongX ? new Vector3(0, 0, -0.02f) : new Vector3(-0.02f, 0, 0)), alongX ? new Vector3(0.72f, 0.07f, 0.03f) : new Vector3(0.03f, 0.07f, 0.72f), teakDark);
             }
         }
@@ -201,8 +266,8 @@ public static partial class SceneBuilder
             Post(new Vector3(x, gy - 0.3f, vz - 1.1f), fy - gy + 0.3f, 0.12f, teakDark);
             Lantern(new Vector3(x, fy + 0.85f, vz - 1.15f), 1.2f);
         }
-        foreach (float x in new[] { hx - 2f, hx + 3f, hx + 8.5f }) Lamp(new Vector3(x, fy + 1.4f, vz - 0.6f), 10f, 6f);
-        Lamp(new Vector3(hx, fy + 1.3f, hz), 6f, 2f);   // แสงในเรือนลอดหน้าต่าง
+        foreach (float x in new[] { hx - 2f, hx + 8.5f }) Lamp(new Vector3(x, fy + 1.4f, vz - 0.6f), 8f, 3.2f);
+        Lamp(new Vector3(hx - 2f, fy + 1.3f, hz - 1.5f), 5f, 1.4f);   // แสงในเรือนลอดหน้าต่าง (สลัวกว่าเดิม)
         // บันไดลงท่าน้ำ + ท่าน้ำเล็กหน้าเรือน
         for (int k = 0; k < 9; k++)
         {
@@ -214,6 +279,58 @@ public static partial class SceneBuilder
             Post(new Vector3(x, HMW - 1.5f, z), 2.4f, 0.08f, plankDark);
         Lantern(new Vector3(hx + 2.2f, HMW + 0.9f, bankZ - 3.4f), 1.1f);
         Lamp(new Vector3(hx + 2f, HMW + 1.3f, bankZ - 3.2f), 6f, 2.4f);
+        // กาแล: ไม้แผ่นไขว้รูปตัว V บนยอดจั่วทั้งสองหลัง
+        foreach (var (cx, w, rise) in new[] { (hx, 8f, 3.3f), (hx + 7.2f, 4.2f, 2.4f) })
+            foreach (float side in new[] { -1f, 1f })
+            {
+                var top = new Vector3(cx + side * (w * 0.5f + 0.7f), fy + (w < 5 ? 2.2f : 2.5f) + rise, hz + (w < 5 ? 0.6f : 0));
+                for (int k = -1; k <= 1; k += 2)
+                {
+                    var g = Box("Galae", top + new Vector3(0, 0.35f, k * 0.18f), new Vector3(0.05f, 0.9f, 0.16f), teakDark);
+                    g.transform.rotation = Quaternion.Euler(k * 28, 0, 0);
+                }
+            }
+        // ใต้ถุนเรือน: กองฟืน กระสอบข้าวสาร กรงไก่ไม้ไผ่ แคร่
+        {
+            float ux = hx - 1.5f, uz = hz - 1f;
+            for (int k = 0; k < 12; k++)
+            {
+                var lg = Prim(PrimitiveType.Cylinder, "Firewood", new Vector3(ux - 2.2f + (k % 4) * 0.2f, gy + 0.09f + (k / 4) * 0.16f, uz + Rf(-0.05f, 0.05f)), new Vector3(0.16f, 0.6f, 0.16f), teakDark);
+                lg.transform.rotation = Quaternion.Euler(90, 0, 0); lg.transform.SetParent(root, true);
+            }
+            for (int k = 0; k < 5; k++) Box("RiceSack", new Vector3(ux + 0.4f + (k % 3) * 0.55f, gy + 0.18f + (k / 3) * 0.3f, uz + 0.4f), new Vector3(0.5f, 0.32f, 0.75f), sack, Rf(-10, 10));
+            float cx2 = ux + 3.6f, cz2 = uz - 0.3f;
+            Box("CoopBase", new Vector3(cx2, gy + 0.05f, cz2), new Vector3(1.1f, 0.06f, 0.8f), plankDark);
+            Box("CoopTop", new Vector3(cx2, gy + 0.75f, cz2), new Vector3(1.1f, 0.05f, 0.8f), plankDark);
+            for (int k = 0; k <= 10; k++) { float t = k / 10f - 0.5f; Box("CoopSlat", new Vector3(cx2 + t * 1.05f, gy + 0.4f, cz2 - 0.39f), new Vector3(0.025f, 0.7f, 0.025f), bambooMat); Box("CoopSlat", new Vector3(cx2 + t * 1.05f, gy + 0.4f, cz2 + 0.39f), new Vector3(0.025f, 0.7f, 0.025f), bambooMat); }
+            Box("Krae", new Vector3(ux + 6.2f, gy + 0.45f, uz), new Vector3(1.8f, 0.06f, 1f), bambooMat);
+            foreach (var (ox, oz) in new[] { (-0.8f, -0.4f), (0.8f, -0.4f), (-0.8f, 0.4f), (0.8f, 0.4f) }) Box("KraeLeg", new Vector3(ux + 6.2f + ox, gy + 0.22f, uz + oz), new Vector3(0.06f, 0.45f, 0.06f), bambooMat);
+            Lamp(new Vector3(ux + 2f, gy + 1.6f, uz), 4f, 0.7f, "#ff9a40");   // แสงตะเกียงริบหรี่ใต้ถุน
+        }
+        // เรือบดผูกริมตลิ่งหน้าเรือน
+        MeshAt("Ruea Bot", SaveMesh(ProceduralMeshes.Rowboat(3.2f, 0.85f, 0.32f), "HeadDugout"), new[] { boatMat }, new Vector3(hx + 4f, HMW + 0.08f, bankZ - 1.2f), 84);
+        // เสาไฟไม้โบราณริมตลิ่งสองฝั่ง ไฟสลัว
+        foreach (var (lx, far) in new[] { (hx - 5f, true), (hx + 9f, true), (hx + 14f, true), (px + 8f, false), (px - 9f, false) })
+        {
+            float lz = far ? HMZc(lx) + HMHw(lx) + 0.8f : -5.5f, lg = HeadmanGround(lx, lz);
+            Post(new Vector3(lx, lg - 0.2f, lz), 3.4f, 0.07f, plankDark);
+            Box("LampArm", new Vector3(lx, lg + 3.05f, lz + (far ? -0.3f : 0.3f)), new Vector3(0.05f, 0.05f, 0.6f), plankDark);
+            var bulb = Box("LampBulb", new Vector3(lx, lg + 2.9f, lz + (far ? -0.55f : 0.55f)), new Vector3(0.07f, 0.1f, 0.07f), dimGlow);
+            bulb.GetComponent<Renderer>().shadowCastingMode = ShadowCastingMode.Off;
+            Lamp(new Vector3(lx, lg + 2.7f, lz + (far ? -0.6f : 0.6f)), 6f, 1.6f, "#ffb070");
+        }
+        // ท่าน้ำพังของบ้านเพื่อนบ้านไกล ๆ (เสาเอียง ไม้กระดานหลุด)
+        foreach (float bx in new[] { 22f, -24f })
+        {
+            float bz = HMZc(bx) + HMHw(bx) - 1.5f;
+            for (int k = 0; k < 5; k++)
+            {
+                var pp = Post(new Vector3(bx + (k % 2) * 1.4f, HMW - 1.2f, bz - k * 0.9f), 2.2f - k * 0.15f, 0.07f, plankDark);
+                pp.transform.rotation = Quaternion.Euler(Rf(-12, 12), 0, Rf(-12, 12));
+            }
+            for (int k = 0; k < 4; k++) Box("BrokenPlank", new Vector3(bx + 0.7f, HMW + 0.5f - k * 0.1f, bz - k * 0.8f), new Vector3(1.6f, 0.05f, 0.25f), plankDark, Rf(-25, 25)).transform.rotation *= Quaternion.Euler(Rf(-15, 15), 0, Rf(-8, 8));
+        }
+
         // ศาลพระภูมิริมตลิ่ง
         float sx = hx - 7f, sz = bankZ + 1.5f, sg = HeadmanGround(sx, sz);
         Post(new Vector3(sx, sg - 0.1f, sz), 1.5f, 0.09f, white);
@@ -241,7 +358,7 @@ public static partial class SceneBuilder
         var palmTrunk = SurfMat("SugarPalmTrunk", Hex("#b8a890"), tex: "bark_brown_02", tiles: 0.9f, cull: CullMode.Off);
         var palmLeaf = SurfMat("SugarPalmLeaf", Color.white, sway: 0.05f, swayStart: 6f, vertexColor: true, smooth: 0.35f, cull: CullMode.Off);
         int pi = 0;
-        foreach (var (x, dz, h) in new[] { (hx + 12.5f, 3f, 10f), (hx + 15f, 6f, 11f), (hx - 9.5f, 4f, 9.5f), (hx + 19f, 2f, 9f), (hx - 15f, 2.5f, 10.5f), (13f, -6f, 8.5f), (-11f, -7f, 9.5f) })
+        foreach (var (x, dz, h) in new[] { (hx + 12.5f, 3f, 10f), (hx + 15f, 6f, 11f), (hx - 9.5f, 4f, 9.5f), (hx + 19f, 2f, 9f), (hx - 15f, 2.5f, 10.5f), (13f, -6f, 8.5f), (-11f, -7f, 9.5f), (hx + 25f, 7f, 11.5f), (hx - 20f, 8f, 12f), (hx + 4f, 12f, 12.5f), (hx - 2f, 14f, 11f), (24f, -9f, 10f) })
         {
             float z = dz > 0 ? HMZc(x) + HMHw(x) + dz : dz;
             var go = new GameObject("SugarPalm"); go.transform.SetParent(natureRoot, true);
@@ -252,7 +369,7 @@ public static partial class SceneBuilder
         var bambooCulm = SurfMat("BambooCulm", Color.white, vertexColor: true, smooth: 0.45f);
         var bambooLeaf = SurfMat("BambooLeaf", Color.white, sway: 0.06f, swayStart: 3f, vertexColor: true, smooth: 0.3f, cull: CullMode.Off);
         int bi = 0;
-        foreach (var (x, dz) in new[] { (hx - 12f, 2f), (hx - 5.5f, 9f), (hx + 22f, 3f), (-6f, -6f), (-15f, -5f), (10f, -7f), (18f, -5.5f) })
+        foreach (var (x, dz) in new[] { (hx - 12f, 2f), (hx - 5.5f, 9f), (hx + 22f, 3f), (-6f, -6f), (-15f, -5f), (10f, -7f), (18f, -5.5f), (hx + 16f, 1f), (hx - 17f, 1.2f), (-20f, -4.5f), (22f, -4.8f) })
         {
             float z = dz > 0 ? HMZc(x) + HMHw(x) + dz : dz;
             var go = new GameObject("Bamboo"); go.transform.SetParent(natureRoot, true);
@@ -277,7 +394,7 @@ public static partial class SceneBuilder
         }
         var reedMat = SurfMat("Reeds", Color.white, sway: 0.08f, swayStart: 0.3f, vertexColor: true, smooth: 0.25f, cull: CullMode.Off);
         var reeds = new Mesh[2]; for (int i = 0; i < 2; i++) reeds[i] = SaveMesh(ProceduralMeshes.Reeds(950 + i, Rf(1.1f, 1.6f)), "HeadReeds" + i);
-        for (int t = 0, n = 0; t < 1200 && n < 40; t++)
+        for (int t = 0, n = 0; t < 3000 && n < 110; t++)
         {
             float x = Rf(-30, 30), z = Rf(-6, 18), h = HeadmanGround(x, z);
             if (h > HMW + 0.35f || h < HMW - 0.35f || Mathf.Abs(x - px) < 3.5f && z < 0 || Mathf.Abs(x - hx - 1.2f) < 2f && z > 10) continue;
@@ -286,13 +403,41 @@ public static partial class SceneBuilder
             g.AddComponent<MeshFilter>().sharedMesh = reeds[rnd.Next(2)]; g.AddComponent<MeshRenderer>().sharedMaterial = reedMat; n++;
         }
 
+        // ผิวน้ำ: ใบบัวเป็นกอริมตลิ่ง ใบไม้เน่าลอย ฟองรอบเสาท่าน้ำ
+        {
+            var ci = new System.Collections.Generic.List<CombineInstance>();
+            var pad = ProceduralMeshes.Blob(new Color(0.2f, 0.32f, 0.16f), 10, 2); var padY = ProceduralMeshes.Blob(new Color(0.42f, 0.4f, 0.18f), 10, 2);
+            var leafB = ProceduralMeshes.Blob(new Color(0.36f, 0.26f, 0.12f), 6, 2); var foamB = ProceduralMeshes.Blob(new Color(0.62f, 0.64f, 0.6f), 6, 2);
+            void Put(Mesh mesh, Vector3 pos, float yaw, Vector3 sc) => ci.Add(new CombineInstance { mesh = mesh, transform = Matrix4x4.TRS(pos, Quaternion.Euler(0, yaw, 0), sc) });
+            foreach (var (lx, lzSide) in new[] { (-14f, 1f), (-9f, -1f), (9f, 1f), (14f, -1f), (19f, 1f), (-19f, -1f) })   // กอบัวริมตลิ่ง
+                for (int k = 0; k < 18; k++)
+                {
+                    float x = lx + Rf(-2.2f, 2.2f), z = HMZc(x) + lzSide * (HMHw(x) - Rf(0.6f, 2.4f));
+                    if (HeadmanGround(x, z) > HMW - 0.05f) continue;
+                    float dsz = Rf(0.3f, 0.55f); Put(rnd.NextDouble() < 0.8 ? pad : padY, new Vector3(x, HMW + 0.01f, z), Rf(0, 360), new Vector3(dsz, 0.01f, dsz));
+                }
+            for (int k = 0; k < 260; k++)
+            {
+                float x = Rf(-26, 26), z = HMZc(x) + Rf(-1, 1) * HMHw(x);
+                if (HeadmanGround(x, z) > HMW - 0.05f) continue;
+                float dsz = Rf(0.06f, 0.12f); Put(leafB, new Vector3(x, HMW + 0.008f, z), Rf(0, 360), new Vector3(dsz, 0.006f, dsz * 0.5f));
+            }
+            foreach (var (fx, fz) in new[] { (px - 0.85f, -1.3f), (px + 0.85f, -1.3f), (px + 3.55f, -1.3f), (hx + 0.2f, bankZ - 3.4f), (hx + 2.2f, bankZ - 3.4f) })
+                for (int k = 0; k < 6; k++) { float dsz = Rf(0.08f, 0.2f); Put(foamB, new Vector3(fx + Rf(-0.3f, 0.3f), HMW + 0.012f, fz + Rf(-0.3f, 0.3f)), Rf(0, 360), new Vector3(dsz, 0.006f, dsz * 0.7f)); }
+            var fm = new Mesh { indexFormat = IndexFormat.UInt32 }; fm.CombineMeshes(ci.ToArray(), true, true);
+            var fg = new GameObject("RiverDebris"); fg.AddComponent<MeshFilter>().sharedMesh = SaveMesh(fm, "HeadRiverDebris");
+            var fr = fg.AddComponent<MeshRenderer>(); fr.sharedMaterial = SurfMat("HeadDebris", Color.white, 0f, vertexColor: true, smooth: 0.5f); fr.shadowCastingMode = ShadowCastingMode.Off;
+        }
+
         // หมอกจางบนผิวน้ำ + หิ่งห้อยริมตลิ่ง
-        Particles("RiverMist", new Vector3(0, HMW + 0.35f, 6), new Vector3(50f, 16f, 0.1f), ParticleMat("Spray", new Color(1, 1, 1, 0.5f)), 20, new Vector2(4f, 8f), new Vector2(7f, 11f), new Vector2(0.04f, 0.14f), new Color(0.8f, 0.86f, 0.95f, 0.1f));
-        var ff = Particles("Fireflies", new Vector3(hx + 3, HMW + 1.6f, bankZ + 2), new Vector3(36f, 6f, 2.5f), ParticleMat("Firefly", new Color(1.6f, 1.5f, 0.5f, 1)), 10, new Vector2(0.04f, 0.08f), new Vector2(3f, 6f), new Vector2(0.05f, 0.25f), new Color(0.9f, 1f, 0.45f, 1));
+        Particles("RiverMist", new Vector3(0, HMW + 0.35f, 6), new Vector3(50f, 16f, 0.1f), ParticleMat("Spray", new Color(1, 1, 1, 0.5f)), 46, new Vector2(4f, 9f), new Vector2(8f, 12f), new Vector2(0.04f, 0.14f), new Color(0.72f, 0.8f, 0.95f, 0.15f));
+        var ff = Particles("Fireflies", new Vector3(hx + 3, HMW + 1.6f, bankZ + 2), new Vector3(36f, 6f, 2.5f), ParticleMat("Firefly", new Color(1.6f, 1.5f, 0.5f, 1)), 26, new Vector2(0.04f, 0.08f), new Vector2(3f, 6f), new Vector2(0.05f, 0.25f), new Color(0.9f, 1f, 0.45f, 1));
         var noise = ff.noise; noise.enabled = true; noise.strength = 0.4f; noise.frequency = 0.35f;
+        var ff2 = Particles("Fireflies", new Vector3(hx + 2, gy + 0.8f, hz - 0.5f), new Vector3(12f, 4f, 1.4f), ParticleMat("Firefly", new Color(1.6f, 1.5f, 0.5f, 1)), 8, new Vector2(0.04f, 0.08f), new Vector2(3f, 6f), new Vector2(0.05f, 0.2f), new Color(0.9f, 1f, 0.45f, 1));
+        var noise2 = ff2.noise; noise2.enabled = true; noise2.strength = 0.4f; noise2.frequency = 0.35f;
 
         // ---------- ตัวละคร กล้อง แสง ระบบเกม ----------
-        var look = new Look { sun = "#b8c4dc", sunIntensity = 1.1f, sunRot = new Vector2(30, 200), fog = "#4a5670", fogStart = 18, fogEnd = 80, exposure = 0.9f, ambient = 0.95f, skyId = "Overcast", skyTint = "#28344e" };   // ฟ้าน้ำเงินเข้มยามพลบค่ำ
+        var look = new Look { sun = "#b4c2e0", sunIntensity = 1.3f, sunRot = new Vector2(22, 100), fog = "#54607c", fogStart = 8, fogEnd = 70, exposure = 1.05f, ambient = 1.2f, skyId = "Overcast", skyTint = "#222c44" };   // ฟ้าน้ำเงินเข้มยามพลบค่ำ
         BuildGameplay(world, model, world.spawn, look, world);
         SaveStage(scene, path);
     }

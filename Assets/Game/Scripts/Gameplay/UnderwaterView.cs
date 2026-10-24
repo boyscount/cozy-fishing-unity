@@ -17,12 +17,12 @@ namespace CozyFishing
         System.Collections.Generic.List<GameObject> unders = new System.Collections.Generic.List<GameObject>(); GameObject bait; ParticleSystem motes; LineRenderer leader;
         ParticleSystem rays, leaves, lineBubbles, mudBubbles; GameObject bed; Transform[] weeds; Vector3 bedAt = new Vector3(9999, 0, 0);
         bool active, noSpot; float enterT;
-        bool swamp; GameObject shrimp, worm0; ParticleSystem silt; bool wasBite;
+        bool swamp, manor; GameObject shrimp, worm0; ParticleSystem silt; bool wasBite;
         Color fogColor; FogMode savedMode; float savedDensity, savedStart, savedEnd;
 
         public void Init(IWorld w, FishingController f, CameraRig r)
         {
-            world = w; fishing = f; rig = r; swamp = w.StageId == "mangrove";
+            world = w; fishing = f; rig = r; swamp = w.StageId == "mangrove"; manor = w.StageId == "headman";
             // ผิวน้ำมองจากใต้น้ำ: แผ่นใหญ่ระดับผิวน้ำตามกล้องไป (mesh ผิวน้ำของบางด่านเล็ก มองไกลแล้วทะลุเห็นฟ้า) · ตลิ่งที่สูงกว่าน้ำบังส่วนเกินเอง
             Material waterMat = null;
             foreach (var mr in FindObjectsByType<MeshRenderer>(FindObjectsSortMode.None))
@@ -52,7 +52,7 @@ namespace CozyFishing
             hook.AddComponent<MeshFilter>().sharedMesh = HookMesh();
             hook.AddComponent<MeshRenderer>().sharedMaterial = Resources.Load<Material>("Rod/Metal");
             worm0 = worm;
-            if (swamp)   // ป่าเลน: กุ้งเป็นเกี่ยวหลัง ดิ้นพล่าน
+            if (swamp || manor)   // ป่าเลน/ท่าน้ำ: กุ้งเป็นเกี่ยวหลัง ดิ้นพล่าน
             {
                 worm.SetActive(false);
                 shrimp = new GameObject("LiveShrimp"); shrimp.transform.SetParent(bait.transform, false); shrimp.transform.localPosition = new Vector3(0.006f, -0.012f, 0); shrimp.transform.localScale = Vector3.one * 1.6f;
@@ -140,10 +140,31 @@ namespace CozyFishing
             lid.transform.SetParent(box.transform, false); lid.transform.localScale = new Vector3(1.04f, 0.15f, 1.04f); lid.transform.localPosition = new Vector3(0.05f, 0.6f, -0.05f); lid.transform.localRotation = Quaternion.Euler(0, 0, 22);
             lid.GetComponent<Renderer>().sharedMaterial = Lit(new Color(0.32f, 0.16f, 0.07f), 0.25f);
             if (swamp) BuildSwampBed(Lit);
+            if (manor)   // ใต้ท่าน้ำ: ไซดักปลาไม้ไผ่จม โอ่งแตก ขวดเก่า
+            {
+                var bam = Lit(new Color(0.36f, 0.3f, 0.16f), 0.15f);
+                var trap = new GameObject("SunkenTrap"); trap.transform.SetParent(bed.transform, false);
+                for (int k = 0; k < 14; k++)
+                {
+                    float a = k / 14f * Mathf.PI * 2;
+                    var sl = GameObject.CreatePrimitive(PrimitiveType.Cube); Destroy(sl.GetComponent<Collider>()); sl.transform.SetParent(trap.transform, false);
+                    sl.transform.localPosition = new Vector3(Mathf.Cos(a) * 0.2f, 0, Mathf.Sin(a) * 0.2f); sl.transform.localScale = new Vector3(0.02f, 0.012f, 0.9f);
+                    sl.transform.localRotation = Quaternion.Euler(0, 0, a * Mathf.Rad2Deg); sl.GetComponent<Renderer>().sharedMaterial = bam;
+                }
+                for (int k = 0; k < 3; k++)
+                {
+                    var rg = GameObject.CreatePrimitive(PrimitiveType.Cylinder); Destroy(rg.GetComponent<Collider>()); rg.transform.SetParent(trap.transform, false);
+                    rg.transform.localPosition = new Vector3(0, 0, (k - 1) * 0.35f); rg.transform.localScale = new Vector3(0.42f, 0.008f, 0.42f); rg.transform.localRotation = Quaternion.Euler(90, 0, 0);
+                    rg.GetComponent<Renderer>().sharedMaterial = bam;
+                }
+                trap.transform.localRotation = Quaternion.Euler(8, 35, 12); manorTrap = trap.transform;
+                var jarG = GameObject.CreatePrimitive(PrimitiveType.Sphere); Destroy(jarG.GetComponent<Collider>()); jarG.name = "SunkenJar"; jarG.transform.SetParent(bed.transform, false);
+                jarG.transform.localScale = new Vector3(0.38f, 0.48f, 0.38f); jarG.transform.localRotation = Quaternion.Euler(0, 0, 70); jarG.GetComponent<Renderer>().sharedMaterial = Lit(new Color(0.3f, 0.17f, 0.1f), 0.6f); manorJar = jarG.transform;
+            }
             bed.SetActive(false);
         }
 
-        Transform[] swampRoots; Transform wreck, net;
+        Transform[] swampRoots; Transform wreck, net, manorTrap, manorJar;
         // รากโกงกางบิดเบี้ยวดิ่งจากผิวน้ำลงปักโคลน · ซากเรือไม้ผุจมดิน · อวนเก่าจับคราบโคลน
         void BuildSwampBed(System.Func<Color, float, Material> lit)
         {
@@ -262,6 +283,7 @@ namespace CozyFishing
             var log = bed.transform.Find("SunkenLog"); log.position = Ground(b - toCam * 1.6f + side * 1.1f) + Vector3.up * 0.1f;
             var box = bed.transform.Find("RustyBox"); box.position = Ground(b - toCam * 1.1f - side * 0.9f) + Vector3.up * 0.06f;
             mudBubbles.transform.position = Ground(b - toCam * 0.8f + side * 0.3f);
+            if (manorTrap != null) { manorTrap.position = Ground(b - toCam * 1.4f + side * 0.9f) + Vector3.up * 0.18f; manorJar.position = Ground(b - toCam * 2f - side * 1f) + Vector3.up * 0.12f; }
             if (swampRoots != null)
             {
                 for (int i = 0; i < swampRoots.Length; i++)   // รากล้อมรอบด้านหลังและข้างเหยื่อ (เว้นหน้ากล้อง)
