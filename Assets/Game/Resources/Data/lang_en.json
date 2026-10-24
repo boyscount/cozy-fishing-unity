@@ -1,6 +1,18 @@
 {
 "items": [
 {
+"th": "ดุน้อย",
+"en": "Mild"
+},
+{
+"th": "ดุ",
+"en": "Fierce"
+},
+{
+"th": "ดุมาก",
+"en": "Deadly"
+},
+{
 "th": "แอบไปตกปลาที่ไหนดี? (ตกได้ถึงตี 5 ครึ่ง)",
 "en": "Where shall we sneak off to fish? (you can stay until 5:30 AM)"
 },

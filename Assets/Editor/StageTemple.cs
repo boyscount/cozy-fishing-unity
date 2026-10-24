@@ -280,7 +280,7 @@ public static partial class SceneBuilder
         var padMeshes = new[] { SaveMesh(ProceduralMeshes.LotusPad(1), "LotusPad1"), SaveMesh(ProceduralMeshes.LotusPad(2), "LotusPad2"), SaveMesh(ProceduralMeshes.LotusPad(3), "LotusPad3") };
         var flowerMesh = SaveMesh(ProceduralMeshes.LotusFlower(4, false), "LotusFlower");
         int pads = 0;
-        for (int tries = 0; tries < 600 && pads < 55; tries++)
+        for (int tries = 0; tries < 1500 && pads < 110; tries++)
         {
             float x = Rf(-13, 14), z = Rf(-1, 24), d = TW - TempleGround(x, z);
             if (d < 0.1f || d > 1.3f || x * x + z * z < 9 || Mathf.Abs(x - TX) < 3.6f && z > TZ - 9 && z < TZ + 7) continue;
@@ -306,12 +306,44 @@ public static partial class SceneBuilder
             lg.transform.position = p + Vector3.up * 0.4f;
         }
 
+        // เทียนบนหัวเสาบันไดท่าน้ำสองต้น (แสงอุ่นกลางความมืด)
+        var flame = UnlitMat("CandleFlame", new Color(2.4f, 1.4f, 0.5f));
+        foreach (var s in new[] { -1f, 1f })
+        {
+            var cd = Prim(PrimitiveType.Cylinder, "Candle", new Vector3(s * 1.7f + 0.15f, 0.82f, -1.75f), new Vector3(0.05f, 0.07f, 0.05f), SurfMat("CandleWax", Hex("#f0e8d0"), 0f, smooth: 0.4f)); cd.transform.SetParent(root, true);
+            var fl = Prim(PrimitiveType.Sphere, "Flame", new Vector3(s * 1.7f + 0.15f, 0.93f, -1.75f), new Vector3(0.035f, 0.06f, 0.035f), flame); fl.transform.SetParent(root, true); fl.GetComponent<Renderer>().shadowCastingMode = ShadowCastingMode.Off;
+            var cl = new GameObject("CandleLight").AddComponent<Light>(); cl.type = LightType.Point; cl.range = 3.5f; cl.intensity = 1.4f; cl.color = Hex("#ffb060"); cl.shadows = LightShadows.None; cl.transform.position = new Vector3(s * 1.7f + 0.15f, 1.1f, -1.75f);
+        }
+        // ขอนไม้ลอย · ซากกำแพงอิฐพังจมน้ำ
+        var logMat = SurfMat("TempleDriftLog", Hex("#4a3e30"), 0.3f, smooth: 0.25f, tex: "bark_brown_02", tiles: 1f);
+        for (int i = 0; i < 10; i++)
+        {
+            float x = Rf(-11, 12), z = Rf(2, 20);
+            if (Mathf.Abs(x - TX) < 3.8f && z > TZ - 9 && z < TZ + 7 || TW - TempleGround(x, z) < 0.25f) continue;
+            var lg2 = Prim(PrimitiveType.Cylinder, "DriftLog", new Vector3(x, TW + 0.03f, z), new Vector3(Rf(0.2f, 0.35f), Rf(0.8f, 1.6f), Rf(0.2f, 0.35f)), logMat);
+            lg2.transform.rotation = Quaternion.Euler(90 + Rf(-6, 6), Rf(0, 360), 0); lg2.transform.SetParent(root, true);
+        }
+        foreach (var (x, z, yaw) in new[] { (-8.5f, 14f, 20f), (-10f, 9f, -40f), (9f, 18f, 60f) })
+            for (int k = 0; k < 4; k++)
+            {
+                var wb = Box("RuinWall", new Vector3(x + k * 0.9f * Mathf.Cos(yaw * Mathf.Deg2Rad), TW + Rf(0.1f, 0.9f) - 0.3f, z + k * 0.9f * Mathf.Sin(yaw * Mathf.Deg2Rad)), new Vector3(0.9f, Rf(0.8f, 1.8f), 0.4f), brick);
+                wb.transform.rotation = Quaternion.Euler(Rf(-8, 8), -yaw, Rf(-10, 10));
+            }
+        // ดวงตาแดงเรืองในความมืดรอบวัด (ออกเฉพาะกลางคืน)
+        var eyeMat = ParticleMat("GhostEyes", new Color(2.2f, 0.25f, 0.15f, 1));
+        foreach (var (ex, ez) in new[] { (-12f, 16f), (13f, 18f), (-9f, 25f), (8f, 27f), (15f, 8f) })
+        {
+            var eyes = Particles("GhostEyes", new Vector3(ex, TempleGround(ex, ez) + 1.2f, ez), new Vector3(1.5f, 0.6f, 0.3f), eyeMat, 0.4f, new Vector2(0.06f, 0.09f), new Vector2(4f, 7f), new Vector2(0f, 0f), new Color(1, 0.3f, 0.2f, 1));
+            var sz = eyes.sizeOverLifetime; sz.enabled = false;
+            eyes.gameObject.AddComponent<DuskOnly>().from = 19.5f; eyes.gameObject.GetComponent<DuskOnly>().to = 5f;
+        }
+
         // หมอกบาง ๆ ลอยเหนือวังน้ำ
         var mist = ParticleMat("Spray", new Color(1, 1, 1, 0.5f));
-        Particles("PoolMist", new Vector3(TX, TW + 0.35f, 9f), new Vector3(24f, 18f, 0.1f), mist, 12, new Vector2(3f, 6f), new Vector2(6f, 9f), new Vector2(0.04f, 0.15f), new Color(1, 1, 1, 0.1f));
+        Particles("PoolMist", new Vector3(TX, TW + 0.4f, 10f), new Vector3(28f, 22f, 1f), mist, 28, new Vector2(4f, 7f), new Vector2(7f, 10f), new Vector2(0.04f, 0.15f), new Color(0.92f, 0.94f, 0.92f, 0.13f));
 
         // ---------- ตัวละคร กล้อง แสง ระบบเกม ----------
-        var look = new Look { sun = "#ffd9b0", sunIntensity = 1.7f, sunRot = new Vector2(30, 125), fog = "#b4c0b2", fogStart = 14, fogEnd = 75, exposure = 0.95f, ambient = 1.0f };
+        var look = new Look { sun = "#f0dcc0", sunIntensity = 1.4f, sunRot = new Vector2(26, 125), fog = "#98a29a", fogStart = 8, fogEnd = 58, exposure = 0.95f, ambient = 0.95f, skyId = "Overcast", skyTint = "#8e9894" };   // ครึ้มหมอก วัดร้างวังเวง
         world.spawn.y = TempleGround(world.spawn.x, world.spawn.z);
         BuildGameplay(world, model, world.spawn, look, world);
         SaveStage(scene, path);

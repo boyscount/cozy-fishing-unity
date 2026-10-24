@@ -23,7 +23,7 @@ namespace CozyFishing
         Action<bool[]> onEveningDone;
         bool[] eveGrill;
         bool dialogNext;
-        public bool ModalOpen => Shown(ask) || Shown(fadeEl) || Shown(dialogEl) || Shown(morning) || Shown(evening) || Shown(bag) || Shown(casePanel) || Shown(cluePop) || Shown(title) || Shown(settings) || Shown(bed);
+        public bool ModalOpen => Shown(ask) || Shown(fadeEl) || Shown(dialogEl) || Shown(morning) || Shown(evening) || Shown(bag) || Shown(casePanel) || Shown(cluePop) || Shown(title) || Shown(settings) || Shown(bed) || Shown(sneak);
         VisualElement caseBtn, casePanel, caseBody, cluePop, clueBody;
         Label caseBtnTxt;
 

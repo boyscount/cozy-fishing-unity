@@ -1,5 +1,7 @@
 // ด่าน: หลืบแพสุสาน — คุ้งแม่น้ำกว้างหมอกลงจัด เรือนแพร้างลอยเกยกันเป็นกลุ่ม บางหลังเอียงจมครึ่งหลัง หลังคาจากพัง
 //      เรือพายคว่ำ/จมอยู่ระหว่างแพ หลักผูกเรือโผล่น้ำ เศษไม้ลอย ตะเกียงริบหรี่บนแพหลังหนึ่ง · ผู้เล่นยืนบนแพไม้ไผ่ที่ยื่นจากฝั่งออกไปกลางน้ำ
+//      หลังคาสังกะสีลอนขึ้นสนิมทรุดเอียง · ฐานแพท่อนซุงผุ + ทุ่นแกลลอนพลาสติก · เชือกล่ามแพ · บังตาไม้ไผ่ขาด · หม้อ อวน มุ้งขาด ศาลพระภูมิเก่า
+//      น้ำนิ่งขุ่นดำ ผักตบเน่า กิ่งไม้ เสาปูนหัก ป้ายวิญญาณ ผ้าสามสีผูกต้นไม้ · หมอกจับเป็นก้อนเรี่ยน้ำระหว่างแพ · ลานแพผู้เล่นไม้ผุมีมอส ตะเกียงบนลังไม้ ถัง ข้อง
 using System.IO;
 using CozyFishing;
 using UnityEditor;
@@ -98,9 +100,9 @@ public static partial class SceneBuilder
         var water = new GameObject("RiverWater");
         water.AddComponent<MeshFilter>().sharedMesh = SaveMesh(Grid(100, 70, 150, new Vector3(0, HW, 12)), "HouseboatWater");
         var wm = LoadOrCreate($"{MatDir}/Water_Houseboat.mat", waterShader);
-        wm.SetColor("_Shallow", Hex("#a8b0a4")); wm.SetColor("_Deep", Hex("#2a3632"));
-        wm.SetFloat("_DepthScale", 1.5f); wm.SetFloat("_Clarity", 0.4f); wm.SetFloat("_Glint", 0.8f); wm.SetFloat("_Refraction", 0.03f);
-        wm.SetFloat("_Reflect", 0.95f); wm.SetFloat("_Waves", 0.018f); wm.SetFloat("_FoamWidth", 0.05f); wm.SetVector("_Flow", new Vector4(0.12f, 0.01f, 0, 0));
+        wm.SetColor("_Shallow", Hex("#5e665a")); wm.SetColor("_Deep", Hex("#141a18"));
+        wm.SetFloat("_DepthScale", 1.2f); wm.SetFloat("_Clarity", 0.14f); wm.SetFloat("_Glint", 0.3f); wm.SetFloat("_Refraction", 0.03f);
+        wm.SetFloat("_Reflect", 0.95f); wm.SetFloat("_Waves", 0.018f); wm.SetFloat("_FoamWidth", 0.05f); wm.SetVector("_Flow", new Vector4(0.03f, 0.005f, 0, 0));   // น้ำแทบนิ่ง
         wm.SetVector("_RapidZone", Vector4.zero);
         var wr = water.AddComponent<MeshRenderer>(); wr.sharedMaterial = wm; wr.shadowCastingMode = ShadowCastingMode.Off;
 
@@ -110,6 +112,15 @@ public static partial class SceneBuilder
         var bamboo = SurfMat("HBBamboo", Hex("#c8b07a"), 0.04f, smooth: 0.35f, tex: "bark_brown_02", tiles: 1.6f);
         var roofMat = SurfMat("HBRoof", Hex("#9a8060"), 0.03f, smooth: 0.08f, tex: "reed_roof_04", tiles: 0.6f, cull: CullMode.Off);
         var boatMat = SurfMat("HBBoat", Hex("#8a6e52"), 0.05f, smooth: 0.25f, tex: "weathered_brown_planks", tiles: 0.9f, cull: CullMode.Off);
+        var rottenLog = SurfMat("HBRottenLog", Hex("#5a4a38"), 0.35f, smooth: 0.2f, tex: "bark_brown_02", tiles: 1.2f);
+        var tin = SurfMat("HBTin", Color.white, 0f, vertexColor: true, smooth: 0.35f, cull: CullMode.Off);
+        var mossMat = SurfMat("HBMoss", Hex("#3a5a2a"), 0.6f, smooth: 0.3f);
+        var rope = SurfMat("HeadRope", Hex("#b89a6a"), 0f, smooth: 0.05f, tex: "reed_roof_04", tiles: 3f);
+        var gallonCols = new[] { SurfMat("HBGallonBlue", Hex("#3a5a8a"), 0.15f, smooth: 0.5f), SurfMat("HBGallonWhite", Hex("#c8c4b4"), 0.2f, smooth: 0.45f), SurfMat("HBGallonYellow", Hex("#b89a3a"), 0.15f, smooth: 0.45f) };
+        var potMat = SurfMat("HBPot", Hex("#2a2622"), 0.05f, smooth: 0.45f);
+        var netMatH = SurfMat("HBNetCloth", Hex("#8a8670"), 0f, smooth: 0.1f, cull: CullMode.Off);
+        var concrete = SurfMat("HBConcrete", Hex("#8a8a82"), 0.3f, smooth: 0.15f, tex: "worn_mossy_plasterwall", tiles: 0.5f);
+        var shrineMat = SurfMat("TemplePlaster", Hex("#f4ecd8"), 0.15f, smooth: 0.08f, tex: "worn_mossy_plasterwall", tiles: 0.3f);
         Transform group = null;
         GameObject Box(string name, Vector3 lp, Vector3 s, Material mat, Vector3? rot = null)
         {
@@ -197,8 +208,30 @@ public static partial class SceneBuilder
                 Box("Shutter", new Vector3(s * (hw + 0.05f), y0 + 1.25f, 0.42f), new Vector3(0.03f, 0.62f, 0.36f), plankDark, new Vector3(0, s * Rf(30, 70), Rf(-20, 20)));   // บานเปิดห้อยเอียง
             }
             // หลังคาจาก (สันตามแกน Z) · หลังที่พังเอียงยุบลงข้างหนึ่ง
-            var roofMesh = SaveMesh(ProceduralMeshes.ThatchRoof(400 + hb, hl * 2 + 1.0f, hw + 0.65f, 1.15f), "HBThatch" + hb);
-            MeshAt("Thatch", roofMesh, thatch, new Vector3(0, y0 + H - 0.05f - (broken ? 0.35f : 0), 0), new Vector3(0, 0, broken ? Rf(10, 18) : Rf(-2, 2)));
+            if (hb % 2 == 1 || broken)   // หลังคาสังกะสีลอนขึ้นสนิม ทรุดเอียง
+                MeshAt("TinRoof", SaveMesh(ProceduralMeshes.TinRoof(420 + hb, hl * 2 + 1.0f, hw + 0.6f, 0.95f), "HBTin" + hb), tin, new Vector3(0, y0 + H - 0.05f - (broken ? 0.35f : 0), 0), new Vector3(Rf(-4, 4), 0, broken ? Rf(10, 18) : Rf(-5, 5)));
+            else
+            {
+                var roofMesh = SaveMesh(ProceduralMeshes.ThatchRoof(400 + hb, hl * 2 + 1.0f, hw + 0.65f, 1.15f), "HBThatch" + hb);
+                MeshAt("Thatch", roofMesh, thatch, new Vector3(0, y0 + H - 0.05f - (broken ? 0.35f : 0), 0), new Vector3(0, 0, broken ? Rf(10, 18) : Rf(-2, 2)));
+            }
+            // ฐานแพ: ท่อนซุงผุมัดรวม + ทุ่นแกลลอนพลาสติกเก่าใต้พื้น + คราบตะไคร่ริมน้ำ
+            for (int s = -1; s <= 1; s += 2) Log(new Vector3(s * (W * 0.5f + 0.1f), -0.02f, 0), L + 0.6f, Rf(0.17f, 0.22f), rottenLog, new Vector3(90, 0, Rf(-3, 3)));
+            for (int k = 0; k < 4; k++) Box("FloatGallon", new Vector3((k % 2 == 0 ? -1 : 1) * W * 0.25f, -0.05f, (k / 2 == 0 ? -1 : 1) * L * 0.3f), new Vector3(0.32f, 0.3f, 0.45f), gallonCols[(hb + k) % 3], new Vector3(Rf(-8, 8), Rf(0, 40), Rf(-8, 8)));
+            Box("MossEdge", new Vector3(0, 0.12f, -L * 0.5f - 0.15f), new Vector3(W, 0.03f, 0.25f), mossMat);
+            // บังตาไม้ไผ่ขาดรุ่งริ่งหน้าเรือน
+            for (int k = 0; k < 9; k++) if (rnd.NextDouble() > 0.3) Box("BlindSlat", new Vector3(-0.6f + k * 0.15f + Rf(-0.02f, 0.02f), y0 + 1.2f - Rf(0, 0.3f), -hl - 0.08f), new Vector3(0.1f, Rf(0.5f, 1.1f), 0.01f), wicker, new Vector3(0, 0, Rf(-8, 8)));
+            // ของพังบนแพ: หม้อดำ อวนกองพับ
+            MeshAt("Pot", jarMesh, potMat, new Vector3(W * 0.2f, y0, -hl - 0.6f), new Vector3(rnd.NextDouble() < 0.5 ? 90 : 0, Rf(0, 360), 0), 0.55f);
+            Box("NetPile", new Vector3(-W * 0.1f, y0 + 0.06f, -hl - 0.75f), new Vector3(0.7f, 0.12f, 0.5f), netMatH, new Vector3(0, Rf(0, 360), Rf(-6, 6)));
+            if (hb == 2 || hb == 6)   // มุ้งขาดแขวนห้อยหน้าประตู
+                for (int k = 0; k < 3; k++) MeshAt("TornNet", SaveMesh(ProceduralMeshes.Ribbon(560 + hb * 3 + k, new Color(0.82f, 0.82f, 0.76f), Rf(0.8f, 1.2f)), "HBTornNet" + hb + "_" + k), ragMat, new Vector3(-0.3f + k * 0.3f, y0 + 1.8f, -hl - 0.05f), new Vector3(180, Rf(-20, 20), 0), Rf(3f, 4f));
+            if (hb == 4)   // ศาลพระภูมิเก่าเอียงริมแพ
+            {
+                Log(new Vector3(-W * 0.4f, y0 + 0.55f, -L * 0.4f), 1.1f, 0.05f, plankDark, new Vector3(0, 0, 8));
+                Box("OldShrine", new Vector3(-W * 0.4f, y0 + 1.25f, -L * 0.4f), new Vector3(0.45f, 0.4f, 0.4f), shrineMat, new Vector3(0, 20, 10));
+                Box("OldShrineRoof", new Vector3(-W * 0.4f + 0.04f, y0 + 1.55f, -L * 0.4f), new Vector3(0.55f, 0.08f, 0.5f), roofMat, new Vector3(0, 20, 18));
+            }
             Box("Ridge", new Vector3(0, y0 + H + 1.25f - (broken ? 0.35f : 0), 0), new Vector3(0.14f, 0.12f, hl * 2 + 1.0f), plankDark, new Vector3(0, 0, broken ? 14 : 0));
             // ระเบียงหน้า: เสา ราว · โอ่งน้ำ ไซดักปลา
             for (int s = -1; s <= 1; s += 2) Log(new Vector3(s * (W * 0.5f - 0.15f), y0 + 0.5f, -L * 0.5f + 0.1f), 1f, 0.05f, plankDark, Vector3.zero);
@@ -235,7 +268,8 @@ public static partial class SceneBuilder
         {
             Nature2("brass_diya_lantern", p, 1.6f);
             var lg = new GameObject("LanternLight").AddComponent<Light>();
-            lg.type = LightType.Point; lg.range = 4f; lg.intensity = 1.1f; lg.color = Hex("#ffa850"); lg.shadows = LightShadows.None;
+            bool mine = (p - new Vector3(1.6f, deckY + 0.45f, 6.9f)).sqrMagnitude < 0.01f;
+            lg.type = LightType.Point; lg.range = mine ? 7f : 4.5f; lg.intensity = mine ? 3f : 1.4f; lg.color = Hex("#ffa850"); lg.shadows = LightShadows.None;
             lg.transform.position = p + Vector3.up * 0.4f;
         }
         // บ้านเสาสูงริมตลิ่งฝั่งไกล: เงาตะคุ่มในหมอก ให้ฉากลึก
@@ -264,6 +298,53 @@ public static partial class SceneBuilder
             MeshAt("Hyacinth", hyaMeshes[rnd.Next(4)], hyaMat, new Vector3(cx, HW - 0.02f, cz), new Vector3(0, Rf(0, 360), 0), Rf(1.2f, 1.9f));
             n++;
         }
+        // เชือกป่านพะรุงพะรังล่ามแพแต่ละหลังเข้าด้วยกัน (หย่อนโค้ง)
+        group = new GameObject("MooringRopes").transform; houseRoots.Add(group);
+        foreach (var (ia, ib) in new[] { (0, 5), (2, 3), (4, 6), (1, 2), (6, 7), (3, 4) })
+        {
+            var a = houseRoots[ia].position + Vector3.up * 0.45f; var b = houseRoots[ib].position + Vector3.up * 0.45f;
+            for (int k = 0; k < 12; k++)
+            {
+                float t0 = k / 12f, t1 = (k + 1) / 12f;
+                var p0 = Vector3.Lerp(a, b, t0) + Vector3.down * Mathf.Sin(t0 * Mathf.PI) * 0.5f; var p1 = Vector3.Lerp(a, b, t1) + Vector3.down * Mathf.Sin(t1 * Mathf.PI) * 0.5f;
+                var seg = Prim(PrimitiveType.Cube, "Rope", (p0 + p1) * 0.5f, new Vector3(0.025f, 0.025f, (p1 - p0).magnitude), rope);
+                seg.transform.rotation = Quaternion.LookRotation(p1 - p0); seg.transform.SetParent(group, true);
+            }
+        }
+        // ซากสุสาน: เสาปูนหักโผล่น้ำ ป้ายวิญญาณเก่าเอียง · ต้นไม้ตายริมน้ำผูกผ้าสามสี + ศาลเล็กบนกิ่ง
+        group = new GameObject("Graveyard").transform; houseRoots.Add(group);
+        foreach (var (gx, gz) in new[] { (-11f, 8f), (12f, 7.5f), (-6f, 28f), (9f, 27f), (15f, 14f), (-16f, 15f) })
+        {
+            float hgt = Rf(0.6f, 1.6f);
+            var post = Prim(PrimitiveType.Cylinder, "ConcretePost", new Vector3(gx, HW + hgt * 0.5f - 0.5f, gz), new Vector3(0.22f, hgt * 0.5f + 0.25f, 0.22f), concrete);
+            post.transform.rotation = Quaternion.Euler(Rf(-14, 14), 0, Rf(-14, 14)); post.transform.SetParent(group, true);
+            var tab = Prim(PrimitiveType.Cube, "SpiritTablet", new Vector3(gx + Rf(0.5f, 1f), HW + 0.18f, gz + Rf(-0.6f, 0.6f)), new Vector3(0.32f, 0.55f, 0.07f), concrete);
+            tab.transform.rotation = Quaternion.Euler(Rf(-30, -10), Rf(0, 360), Rf(-15, 15)); tab.transform.SetParent(group, true);
+        }
+        {
+            var tree = new Vector3(-4.2f, HouseboatGround(-4.2f, -1.5f), -1.5f);
+            var trunk = Prim(PrimitiveType.Cylinder, "DeadTree", tree + Vector3.up * 1.8f, new Vector3(0.32f, 1.9f, 0.32f), rottenLog); trunk.transform.rotation = Quaternion.Euler(0, 0, -6); trunk.transform.SetParent(group, true);
+            var cloth = new[] { Hex("#c02a2a"), Hex("#e8c030"), Hex("#2a8a3a") };   // ผ้าสามสี
+            for (int k = 0; k < 6; k++)
+            {
+                var rib = new GameObject("TriColorCloth"); rib.transform.SetParent(group, true);
+                rib.transform.SetPositionAndRotation(tree + new Vector3(Rf(-0.15f, 0.15f), 1.3f + k * 0.08f, Rf(-0.15f, 0.15f)), Quaternion.Euler(180, Rf(0, 360), 0)); rib.transform.localScale = Vector3.one * Rf(2.5f, 3.5f);
+                rib.AddComponent<MeshFilter>().sharedMesh = SaveMesh(ProceduralMeshes.Ribbon(620 + k, cloth[k % 3], Rf(0.5f, 0.8f)), "HBCloth" + k);
+                rib.AddComponent<MeshRenderer>().sharedMaterial = ragMat;
+            }
+            var sb = Prim(PrimitiveType.Cube, "TreeShrine", tree + new Vector3(0.25f, 2.6f, 0), new Vector3(0.4f, 0.35f, 0.35f), roofMat); sb.transform.rotation = Quaternion.Euler(0, 15, -8); sb.transform.SetParent(group, true);
+            world.colliders.Add(new Vector4(tree.x, tree.z, 0.5f, 99));
+        }
+        // ลานแพผู้เล่น: ไม้ผุมีมอสเปียก · ลังไม้วางตะเกียง · ถัง ข้อง ขดเชือก
+        group = new GameObject("PlayerRaftProps").transform; houseRoots.Add(group);
+        for (int k = 0; k < 7; k++) Box("RaftMoss", new Vector3(Rf(-3f, 3f), deckY - 0.04f, Rf(4.6f, 7.4f)), new Vector3(Rf(0.4f, 1.1f), 0.02f, Rf(0.3f, 0.8f)), mossMat, new Vector3(0, Rf(0, 360), 0));
+        Box("Crate", new Vector3(1.6f, deckY + 0.22f, 6.9f), new Vector3(0.6f, 0.44f, 0.5f), plankDark, new Vector3(0, 12, 0));
+        MeshAt("Bucket", SaveMesh(ProceduralMeshes.Bucket(), "HBBucket"), SurfMat("HBBucketMat", Color.white, 0f, vertexColor: true, smooth: 0.5f), new Vector3(0.9f, deckY - 0.02f, 7.1f), Vector3.zero);
+        MeshAt("FishBasket", SaveMesh(ProceduralMeshes.FishBasket(), "HBFishBasket"), SurfMat("HBBasketMat", Color.white, 0.1f, vertexColor: true, smooth: 0.15f), new Vector3(2.3f, deckY - 0.02f, 6.5f), new Vector3(0, 30, 0), 1.2f);
+        MeshAt("FishBasket", SaveMesh(ProceduralMeshes.FishBasket(), "HBFishBasket"), SurfMat("HBBasketMat", Color.white, 0.1f, vertexColor: true, smooth: 0.15f), new Vector3(2.6f, deckY - 0.02f, 7.0f), new Vector3(70, 30, 0), 1.0f);
+        for (int k = 0; k < 4; k++) Box("RopeCoil", new Vector3(2.2f, deckY + 0.02f + k * 0.04f, 7.35f), new Vector3(0.42f - k * 0.06f, 0.035f, 0.42f - k * 0.06f), rope, new Vector3(0, k * 30, 0));
+        { var lp = new Vector3(1.6f, deckY + 0.45f, 6.9f); Nature2("brass_diya_lantern", lp, 1.6f); var ml = new GameObject("PlayerLanternLight").AddComponent<Light>(); ml.type = LightType.Point; ml.range = 7f; ml.intensity = 3f; ml.color = Hex("#ffa850"); ml.shadows = LightShadows.None; ml.transform.position = lp + Vector3.up * 0.4f; }
+
         // รวม mesh ต่อเรือน (วัตถุน้อยลง เบาเครื่องบนเว็บ)
         for (int i = 0; i < houseRoots.Count; i++) CombineGroup(houseRoots[i], "HBGroup" + i);
         void Nature2(string file, Vector3 p, float scale)
@@ -294,7 +375,7 @@ public static partial class SceneBuilder
             var c = Prim(PrimitiveType.Cylinder, "Stake", new Vector3(x, HW + Rf(0.1f, 0.9f) - 1.2f, z), new Vector3(0.14f, 1.4f + Rf(0, 0.5f), 0.14f), plankDark);
             c.transform.rotation = Quaternion.Euler(Rf(-8, 8), 0, Rf(-8, 8)); c.transform.SetParent(stakes, true);
         }
-        for (int i = 0; i < 14; i++)
+        for (int i = 0; i < 26; i++)
         {
             var g = Prim(PrimitiveType.Cube, "Driftwood", new Vector3(Rf(-15, 15), HW + 0.01f, Rf(9, 30)), new Vector3(Rf(0.2f, 0.35f), 0.05f, Rf(1f, 2.4f)), plank);
             g.transform.rotation = Quaternion.Euler(0, Rf(0, 360), Rf(-4, 4)); g.transform.SetParent(stakes, true);
@@ -350,10 +431,15 @@ public static partial class SceneBuilder
 
         // หมอกหนาลอยบนน้ำ
         var mist = ParticleMat("Spray", new Color(1, 1, 1, 0.5f));
-        Particles("RiverMist", new Vector3(0, HW + 0.4f, 16), new Vector3(40f, 34f, 0.1f), mist, 34, new Vector2(4f, 8f), new Vector2(7f, 11f), new Vector2(0.05f, 0.18f), new Color(1, 1, 1, 0.16f));
+        Particles("RiverMist", new Vector3(0, HW + 0.4f, 18), new Vector3(44f, 34f, 0.1f), mist, 12, new Vector2(4f, 8f), new Vector2(7f, 11f), new Vector2(0.05f, 0.18f), new Color(0.82f, 0.86f, 0.88f, 0.1f));
+        foreach (var (fx, fz, fs) in new[] { (-6f, 13f, 6f), (6f, 16f, 7f), (-12f, 22f, 8f), (10f, 25f, 8f), (0f, 30f, 10f), (-2f, 20f, 5f) })   // ก้อนหมอกหนาเรี่ยน้ำพาดผ่านระหว่างแพ → แพไกล ๆ เลือนหาย
+            Particles("FogBank", new Vector3(fx, HW + 0.5f, fz), new Vector3(fs, fs * 0.6f, 0.8f), mist, 9, new Vector2(4f, 7f), new Vector2(8f, 12f), new Vector2(0.03f, 0.1f), new Color(0.84f, 0.88f, 0.9f, 0.24f));
+        var fly = ParticleMat("Firefly", new Color(1.6f, 1.5f, 0.5f, 1));
+        var ffh = Particles("Fireflies", new Vector3(0, HW + 1.2f, 10), new Vector3(30f, 14f, 2f), fly, 10, new Vector2(0.04f, 0.07f), new Vector2(3f, 6f), new Vector2(0.05f, 0.2f), new Color(0.9f, 1f, 0.45f, 1));
+        var nzh = ffh.noise; nzh.enabled = true; nzh.strength = 0.4f; nzh.frequency = 0.35f;
 
         // ---------- ตัวละคร กล้อง แสง ระบบเกม ----------
-        var look = new Look { sun = "#dde2e4", sunIntensity = 1.25f, sunRot = new Vector2(38, 140), fog = "#9ea6a8", fogStart = 7, fogEnd = 50, exposure = 0.75f, ambient = 0.95f, skyId = "Overcast", skyTint = "#76808a" };   // ฟ้าครึ้มเทา หมอกจัด
+        var look = new Look { sun = "#d8dcd8", sunIntensity = 1.35f, sunRot = new Vector2(16, 120), fog = "#6e787c", fogStart = 6, fogEnd = 48, exposure = 0.85f, ambient = 0.85f, skyId = "Overcast", skyTint = "#4e5860" };   // เช้ามืดครึ้ม แสงทิศเดียวต่ำ ๆ   // ฟ้าครึ้มเทา หมอกจัด
         BuildGameplay(world, model, world.spawn, look, world);
         SaveStage(scene, path);
     }

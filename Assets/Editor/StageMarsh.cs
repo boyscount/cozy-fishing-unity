@@ -142,12 +142,17 @@ public static partial class SceneBuilder
             g.AddComponent<MeshFilter>().sharedMesh = mesh; g.AddComponent<MeshRenderer>().sharedMaterials = mats; return g;
         }
         var wood = SurfMat("ShrineWood", Hex("#8a6a4c"), 0.2f, smooth: 0.15f, tex: "weathered_brown_planks", tiles: 1.2f);
-        var redLacquer = SurfMat("ShrinePlaster", Hex("#d9d0bc"), 0.15f, smooth: 0.2f, tex: "weathered_brown_planks", tiles: 0.6f);   // ปูนขาวหม่นคราบฝน
-        var plasterPost = SurfMat("ShrinePost", Hex("#c9c1ad"), 0.1f, smooth: 0.15f);
+        var redLacquer = SurfMat("ShrineOldWood", Hex("#7a6248"), 0.35f, smooth: 0.15f, tex: "weathered_brown_planks", tiles: 0.6f);   // ไม้เก่าผุคราบตะไคร่
+        var plasterPost = SurfMat("ShrineStump", Hex("#6a5a46"), 0.55f, smooth: 0.18f, tex: "bark_brown_02", tiles: 0.8f);           // ตอไม้ใหญ่มอสเกาะ
         var gold = SurfMat("TempleGold", Hex("#c8a050"), 0.2f, smooth: 0.55f, cull: CullMode.Off);
-        var tileRed = SurfMat("ShrineTile", Hex("#b04a2e"), 0.15f, smooth: 0.3f, tex: "clay_roof_tiles", tiles: 1.6f, cull: CullMode.Off);
+        var tileRed = SurfMat("ShrineTileOld", Hex("#5e4c3c"), 0.45f, smooth: 0.2f, tex: "clay_roof_tiles", tiles: 1.6f, cull: CullMode.Off);   // กระเบื้องไม้ดำหม่นมอสขึ้น
         float sx = ShrinePos.x, sz = ShrinePos.y, top = MW + 1.6f;
-        var pole = Prim(PrimitiveType.Cylinder, "ShrinePost", new Vector3(sx, (top + MW - 1.8f) * 0.5f, sz), new Vector3(0.2f, (top - MW + 1.8f) * 0.5f, 0.2f), plasterPost);
+        var pole = Prim(PrimitiveType.Cylinder, "ShrineStump", new Vector3(sx, (top + MW - 1.8f) * 0.5f, sz), new Vector3(0.95f, (top - MW + 1.8f) * 0.5f, 0.95f), plasterPost);
+        {   // รากตอไม้แผ่ลงน้ำ บิดเป็นปุ่มปม
+            var rootsG = new GameObject("StumpRoots"); rootsG.transform.SetParent(shrine, true); rootsG.transform.SetPositionAndRotation(new Vector3(sx, MW - 0.2f, sz), Quaternion.identity); rootsG.transform.localScale = new Vector3(0.9f, 0.4f, 0.9f);   // รากเตี้ยแผ่กว้างรอบโคนตอ
+            rootsG.AddComponent<MeshFilter>().sharedMesh = SaveMesh(ProceduralMeshes.MangroveRoots(733, 1.6f), "MarshStumpRoots");
+            rootsG.AddComponent<MeshRenderer>().sharedMaterial = SurfMat("MarshRootBark", Color.white, 0.4f, vertexColor: true, smooth: 0.2f, tex: "bark_brown_02", tiles: 1.2f, cull: CullMode.Off);
+        }
         // หัวเสารูปบัวหงายรองแท่น
         var cap = Prim(PrimitiveType.Cylinder, "LotusCap", new Vector3(sx, top - 0.08f, sz), new Vector3(0.42f, 0.06f, 0.42f), plasterPost); cap.transform.SetParent(shrine, true);
         var cap2 = Prim(PrimitiveType.Cylinder, "LotusCapGold", new Vector3(sx, top - 0.16f, sz), new Vector3(0.3f, 0.03f, 0.3f), gold); cap2.transform.SetParent(shrine, true);
@@ -181,22 +186,27 @@ public static partial class SceneBuilder
         for (int e = -1; e <= 1; e += 2) SMesh("Chofa", chofa, new[] { gold }, new Vector3(sx, top + 1.21f, sz + e * 0.4f), Quaternion.Euler(0, e < 0 ? 90 : -90, 0), 0.22f);
         // ผ้าแพรผูกรอบเสา + ชายผ้าห้อยปลิว · พวงมาลัยดาวเรืองคล้องเสา
         var ribbonMat = SurfMat("Ribbon", Color.white, sway: 0.12f, swayStart: 0f, vertexColor: true, smooth: 0.5f, cull: CullMode.Off);
-        var cloth = new[] { Hex("#d8262a"), Hex("#2e8a3a"), Hex("#e8a020"), Hex("#d84a9a"), Hex("#2a5ac0"), Hex("#f0e8d8"), Hex("#7a2a9a") };
+        var cloth = new[] { Hex("#c0262a"), Hex("#e0b020"), Hex("#2e7a3a"), Hex("#c0262a"), Hex("#e0b020"), Hex("#2e7a3a"), Hex("#8a6a4a") };   // ผ้าสามสี + ผ้าสไบเก่า
         for (int k = 0; k < cloth.Length; k++) cloth[k] = Color.Lerp(cloth[k], Hex("#9a9284"), 0.38f);   // ผ้าเก่าซีดแดด
         for (int k = 0; k < cloth.Length; k++)
         {
             float y = top - 0.25f - k * 0.075f;
-            var band = Prim(PrimitiveType.Cylinder, "ClothBand", new Vector3(sx + 0.005f * k, y, sz), new Vector3(0.205f, 0.036f, 0.205f), SurfMat("Cloth" + k, cloth[k], smooth: 0.45f));
+            var band = Prim(PrimitiveType.Cylinder, "ClothBand", new Vector3(sx + 0.005f * k, y, sz), new Vector3(0.97f, 0.036f, 0.97f), SurfMat("Cloth" + k, cloth[k], smooth: 0.45f));
             band.transform.rotation = Quaternion.Euler(Rf(-4, 4), 0, Rf(-4, 4)); band.transform.SetParent(shrine, true);
             float a = Rf(0, Mathf.PI * 2);
             var rb = SMesh("RibbonTail", SaveMesh(ProceduralMeshes.Ribbon(90 + k, cloth[k], Rf(0.5f, 0.85f)), "Ribbon" + k), new[] { ribbonMat },
-                new Vector3(sx + Mathf.Cos(a) * 0.1f, y, sz + Mathf.Sin(a) * 0.1f), Quaternion.Euler(180, a * Mathf.Rad2Deg, Rf(-10, 10)));
+                new Vector3(sx + Mathf.Cos(a) * 0.48f, y, sz + Mathf.Sin(a) * 0.48f), Quaternion.Euler(180, a * Mathf.Rad2Deg, Rf(-10, 10)));
             rb.GetComponent<Renderer>().shadowCastingMode = ShadowCastingMode.Off;
         }
         var garlandMat = SurfMat("Garland", Color.white, vertexColor: true, smooth: 0.3f, cull: CullMode.Off);
         SMesh("Garland", SaveMesh(ProceduralMeshes.Garland(7, 0.16f, 22), "Garland"), new[] { garlandMat }, new Vector3(sx, top - 0.05f, sz), Quaternion.Euler(12, 0, 6));
         SMesh("GarlandRail", SaveMesh(ProceduralMeshes.Garland(8, 0.07f, 12), "GarlandSmall"), new[] { garlandMat }, new Vector3(sx + 0.2f, top + 0.1f, sz - 0.42f), Quaternion.Euler(80, 0, 0));
 
+        var clayOld = SurfMat("ShrineClay", Hex("#7a4a2e"), 0.25f, smooth: 0.3f);
+        var potMesh = SaveMesh(ProceduralMeshes.Lathe(new[] { new Vector2(0.03f, 0), new Vector2(0.05f, 0.03f), new Vector2(0.055f, 0.07f), new Vector2(0.03f, 0.1f), new Vector2(0.035f, 0.12f) }, 10, Color.white), "ShrineOfferingPot");
+        foreach (var (dx, dz, tip) in new[] { (-0.42f, -0.2f, 0f), (0.4f, -0.15f, 70f), (-0.25f, 0.38f, 0f), (0.3f, 0.36f, 0f), (0.1f, -0.45f, 85f) })
+            SMesh("OfferingPot", potMesh, new[] { clayOld }, new Vector3(sx + dx, top + 0.07f, sz + dz), Quaternion.Euler(tip, Rf(0, 360), 0), Rf(0.9f, 1.4f));
+        shrine.rotation = Quaternion.Euler(4f, 0, -6f);   // ศาลเก่าเอียงทรุดไปตามตอที่ผุ
         shrine.localScale = Vector3.one * 1.5f;
         float shrineTop = MW + (top - MW) * 1.5f;
 
@@ -233,7 +243,10 @@ public static partial class SceneBuilder
             g.AddComponent<MeshFilter>().sharedMesh = mesh; var r = g.AddComponent<MeshRenderer>(); r.sharedMaterial = mat; r.shadowCastingMode = shadows ? ShadowCastingMode.On : ShadowCastingMode.Off;
         }
         int pads = 0;
-        for (int tries = 0; tries < 2500 && pads < 260; tries++)
+        var stemMat = SurfMat("LotusStem", Hex("#4a6a30"), 0f, smooth: 0.3f);
+        var podMesh = SaveMesh(ProceduralMeshes.Lathe(new[] { new Vector2(0.01f, -0.06f), new Vector2(0.03f, -0.02f), new Vector2(0.07f, 0.04f), new Vector2(0.075f, 0.06f), new Vector2(0.001f, 0.065f) }, 12, new Color(0.42f, 0.32f, 0.2f)), "LotusPod");
+        var podMat = SurfMat("LotusPodDry", Color.white, 0.05f, vertexColor: true, smooth: 0.15f);
+        for (int tries = 0; tries < 6000 && pads < 560; tries++)
         {
             float x = Rf(-16, 20), z = Rf(-1, 28), d = MW - MarshGround(x, z);
             if (d < 0.08f || d > 1.4f || NearWalk(x, z, 0.9f) || Sq(x - ShrinePos.x) + Sq(z - ShrinePos.y) < 6.5f) continue;
@@ -243,6 +256,20 @@ public static partial class SceneBuilder
             double fr = rnd.NextDouble();
             if (fr < 0.2) Obj("Lotus", flowerMesh, lotus, new Vector3(x + 0.2f, MW + Rf(0.1f, 0.4f), z), Rf(0, 360), Rf(0.24f, 0.32f), true);
             else if (fr < 0.34) Obj("LotusBud", budMesh, lotus, new Vector3(x + 0.2f, MW + Rf(0.15f, 0.5f), z), Rf(0, 360), Rf(0.17f, 0.24f), true);
+            else if (fr < 0.44)   // ใบบัวหลวงชูก้านพ้นน้ำ
+            {
+                float hgt = Rf(0.4f, 1.1f);
+                var st = Prim(PrimitiveType.Cylinder, "LotusStem", new Vector3(x - 0.15f, MW + hgt * 0.5f, z), new Vector3(0.025f, hgt * 0.5f, 0.025f), stemMat); st.transform.SetParent(lotusRoot, true);
+                var lp = new GameObject("RaisedPad"); lp.transform.SetParent(lotusRoot, true); lp.transform.SetPositionAndRotation(new Vector3(x - 0.15f, MW + hgt, z), Quaternion.Euler(Rf(-25, 25), Rf(0, 360), Rf(-25, 25))); lp.transform.localScale = Vector3.one * Rf(0.5f, 0.8f);
+                lp.AddComponent<MeshFilter>().sharedMesh = padMeshes[rnd.Next(3)]; lp.AddComponent<MeshRenderer>().sharedMaterial = pad;
+            }
+            else if (fr < 0.52)   // ฝักบัวแก่แห้งก้มหัว
+            {
+                float hgt = Rf(0.35f, 0.8f);
+                var st = Prim(PrimitiveType.Cylinder, "PodStem", new Vector3(x + 0.1f, MW + hgt * 0.5f, z), new Vector3(0.018f, hgt * 0.5f, 0.018f), podMat); st.transform.SetParent(lotusRoot, true);
+                var pg = new GameObject("LotusPod"); pg.transform.SetParent(lotusRoot, true); pg.transform.SetPositionAndRotation(new Vector3(x + 0.1f, MW + hgt, z), Quaternion.Euler(Rf(20, 60), Rf(0, 360), 0)); pg.transform.localScale = Vector3.one * Rf(1.2f, 1.7f);
+                pg.AddComponent<MeshFilter>().sharedMesh = podMesh; pg.AddComponent<MeshRenderer>().sharedMaterial = podMat;
+            }
             pads++;
         }
         // กอกก ธูปฤาษี ริมหนองและบนเนินกลางน้ำ
@@ -285,9 +312,41 @@ public static partial class SceneBuilder
             Nature(new[] { "shrub_02", "fern_02", "weed_plant_02", "shrub_03" }[i % 4], x, z, Rf(0.6f, 1f), Rf(0, 360), i % 4 == 0 ? 0.6f : 0, i % 4 != 2, 0.03f);
         }
 
+        // ต้นไทรย้อยรากอากาศลู่ลงน้ำ โอบรอบหนอง
+        {
+            var bBark = SurfMat("BendBark", Hex("#a09480"), 0.35f, smooth: 0.12f, vertexColor: true, tex: "bark_brown_02", tiles: 1.2f, cull: CullMode.Off);
+            var bAerial = SurfMat("BendAerial", Hex("#8a8070"), 0.1f, sway: 0.05f, swayStart: 2f, vertexColor: true, smooth: 0.1f, cull: CullMode.Off);
+            int bi = 0;
+            foreach (var (x, z, h) in new[] { (-6f, 27f, 10f), (12f, 28f, 11f), (-15f, 18f, 9f), (21f, 20f, 9.5f), (2f, 31f, 10.5f) })
+            {
+                var go = new GameObject("Banyan"); go.transform.SetParent(natureRoot, true);
+                go.transform.SetPositionAndRotation(new Vector3(x, MarshGround(x, z) - 0.2f, z), Quaternion.Euler(0, Rf(0, 360), 0)); go.transform.localScale = Vector3.one * Rf(0.9f, 1.15f);
+                go.AddComponent<MeshFilter>().sharedMesh = SaveMesh(ProceduralMeshes.Banyan(760 + bi, h), "MarshBanyan" + bi++);
+                go.AddComponent<MeshRenderer>().sharedMaterials = new[] { bBark, bAerial };
+                world.colliders.Add(new Vector4(x, z, 1.4f, 99));
+            }
+            // เจดีย์อิฐร้างจมหมอกฝั่งไกล
+            var brickOld = SurfMat("TempleBrick", Hex("#f2c4a4"), 0.08f, smooth: 0.1f, tex: "mossy_brick", tiles: 0.5f);
+            var ch = new GameObject("RuinedChedi"); ch.transform.SetParent(natureRoot, true);
+            ch.transform.SetPositionAndRotation(new Vector3(15f, MarshGround(15f, 24f) - 0.3f, 24f), Quaternion.Euler(3, 10, -5)); ch.transform.localScale = Vector3.one * 1.1f;
+            ch.AddComponent<MeshFilter>().sharedMesh = SaveMesh(ProceduralMeshes.Lathe(new[] { new Vector2(1.8f, 0), new Vector2(1.8f, 0.6f), new Vector2(1.4f, 0.6f), new Vector2(1.45f, 1.6f), new Vector2(1.3f, 2.4f), new Vector2(0.9f, 3.2f), new Vector2(0.35f, 3.8f), new Vector2(0.2f, 4.6f), new Vector2(0.05f, 5.2f) }, 16, Color.white), "MarshChedi");
+            ch.AddComponent<MeshRenderer>().sharedMaterial = brickOld;
+            world.colliders.Add(new Vector4(15f, 24f, 2f, 99));
+            // ตะเกียงรั้วบนชานปลายสะพาน + เทียนบนหัวเสาสองต้น
+            Nature("brass_diya_lantern", end.x + 0.7f, end.y + 0.9f, 1.5f, 0, 0, false, 0, deckY + 0.03f);
+            var ll = new GameObject("BridgeLantern").AddComponent<Light>(); ll.type = LightType.Point; ll.range = 6f; ll.intensity = 2.4f; ll.color = Hex("#ffa850"); ll.shadows = LightShadows.None; ll.transform.position = new Vector3(end.x + 0.7f, deckY + 0.5f, end.y + 0.9f);
+            var candle = UnlitMat("CandleFlame", new Color(2.4f, 1.4f, 0.5f));
+            foreach (var cx in new[] { end.x - 1.05f, end.x + 1.05f })
+            {
+                var cp = Prim(PrimitiveType.Cube, "CandlePost", new Vector3(cx, deckY + 0.2f, end.y + 1.3f), new Vector3(0.22f, 0.4f, 0.22f), post); cp.transform.SetParent(walkRoot, true);
+                var cd = Prim(PrimitiveType.Cylinder, "Candle", new Vector3(cx, deckY + 0.47f, end.y + 1.3f), new Vector3(0.04f, 0.06f, 0.04f), SurfMat("CandleWax", Hex("#f0e8d0"), 0f, smooth: 0.4f)); cd.transform.SetParent(walkRoot, true);
+                var fl = Prim(PrimitiveType.Sphere, "Flame", new Vector3(cx, deckY + 0.56f, end.y + 1.3f), new Vector3(0.03f, 0.05f, 0.03f), candle); fl.transform.SetParent(walkRoot, true); fl.GetComponent<Renderer>().shadowCastingMode = ShadowCastingMode.Off;
+            }
+        }
+
         // หมอกต่ำเหนือหนอง + หิ่งห้อยลอยรอบศาล
         var mist = ParticleMat("Spray", new Color(1, 1, 1, 0.5f));
-        Particles("MarshMist", new Vector3(3, MW + 0.3f, 12), new Vector3(36f, 30f, 0.1f), mist, 16, new Vector2(3f, 6.5f), new Vector2(7f, 10f), new Vector2(0.03f, 0.12f), new Color(1, 1, 1, 0.12f));
+        Particles("MarshMist", new Vector3(3, MW + 0.4f, 14), new Vector3(40f, 32f, 1f), mist, 36, new Vector2(4f, 8f), new Vector2(8f, 12f), new Vector2(0.03f, 0.12f), new Color(0.96f, 0.94f, 0.86f, 0.15f));
         var fly = ParticleMat("Firefly", new Color(1.6f, 1.5f, 0.5f, 1));
         var ff = Particles("Fireflies", new Vector3(ShrinePos.x - 2, MW + 0.9f, ShrinePos.y - 3), new Vector3(14f, 12f, 1.2f), fly, 5, new Vector2(0.04f, 0.07f), new Vector2(3f, 5f), new Vector2(0.05f, 0.2f), new Color(1, 0.95f, 0.5f, 1));
         var noise = ff.noise; noise.enabled = true; noise.strength = 0.35f; noise.frequency = 0.4f;
@@ -296,7 +355,7 @@ public static partial class SceneBuilder
         lamp.transform.position = new Vector3(sx, shrineTop + 0.5f, sz - 0.8f);
 
         // ---------- ตัวละคร กล้อง แสง ระบบเกม ----------
-        var look = new Look { sun = "#ffc896", sunIntensity = 1.6f, sunRot = new Vector2(24, 135), fog = "#a6ada0", fogStart = 12, fogEnd = 70, exposure = 0.95f, ambient = 1.0f };
+        var look = new Look { sun = "#ffd8a0", sunIntensity = 1.7f, sunRot = new Vector2(20, 135), fog = "#9ca492", fogStart = 6, fogEnd = 55, exposure = 0.95f, ambient = 0.95f, skyId = "Overcast", skyTint = "#b0ac96" };   // แดดเช้าสีทองอ่อนลอดม่านหมอกหนา
         world.spawn.y = deckY + 0.03f;
         BuildGameplay(world, model, world.spawn, look, world);
         SaveStage(scene, path);

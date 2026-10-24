@@ -1,5 +1,6 @@
 // ด่าน: คุ้งน้ำมืดป่าสนเถา — ลำน้ำแคบคดเคี้ยวลอดป่าทึบ ต้นไทรยักษ์รากบิดเกลียวแผ่ลงน้ำ รากอากาศห้อยระย้า
 //      เถาวัลย์ขึงโยงข้ามลำน้ำ ขอนไม้ผุ หมอกเขียวหม่น หิ่งห้อยกะพริบ · ผู้เล่นยืนบนเรือไม้ลำเล็กผูกไว้ริมตลิ่ง มีตะเกียงดวงเดียว
+//      คืนเดือนมืดฟ้าน้ำเงินดำ · ทิวสนเขาสูงตระหง่านเป็นเงาตัดฟ้าเหมือนนิ้วมือ · หมอกหนาลอยผ่านทิวสน · ตะเกียงรั้วริมฝั่งสาดแสงส้มบนผิวน้ำ
 using System.IO;
 using CozyFishing;
 using UnityEditor;
@@ -103,6 +104,19 @@ public static partial class SceneBuilder
         foreach (var (x, zoff, h, w) in new[] { (-6f, 0f, 7.5f, 9f), (4f, -1f, 8f, 11f), (-12f, 1.5f, 7f, 8f), (10f, 0.5f, 7.5f, 9f), (-1f, 2.5f, 8.5f, 8f) })
             Obj("Vines", SaveMesh(ProceduralMeshes.Vines(800 + vi, w, h), "BendVines" + vi++), new[] { vineMat }, new Vector3(x, BW, BZc(x) + zoff), 90 + Rf(-15, 15));
 
+        // ---------- ทิวสนเขาสูงเป็นเงาตัดฟ้า (ไกลออกไปทั้งสองฝั่ง) ----------
+        {
+            var pineBark = SurfMat("PineBark", Color.white, 0.05f, vertexColor: true, smooth: 0.15f, tex: "bark_brown_02", tiles: 1.2f);
+            var pineLeaf = SurfMat("PineNeedles", Color.white, 0f, sway: 0.03f, swayStart: 8f, vertexColor: true, smooth: 0.25f, cull: CullMode.Off);
+            var pines = new Mesh[5]; for (int i = 0; i < pines.Length; i++) pines[i] = SaveMesh(ProceduralMeshes.MountainPine(1200 + i, Rf(14f, 20f)), "BendPine" + i);
+            for (int t = 0, n = 0; t < 400 && n < 34; t++)
+            {
+                float x = Rf(-38, 38), side = rnd.NextDouble() < 0.7 ? 1 : -1, z = BZc(x) + side * (BHw(x) + Rf(7f, 22f));
+                if (side < 0 && Mathf.Abs(x) < 10) continue;   // ไม่บังกล้องหลังผู้เล่น
+                Obj("MountainPine", pines[rnd.Next(pines.Length)], new[] { pineBark, pineLeaf }, new Vector3(x, BendGround(x, z) - 0.3f, z), Rf(0, 360), Rf(0.85f, 1.2f)); n++;
+            }
+        }
+
         // ---------- เรือไม้ลำเล็กของผู้เล่น + ตะเกียง ----------
         var boat = Obj("PlayerBoat", SaveMesh(ProceduralMeshes.Rowboat(3.4f, 1.0f, 0.35f), "Rowboat"), new[] { boatMat }, new Vector3(0, BW + 0.12f, boatZ), 0);
         for (int k = -1; k <= 1; k++)
@@ -115,8 +129,13 @@ public static partial class SceneBuilder
         var lsrc = AssetDatabase.LoadAssetAtPath<GameObject>($"{NatureDir}/brass_diya_lantern.glb");
         if (lsrc != null) { var l = Object.Instantiate(lsrc); l.transform.position = lanternPos; l.transform.localScale = Vector3.one * 1.7f; }
         var lg = new GameObject("LanternLight").AddComponent<Light>();
-        lg.type = LightType.Point; lg.range = 5f; lg.intensity = 1.6f; lg.color = Hex("#ffb060"); lg.shadows = LightShadows.None;
+        lg.type = LightType.Point; lg.range = 7f; lg.intensity = 2.6f; lg.color = Hex("#ffa850"); lg.shadows = LightShadows.None;
         lg.transform.position = lanternPos + Vector3.up * 0.45f;
+        // ตะเกียงรั้วตั้งริมฝั่งหน้าเรือ: แสงส้มสาดลงผิวน้ำ
+        var shorePos = new Vector3(-1.4f, BendGround(-1.4f, boatZ - 1.9f) + 0.02f, boatZ - 1.9f);
+        if (lsrc != null) { var l2 = Object.Instantiate(lsrc); l2.transform.position = shorePos; l2.transform.localScale = Vector3.one * 1.6f; }
+        var lg2 = new GameObject("ShoreLanternLight").AddComponent<Light>();
+        lg2.type = LightType.Point; lg2.range = 8f; lg2.intensity = 3f; lg2.color = Hex("#ff9a40"); lg2.shadows = LightShadows.None; lg2.transform.position = shorePos + Vector3.up * 0.5f;
 
         // ---------- ป่าทึบสองฝั่ง ----------
         var natureRoot = new GameObject("Nature").transform;
@@ -168,13 +187,14 @@ public static partial class SceneBuilder
 
         // หมอกเขียวต่ำ + หิ่งห้อยทั่วลำน้ำ
         var mist = ParticleMat("Spray", new Color(1, 1, 1, 0.5f));
-        Particles("BendMist", new Vector3(0, BW + 0.35f, 8), new Vector3(36f, 26f, 0.1f), mist, 18, new Vector2(3f, 6f), new Vector2(7f, 10f), new Vector2(0.03f, 0.12f), new Color(0.8f, 0.86f, 0.9f, 0.1f));
+        Particles("BendMist", new Vector3(0, BW + 0.5f, 8), new Vector3(40f, 28f, 1.2f), mist, 46, new Vector2(4f, 8f), new Vector2(8f, 12f), new Vector2(0.03f, 0.12f), new Color(0.66f, 0.74f, 0.84f, 0.15f));
+        Particles("PineFog", new Vector3(0, BW + 4f, 14), new Vector3(60f, 30f, 6f), mist, 22, new Vector2(8f, 14f), new Vector2(10f, 16f), new Vector2(0.05f, 0.2f), new Color(0.5f, 0.58f, 0.68f, 0.1f));   // หมอกลอยผ่านทิวสน
         var fly = ParticleMat("Firefly", new Color(1.6f, 1.5f, 0.5f, 1));
-        var ff = Particles("Fireflies", new Vector3(0, BW + 1.6f, 8), new Vector3(34f, 24f, 2.5f), fly, 14, new Vector2(0.04f, 0.08f), new Vector2(3f, 6f), new Vector2(0.05f, 0.25f), new Color(0.9f, 1f, 0.45f, 1));
+        var ff = Particles("Fireflies", new Vector3(0, BW + 1.6f, 8), new Vector3(34f, 24f, 2.5f), fly, 28, new Vector2(0.04f, 0.08f), new Vector2(3f, 6f), new Vector2(0.05f, 0.25f), new Color(0.9f, 1f, 0.45f, 1));
         var noise = ff.noise; noise.enabled = true; noise.strength = 0.4f; noise.frequency = 0.35f;
 
         // ---------- ตัวละคร กล้อง แสง ระบบเกม ----------
-        var look = new Look { sun = "#c8dcc4", sunIntensity = 1.5f, sunRot = new Vector2(58, 160), fog = "#4a5862", fogStart = 6, fogEnd = 46, exposure = 0.9f, ambient = 1.0f, skyId = "Overcast", skyTint = "#62768a" };   // ฟ้าเทาอมน้ำเงินยามพลบ (เดิมเขียวทั้งผืน ดูแปลก)
+        var look = new Look { sun = "#b4c4d0", sunIntensity = 1.25f, sunRot = new Vector2(50, 160), fog = "#323e4c", fogStart = 5, fogEnd = 42, exposure = 0.95f, ambient = 0.95f, skyId = "Overcast", skyTint = "#28323e" };   // ฟ้าน้ำเงินดำอมเทา เมฆหนา   // ฟ้าเทาอมน้ำเงินยามพลบ (เดิมเขียวทั้งผืน ดูแปลก)
         BuildGameplay(world, model, world.spawn, look, world);
         SaveStage(scene, path);
     }

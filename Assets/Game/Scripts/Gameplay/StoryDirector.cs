@@ -36,6 +36,7 @@ namespace CozyFishing
             if (FishingController.Bot && Application.absoluteURL.Contains("day2") && Story.S.day == 1 && Story.Phase == StoryPhase.New) { Story.S.day = 2; Story.Phase = StoryPhase.Morning; }
             // หลายด่าน: บ้านอยู่ในฉากบ่อทุ่งนา · ตกปลาด่านอื่นโหลดฉากของด่านนั้น
             bool home = roofLeak != null;
+            if (home && FishingController.Bot && !sneaked && Application.absoluteURL.Contains("sneakpick")) { Story.S.unlocked.Clear(); foreach (var t in Stages.All) Story.S.unlocked.Add(t.id); StartCoroutine(SneakOut()); return; }   // ทดสอบ: เปิดกระดานเลือกด่านตอนดึกทันที
             if (home && FishingController.Bot && !sneaked && Application.absoluteURL.Contains("sneakto="))
                 foreach (var t in Stages.All) if (Application.absoluteURL.Contains("sneakto=" + t.id)) { if (!Stages.Unlocked(t.id)) Story.S.unlocked.Add(t.id); StartCoroutine(SneakTo(t.id)); return; }
             if (Story.Phase == StoryPhase.Fishing && Story.S.stage != w.StageId)
@@ -355,16 +356,11 @@ namespace CozyFishing
         // แอบออกจากบ้านตอนดึก: เลือกด่านที่เปิดทางแล้ว ตก 3 ทุ่มครึ่ง–ตี 5 ครึ่ง (ตกได้ทั้งคืน · ผีประจำด่านออกเต็มที่)
         IEnumerator SneakOut()
         {
+            fishing.Paused = true;
             string dest = null;
-            var opts = new System.Collections.Generic.List<(string, System.Action)>();
-            foreach (var st in Stages.All)
-            {
-                if (!Stages.Unlocked(st.id)) continue;
-                int hz = GhostSystem.NightHazard(st.id); string id = st.id;
-                opts.Add(($"{st.name} · {(hz >= 3 ? "ผีดุมาก" : hz == 2 ? "ผีดุ" : "ผีดุน้อย")}", () => dest = id));
-            }
-            opts.Add(("ไม่ไปแล้ว นอนดีกว่า", () => dest = ""));
-            hud.Ask("แอบไปตกปลาที่ไหนดี? (ตกได้ถึงตี 5 ครึ่ง)", opts.ToArray());
+            var spots = new System.Collections.Generic.List<(string, string, int)>();
+            foreach (var st in Stages.All) if (Stages.Unlocked(st.id)) spots.Add((st.id, st.name, GhostSystem.NightHazard(st.id)));
+            hud.ShowSneakPicker(spots, id => dest = id);   // กระดานไม้เลือกด่าน (ไอคอนผี + ตราความดุ)
             while (dest == null) yield return null;
             if (dest == "") { Story.Sleep(rng); StartCoroutine(Morning($"ราตรีสวัสดิ์…  เช้าวันที่ {Story.S.day}", false)); yield break; }
             yield return SneakTo(dest);
