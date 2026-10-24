@@ -68,7 +68,7 @@ namespace CozyFishing
                 data[i] = s * 0.9f;
             }
             var clip = AudioClip.Create("Heartbeat", sr, 1, sr, false); clip.SetData(data, 0); heart.clip = clip;
-            sting = gameObject.AddComponent<AudioSource>(); sting.playOnAwake = false; sting.spatialBlend = 0; sting.volume = 0.8f; sting.clip = StingClip();
+            sting = gameObject.AddComponent<AudioSource>(); sting.playOnAwake = false; sting.spatialBlend = 0; sting.volume = 0.8f; sting.clip = StingClip(w.StageId == "cave");
             if (FishingController.Bot && Application.absoluteURL.Contains("ghost")) cooldown = 2;   // ทดสอบ: ผีโผล่เร็ว
             if (def == null) return;
             mat = new Material(Shader.Find("CozyFishing/Ghost")); mat.SetColor("_Color", def.color); mat.SetFloat("_Dark", def.dark); mat.SetFloat("_Alpha", 0);
@@ -416,8 +416,8 @@ namespace CozyFishing
 
         void OnDisable() { if (cineT >= 0) Time.timeScale = 1; }
 
-        // เสียงตกใจ: ตูม! ต่ำ ๆ + เสียงแหลมไถลลง + ซ่าแตก ๆ
-        static AudioClip StingClip()
+        // เสียงตกใจ: ตูม! ต่ำ ๆ + เสียงแหลมไถลลง + ซ่าแตก ๆ (ในถ้ำใส่เสียงก้อง)
+        static AudioClip StingClip(bool echo)
         {
             int sr = 22050, n = sr * 2; var d = new float[n]; var r = new System.Random(7);
             for (int i = 0; i < n; i++)
@@ -428,7 +428,7 @@ namespace CozyFishing
                 float hiss = ((float)r.NextDouble() * 2 - 1) * Mathf.Exp(-t * 5f) * 0.25f;
                 d[i] = Mathf.Clamp((boom * 0.9f + shriek + hiss) * Mathf.Min(1, t * 200), -1, 1);
             }
-            var c = AudioClip.Create("GhostSting", n, 1, sr, false); c.SetData(d, 0); return c;
+            return Sfx.Clip("GhostSting", echo ? Sfx.Reverb(d, 1.8f, 0.6f) : d);   // ถ้ำ: เสียงตกใจก้องไปทั้งถ้ำ
         }
 
         void Move(Vector3 p, float dt)
