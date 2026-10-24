@@ -37,22 +37,31 @@ public static class CompressTools
     {
         int n = 0;
         foreach (var (dir, fmt, max, mips) in new[] {
-            ("Assets/Game/Resources/UI/Frames", TextureImporterFormat.ASTC_4x4, 2048, false),
-            ("Assets/Game/Resources/UI/Title", TextureImporterFormat.ASTC_4x4, 1024, false),
-            ("Assets/Game/Resources/UI/Stages", TextureImporterFormat.ASTC_6x6, 1024, false),
-            ("Assets/Game/Resources/UI/Portraits", TextureImporterFormat.ASTC_4x4, 512, false),
-            ("Assets/Game/Resources/Fish", TextureImporterFormat.ASTC_6x6, 512, true),
+            // UI ที่เห็นใหญ่ (ฉากหลัง/หน้าแรก/รูปหน้า/รูปสินค้า): ASTC 4x4 + mipmap ย่อลงจอมือถือไม่แตก · ภาพเล็ก (รูปปลา/ภาพด่าน): 6x6 ประหยัดไฟล์
+            ("Assets/Game/Resources/UI/Frames", TextureImporterFormat.ASTC_4x4, 1536, true),
+            ("Assets/Game/Resources/UI/Title", TextureImporterFormat.ASTC_4x4, 1024, true),
+            ("Assets/Game/Resources/UI/Shop", TextureImporterFormat.ASTC_4x4, 256, true),
+            ("Assets/Game/Resources/UI/Stages", TextureImporterFormat.ASTC_6x6, 1024, true),
+            ("Assets/Game/Resources/UI/Portraits", TextureImporterFormat.ASTC_4x4, 512, true),
+            ("Assets/Game/Resources/Fish", TextureImporterFormat.ASTC_6x6, 512, false),
+            ("Assets/Game/Textures/PBR", TextureImporterFormat.ASTC_5x5, 1024, true),   // พื้นผิวทุกด่าน: 5x5 คมกว่า DXT1 เดิม (normal map ใช้ 4x4 ด้านล่าง)
             ("Assets/Game/Textures/Sky", TextureImporterFormat.ASTC_HDR_6x6, 1024, true),   // ฟ้า HDR: ต้องใช้ ASTC แบบ HDR ไม่งั้นแสงฟ้าโดนตัด
-            ("Assets/Game/Models/Character/Textures", TextureImporterFormat.ASTC_6x6, 1024, true) })
+            ("Assets/Game/Models/Character/Textures", TextureImporterFormat.ASTC_4x4, 1024, true) })
             foreach (var guid in AssetDatabase.FindAssets("t:Texture", new[] { dir }))
             {
                 var path = AssetDatabase.GUIDToAssetPath(guid);
                 if (!(AssetImporter.GetAtPath(path) is TextureImporter ti)) continue;
                 var ps = ti.GetPlatformTextureSettings("WebGL");
-                ps.overridden = true; ps.format = fmt; ps.maxTextureSize = max;
+                var fn = System.IO.Path.GetFileNameWithoutExtension(path).ToLowerInvariant();
+                bool pbr = dir.EndsWith("/PBR");
+                // พื้นผิวด่าน: ภาพสีหลักละเอียด (5x5) · แผนที่นูนบีบกลาง (6x6) · แผนที่ความมัน/AO บีบหยาบ (8x8) — ตาเห็นรายละเอียดสีมากกว่า
+                ps.overridden = true;
+                ps.format = pbr && (fn.Contains("rough") || fn.Contains("_arm") || fn.Contains("_ao")) ? TextureImporterFormat.ASTC_8x8
+                    : ti.textureType == TextureImporterType.NormalMap || fn.Contains("_nor") ? (pbr ? TextureImporterFormat.ASTC_6x6 : TextureImporterFormat.ASTC_4x4) : fmt;
+                ps.maxTextureSize = max;
                 ti.SetPlatformTextureSettings(ps);
                 if (ti.textureCompression == TextureImporterCompression.Uncompressed) ti.textureCompression = TextureImporterCompression.CompressedHQ;
-                if (!mips && ti.textureType != TextureImporterType.NormalMap) ti.mipmapEnabled = false;
+                ti.mipmapEnabled = mips || ti.textureType == TextureImporterType.NormalMap; if (ti.mipmapEnabled) ti.filterMode = FilterMode.Trilinear;
                 ti.SaveAndReimport(); n++;
             }
         Debug.Log($"[CompressTools] {n} textures");

@@ -256,7 +256,8 @@ namespace CozyFishing
             if (o.HasValue) { fish = o.Value; return; }
             RollNormal();
         }
-        void RollNormal() => fish = Story.S.caught == 0 ? FishRoller.Roll(world.StageId, false, 1f, 0f, Story.S.time, rng)   // ตัวแรก: ปลาจริงเสมอ
+        void RollNormal() => fish = Bot && Application.absoluteURL.Contains("rarefish") ? FishRoller.Roll(world.StageId, true, 3f, 0f, Story.S.time, rng, 1f)   // ทดสอบ/ถ่ายคลิป: ปลาหายากขึ้นบ่อย
+            : Story.S.caught == 0 ? FishRoller.Roll(world.StageId, false, 1f, 0f, Story.S.time, rng)   // ตัวแรก: ปลาจริงเสมอ
             : Story.S.dead && rng.NextDouble() < 0.85
             ? FishRoller.Roll(world.StageId, false, 0, 1f, Story.S.time, rng)
             : FishRoller.Roll(world.StageId, NearSpecial, world.DepthAt(bob.x, bob.z), Story.JunkChance, Story.S.time, rng, Haunt);

@@ -46,10 +46,10 @@ namespace CozyFishing
 
         public static void Plop() => Play(plop, 0.7f);
         public static void Nibble() { Play(nibble, 0.6f, 0.15f); }
-        public static void Bite() { Play(strike, 0.5f); Buzz(70); }
-        public static void Strike() { Play(strike, 0.8f); Buzz(120); }
+        public static void Bite() { Play(strike, 0.5f); Buzz(70); CameraRig.Impulse(0.35f); }
+        public static void Strike() { Play(strike, 0.8f); Buzz(120); CameraRig.Impulse(0.55f); }
         public static void Splash() { Play(splash, 0.8f); Buzz(40); }
-        public static void Snap() { Play(snap, 0.8f); Buzz(220); }
+        public static void Snap() { Play(snap, 0.8f); Buzz(220); CameraRig.Impulse(0.7f); }
         public static void Coin() => Play(coin, 0.6f, 0.02f);
         public static void GhostBuzz() => Buzz(320);
     }

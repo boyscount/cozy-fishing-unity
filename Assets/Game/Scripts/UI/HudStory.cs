@@ -442,8 +442,17 @@ namespace CozyFishing
             Plaque("coin", $"เงินเก็บ {Story.Baht(s.money)}", Money);
             Plaque("heart", $"ครอบครัว {(s.happy >= 75 ? "มีความสุข" : s.happy >= 40 ? "สบายดี" : "หิวโหย")} {s.happy}%", cream);
             // ร้านโชห่วย: คันเบ็ด รอก เหยื่อ ของกันผี ของในบ้าน
-            var shopBtn = new Button(ShowShop) { text = "ร้านลุงส้ม" }; WoodButton(shopBtn, true); shopBtn.style.alignSelf = Align.Center; shopBtn.style.marginTop = 10;
-            shopBtn.style.unityBackgroundImageTintColor = new Color(1f, 0.82f, 0.55f); ButtonIcon(shopBtn, "coin", 30, Color.white); morningBody.Add(shopBtn);
+            // ป้ายร้านเด่น ๆ: แผ่นไม้ส้มอุ่น รูปรอกสีจริง ชื่อร้าน + บรรทัดบอกว่ามีอะไรขาย · ไม่ให้ถูกบีบในรายการ
+            var shopBtn = new Button(ShowShop) { text = "" }; WoodButton(shopBtn, true);
+            shopBtn.style.alignSelf = Align.Center; shopBtn.style.flexShrink = 0; shopBtn.style.marginTop = 14; shopBtn.style.marginBottom = 4;
+            shopBtn.style.flexDirection = FlexDirection.Row; shopBtn.style.alignItems = Align.Center; Pad(shopBtn, 12, 26); shopBtn.style.minWidth = Narrow ? 300 : 460;
+            shopBtn.style.unityBackgroundImageTintColor = new Color(1f, 0.74f, 0.42f);
+            var sart = new VisualElement { pickingMode = PickingMode.Ignore }; sart.style.width = sart.style.height = Narrow ? 52 : 64; sart.style.flexShrink = 0; sart.style.marginRight = 14;
+            sart.style.backgroundImage = Resources.Load<Texture2D>("UI/Shop/reel2"); sart.style.backgroundSize = new BackgroundSize(BackgroundSizeType.Contain); shopBtn.Add(sart);
+            var scol = new VisualElement { pickingMode = PickingMode.Ignore }; shopBtn.Add(scol);
+            var st1 = L(scol, "ร้านลุงส้ม", Narrow ? 28 : 32, new Color(0.24f, 0.11f, 0.03f)); st1.style.unityTextAlign = TextAnchor.MiddleLeft; st1.style.unityFontDefinition = fontTitle;
+            var st2 = L(scol, "คันเบ็ด · รอก · เหยื่อ · ของกันผี · ของในบ้าน", Narrow ? 16 : 19, new Color(0.36f, 0.18f, 0.06f), false); st2.style.unityTextAlign = TextAnchor.MiddleLeft;
+            morningBody.Add(shopBtn);
             // เป้าหมายครอบครัว: กรอบไม้ไผ่บนกระดาษ + ภาพสเก็ตช์ของเป้าหมาย
             var g = Story.CurrentGoal;
             var gb = new VisualElement { pickingMode = PickingMode.Ignore }; Skin(gb, "bamboo_paper", 26); gb.style.paddingTop = 22; gb.style.paddingBottom = 24; gb.style.paddingLeft = 30; gb.style.paddingRight = 26;

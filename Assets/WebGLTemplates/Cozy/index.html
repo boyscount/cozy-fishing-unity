@@ -94,7 +94,7 @@
   </div>
   <script>
     var canvas = document.getElementById("unity-canvas");
-    // จอมือถือความละเอียดสูง: จำกัด devicePixelRatio ไม่ให้หนักเกินไป
+    // จอความละเอียดสูง: คมเต็มที่ถึง 2 เท่า (ถ้าเครื่องหนัก AdaptiveQuality ลดความละเอียดเรนเดอร์ฉาก 3D เอง UI ยังคมเท่าเดิม)
     var config = {
       dataUrl: "Build/{{{ DATA_FILENAME }}}",
       frameworkUrl: "Build/{{{ FRAMEWORK_FILENAME }}}",
@@ -103,7 +103,7 @@
       companyName: {{{ JSON.stringify(COMPANY_NAME) }}},
       productName: {{{ JSON.stringify(PRODUCT_NAME) }}},
       productVersion: {{{ JSON.stringify(PRODUCT_VERSION) }}},
-      devicePixelRatio: Math.min(window.devicePixelRatio || 1, /Mobi|Android|iPhone|iPad/.test(navigator.userAgent) ? 1.25 : 2),
+      devicePixelRatio: Math.min(window.devicePixelRatio || 1, 2),
       showBanner: function (msg, type) { if (type === "error") { var e = document.getElementById("error"); e.textContent = msg; e.style.display = "block"; } },
     };
     // เกมโหลดเสร็จ 30% แรก → ที่เหลือคือฉากบ้านจาก AssetBundle (เกมเรียก cozyBoot ผ่าน CozyBoot.jslib) แล้วค่อยปิดจอโหลด

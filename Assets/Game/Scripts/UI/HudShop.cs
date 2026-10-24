@@ -50,6 +50,8 @@ namespace CozyFishing
             // ---------- กล่องรายละเอียด + ปุ่มซื้อ ----------
             shopDetail = new VisualElement { pickingMode = PickingMode.Position }; GoldFrame(shopDetail, 2); shopDetail.style.position = Position.Absolute;
             shopDetail.style.paddingTop = 12; shopDetail.style.paddingBottom = 12; shopDetail.style.paddingLeft = 16; shopDetail.style.paddingRight = 16; shop.Add(shopDetail);
+            dArt = new VisualElement { pickingMode = PickingMode.Ignore }; dArt.style.width = dArt.style.height = 130; dArt.style.alignSelf = Align.Center; dArt.style.marginBottom = 6;
+            dArt.style.backgroundSize = new BackgroundSize(BackgroundSizeType.Contain); shopDetail.Add(dArt);
             dName = L(shopDetail, "", 24, ShopGold); dName.style.unityTextAlign = TextAnchor.MiddleLeft; dName.style.unityFontDefinition = fontTitle;
             dDesc = L(shopDetail, "", 18, new Color(0.95f, 0.9f, 0.82f), false); dDesc.style.unityTextAlign = TextAnchor.MiddleLeft; dDesc.style.marginTop = 4;
             dPrice = L(shopDetail, "", 20, new Color(1f, 0.85f, 0.5f)); dPrice.style.unityTextAlign = TextAnchor.MiddleLeft; dPrice.style.marginTop = 6;
@@ -101,6 +103,9 @@ namespace CozyFishing
             FillShop(); shop.style.display = DisplayStyle.Flex; shop.BringToFront(); GameInput.Blocked = true; LayoutShop();
         }
 
+        VisualElement dArt;
+        // รูปสีของสินค้า (Resources/UI/Shop/<id>) · ไม่มีรูปใช้ไอคอนเส้นแทน
+        static Texture2D ShopArt(ShopItem it) => Resources.Load<Texture2D>("UI/Shop/" + it.id) ?? Resources.Load<Texture2D>("UI/Icons/" + ShopIcon(it));
         static string ShopIcon(ShopItem it) => it.id switch
         {
             _ when it.id.StartsWith("rod") => "cast", _ when it.id.StartsWith("reel") => "reel",
@@ -139,7 +144,8 @@ namespace CozyFishing
                 var row = new Button(() => { shopSel = item; FillShop(); }) { text = "" }; StyleButton(row, Color.clear); GoldFrame(row, item == shopSel ? 2 : 1);
                 if (item == shopSel) { row.style.borderTopColor = row.style.borderBottomColor = row.style.borderLeftColor = row.style.borderRightColor = new Color(1f, 0.85f, 0.4f); row.style.backgroundColor = new Color(0.25f, 0.18f, 0.06f, 0.95f); }
                 row.style.flexDirection = FlexDirection.Row; row.style.alignItems = Align.Center; row.style.marginTop = 5; Pad(row, 7, 10);
-                var ic = Ico(row, ShopIcon(item), 34); ic.style.unityBackgroundImageTintColor = ShopGold; ic.style.marginRight = 10; ic.style.flexShrink = 0;
+                var ic = new VisualElement { pickingMode = PickingMode.Ignore }; ic.style.width = ic.style.height = 46; ic.style.marginRight = 10; ic.style.flexShrink = 0;
+                ic.style.backgroundImage = ShopArt(item); ic.style.backgroundSize = new BackgroundSize(BackgroundSizeType.Contain); row.Add(ic);
                 var nm = L(row, item.name, 20, new Color(0.97f, 0.92f, 0.82f), false); nm.style.flexGrow = 1; nm.style.flexShrink = 1; nm.style.unityTextAlign = TextAnchor.MiddleLeft;
                 bool owned = !Shop.CanBuy(item, out var why) && (why == "มีแล้ว" || why == "ทำบุญวันนี้แล้ว");
                 var pr = L(row, owned ? "มีแล้ว" : Story.Baht(item.price), 19, owned ? new Color(0.6f, 0.9f, 0.6f) : ShopGold); pr.style.flexShrink = 0; pr.style.marginLeft = 8;
@@ -150,7 +156,7 @@ namespace CozyFishing
             shopDetail.style.display = sel != null ? DisplayStyle.Flex : DisplayStyle.None;
             if (sel != null)
             {
-                dName.text = sel.name;
+                dName.text = sel.name; dArt.style.backgroundImage = ShopArt(sel); dArt.style.width = dArt.style.height = Narrow || shop.layout.width < shop.layout.height ? 84 : 130;
                 string state = sel.cat == Shop.Bait ? $" · มี {Shop.Owned(sel)}" : sel.id == "amulet" ? $" · มี {s.amulets}/5" : "";
                 dDesc.text = sel.desc + state;
                 bool ok = Shop.CanBuy(sel, out var why);
