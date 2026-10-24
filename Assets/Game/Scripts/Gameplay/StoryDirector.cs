@@ -62,6 +62,7 @@ namespace CozyFishing
                 string info = Story.HasStorySave ? $"คดีที่ {Mystery.M.chapter + 1} · วันที่ {Story.S.day}" : null;
                 hud.ShowTitle(info, k => pick = k);
                 if (!testDex && Application.absoluteURL.Contains("opendex")) { testDex = true; pick = "dex"; }
+                if (!testDex && Application.absoluteURL.Contains("openfree")) { testDex = true; pick = "free"; }   // ทดสอบ: เข้าหน้าเลือกที่ตกปลาเอง
                 while (pick == null) yield return null;
                 if (pick == "dex") { hud.OpenDexFromTitle(); continue; }
                 if (pick == "settings") { hud.ShowSettings(); continue; }

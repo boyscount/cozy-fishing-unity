@@ -12,6 +12,7 @@ namespace CozyFishing
     public partial class Hud
     {
         public StoryDirector director;
+        ScrollView morningScroll;
         VisualElement statusBox, clockBox, homeBtn, ask, askBox, askBtns, fadeEl, dialogEl, morning, morningBody, evening, eveList, eveSum, bag, bagList;
         VisualElement fadeArt;
         VisualElement timeIco, skyIco, viewBtn; Label dayTxt, tempTxt, windTxt;
@@ -131,9 +132,25 @@ namespace CozyFishing
             // เช้าที่บ้าน
             morning = Overlay(out var mBox, 900);
             morning.style.backgroundImage = Resources.Load<Texture2D>("UI/Frames/backdrop"); morning.style.backgroundSize = new BackgroundSize(BackgroundSizeType.Cover);
-            mBox.style.backgroundColor = new Color(0, 0, 0, 0.18f); mBox.style.borderTopWidth = mBox.style.borderBottomWidth = mBox.style.borderLeftWidth = mBox.style.borderRightWidth = 0;
-            var ms = new ScrollView(ScrollViewMode.Vertical); ms.horizontalScrollerVisibility = ScrollerVisibility.Hidden; ms.style.flexGrow = 1; ms.style.flexShrink = 1; mBox.Add(ms);
+            mBox.style.borderTopWidth = mBox.style.borderBottomWidth = mBox.style.borderLeftWidth = mBox.style.borderRightWidth = 0;
+            mBox.style.borderTopLeftRadius = mBox.style.borderTopRightRadius = mBox.style.borderBottomLeftRadius = mBox.style.borderBottomRightRadius = 0;
+            mBox.style.backgroundColor = Color.clear; mBox.style.backgroundImage = TitleTex("board");
+            mBox.style.unitySliceLeft = mBox.style.unitySliceRight = mBox.style.unitySliceTop = mBox.style.unitySliceBottom = 96;
+            mBox.style.paddingTop = mBox.style.paddingBottom = 56; mBox.style.paddingLeft = 52; mBox.style.paddingRight = 74; mBox.style.overflow = Overflow.Visible;
+            var ms = morningScroll = new ScrollView(ScrollViewMode.Vertical); ms.horizontalScrollerVisibility = ScrollerVisibility.Hidden; ms.verticalScrollerVisibility = ScrollerVisibility.Hidden;
+            ms.style.flexGrow = 1; ms.style.flexShrink = 1; mBox.Add(ms);
             morningBody = new VisualElement(); ms.Add(morningBody);
+            // ขอบขวากระดาน: เชือกถักลูกรอก + ลูกศรหัวไม้ไผ่ขึ้น/ลง (แตะเลื่อน · ลาก/ล้อเมาส์เลื่อนได้ตามเดิม)
+            var rope = new VisualElement { pickingMode = PickingMode.Ignore }; Abs(rope, null, 26, 66, 66); rope.style.width = 32;
+            rope.style.backgroundImage = TitleTex("rope_v"); rope.style.backgroundSize = new BackgroundSize(Length.Percent(100), Length.Percent(100)); mBox.Add(rope);
+            foreach (var up in new[] { true, false })
+            {
+                var ar = new Button(() => ms.scrollOffset += new Vector2(0, up ? -260 : 260)) { text = "" }; StyleButton(ar, Color.clear);
+                ar.style.position = Position.Absolute; ar.style.right = 8; ar.style.width = ar.style.height = 50; ar.style.backgroundImage = TitleTex("bamboo_arrow");
+                ar.style.borderTopWidth = ar.style.borderBottomWidth = ar.style.borderLeftWidth = ar.style.borderRightWidth = 0;
+                if (up) ar.style.top = 22; else { ar.style.bottom = 22; ar.style.rotate = new Rotate(180); }
+                mBox.Add(ar);
+            }
 
             BuildEvening();
 
@@ -389,14 +406,25 @@ namespace CozyFishing
             var s = Story.S;
             morningBody.Clear();
             var brown = new Color(0.24f, 0.14f, 0.06f); var cream = new Color(1f, 0.93f, 0.78f);
-            var title = L(morningBody, Story.FreePlay ? "ตกปลาอิสระ · เลือกที่ตกปลา" : $"เช้าวันที่ {s.day}", 50, cream); title.style.unityFontDefinition = fontTitle; Shadow(title);
+            var beam = new VisualElement { pickingMode = PickingMode.Ignore }; beam.style.alignSelf = Align.Center;
+            beam.style.backgroundImage = TitleTex("beam"); beam.style.backgroundSize = new BackgroundSize(Length.Percent(100), Length.Percent(100));
+            beam.style.paddingTop = 30; beam.style.paddingBottom = 34; beam.style.paddingLeft = Narrow ? 50 : 80; beam.style.paddingRight = Narrow ? 50 : 80; morningBody.Add(beam);
+            var title = L(beam, Story.FreePlay ? "ตกปลาอิสระ · เลือกที่ตกปลา" : $"เช้าวันที่ {s.day}", Narrow ? (Loc.English ? 26 : 32) : (Loc.English ? 36 : 46), new Color(0.2f, 0.1f, 0.03f)); title.style.unityFontDefinition = fontTitle; title.style.whiteSpace = WhiteSpace.NoWrap;
+            title.style.textShadow = new TextShadow { offset = new Vector2(0, 1.5f), blurRadius = 0.5f, color = new Color(1f, 0.86f, 0.62f, 0.6f) };
             // ข่าวหมู่บ้าน: แผ่นกระดาษประกาศ (อากาศ · ราคาตลาด)
-            VisualElement Notice(string text, Color col)
+            VisualElement Notice(string text, Color col, string icon = null)
             {
-                var n = new VisualElement { pickingMode = PickingMode.Ignore }; Skin(n, "parchment", 20); Pad(n, 12, 30); n.style.marginTop = 8; n.style.alignSelf = Align.Center;
-                morningBody.Add(n); L(n, text, 26, col); return n;
+                var n = new VisualElement { pickingMode = PickingMode.Ignore }; n.style.marginTop = 8; n.style.alignSelf = Align.Center;
+                n.style.backgroundImage = TitleTex("note"); n.style.unitySliceLeft = n.style.unitySliceRight = n.style.unitySliceTop = n.style.unitySliceBottom = 34;
+                Pad(n, 18, 38); n.style.flexDirection = FlexDirection.Row; n.style.alignItems = Align.Center;
+                morningBody.Add(n);
+                if (icon != null) { var ic = Ico(n, icon, 38); ic.style.unityBackgroundImageTintColor = new Color(0.36f, 0.22f, 0.1f); ic.style.marginRight = 10; }
+                L(n, text, 26, col);
+                var pin = Ico(n, "pin", 28); pin.style.position = Position.Absolute; pin.style.top = -12; pin.style.left = Length.Percent(50); pin.style.marginLeft = -14;
+                return n;
             }
-            Notice(Story.CurrentLuck.text, brown);
+            var lk0 = Story.CurrentLuck;
+            Notice(lk0.text, brown, lk0.rain ? "rain" : lk0.sun > 0.8f ? "sun" : lk0.sun > 0.45f ? "partly" : "cloud");
             var hot = s.hot != null ? FishDatabase.Get(s.hot) : null;
             if (hot != null && !Story.FreePlay) Notice($"วันนี้แม่ค้ารับซื้อ{(FishDex.Has(hot.id) ? hot.name : "ปลาลึกลับ")}ราคาพิเศษ {Story.Baht(Story.PriceOf(hot.id))}/กก.", new Color(0.55f, 0.2f, 0.05f));
             // ป้ายไม้: เงินเก็บ · ความสุขครอบครัว
@@ -435,24 +463,34 @@ namespace CozyFishing
             {
                 var st = Stages.All[si];
                 bool open = Stages.Unlocked(st.id);
-                var row = new VisualElement { pickingMode = PickingMode.Ignore }; Skin(row, "parchment", 20); Pad(row, 14, 20);
+                var row = new VisualElement { pickingMode = PickingMode.Ignore }; Pad(row, 26, Narrow ? 22 : 34);
+                row.style.backgroundImage = TitleTex("card"); row.style.unitySliceLeft = row.style.unitySliceRight = row.style.unitySliceTop = row.style.unitySliceBottom = 60;
                 row.style.flexDirection = FlexDirection.Row; row.style.alignItems = Align.Center; row.style.marginTop = 10; morningBody.Add(row);
                 bool narrow = Narrow;   // จอแคบ: รูปเล็กลง · ปุ่มลงไปอยู่แถวล่างเต็มกว้าง ชื่อด่านไม่ถูกบีบ
-                if (narrow) row.style.flexWrap = Wrap.Wrap;
+                var top = row;   // จอแคบ: แถวบน = รูป + ข้อความ · ปุ่มอยู่แถวล่างกลางการ์ด
+                if (narrow) { row.style.flexDirection = FlexDirection.Column; row.style.alignItems = Align.Stretch; top = new VisualElement { pickingMode = PickingMode.Ignore }; top.style.flexDirection = FlexDirection.Row; top.style.alignItems = Align.Center; row.Add(top); }
                 var polaroid = new VisualElement { pickingMode = PickingMode.Ignore }; polaroid.style.backgroundColor = new Color(0.97f, 0.95f, 0.9f); Pad(polaroid, 6, 6); polaroid.style.paddingBottom = 16;
-                polaroid.style.flexShrink = 0; polaroid.style.marginRight = 14; polaroid.style.rotate = new Rotate(si % 2 == 0 ? -3 : 2); row.Add(polaroid);
+                polaroid.style.flexShrink = 0; polaroid.style.marginRight = 14; polaroid.style.rotate = new Rotate(si % 2 == 0 ? -3 : 2); top.Add(polaroid);
                 var art = new VisualElement { pickingMode = PickingMode.Ignore }; art.style.width = narrow ? 130 : 168; art.style.height = narrow ? 84 : 108;
                 art.style.backgroundImage = st.Art; art.style.backgroundSize = new BackgroundSize(BackgroundSizeType.Cover);
                 art.style.unityBackgroundImageTintColor = open ? Color.white : new Color(0.45f, 0.42f, 0.4f); polaroid.Add(art);
                 var pin = Ico(polaroid, "pin", 30); Abs(pin, 78, null, -14);
-                var info = new VisualElement { pickingMode = PickingMode.Ignore }; info.style.flexGrow = 1; info.style.flexShrink = 1; info.style.marginRight = 10; row.Add(info);
-                if (narrow) info.style.flexBasis = 0;
+                var tp = new VisualElement { pickingMode = PickingMode.Ignore }; tp.style.position = Position.Absolute; tp.style.width = 70; tp.style.height = 22;
+                tp.style.backgroundImage = TitleTex("tape"); tp.style.left = -22; tp.style.top = -4; tp.style.rotate = new Rotate(-38); polaroid.Add(tp);
+                var info = new VisualElement { pickingMode = PickingMode.Ignore }; info.style.flexGrow = 1; info.style.flexShrink = 1; info.style.marginRight = 10; top.Add(info);
+                if (narrow) { info.style.flexBasis = 0; info.style.minWidth = 0; }
                 var nm = L(info, st.name, narrow ? 28 : 32, open ? brown : new Color(0.45f, 0.36f, 0.28f)); nm.style.unityTextAlign = TextAnchor.MiddleLeft; nm.style.unityFontDefinition = fontTitle; nm.style.whiteSpace = WhiteSpace.NoWrap;
                 var ds = L(info, open ? st.desc : $"{st.desc} · ค่าเดินทางครั้งแรก {Story.Baht(st.price)}", 18, new Color(0.32f, 0.22f, 0.12f), false); ds.style.unityTextAlign = TextAnchor.MiddleLeft;
-                var tags = new VisualElement { pickingMode = PickingMode.Ignore }; tags.style.flexDirection = FlexDirection.Row; tags.style.alignItems = Align.Center; tags.style.marginTop = 4; info.Add(tags);
+                var tags = new VisualElement { pickingMode = PickingMode.Ignore }; tags.style.flexDirection = FlexDirection.Row; tags.style.alignItems = Align.Center; tags.style.marginTop = 4; tags.style.flexWrap = Wrap.Wrap; info.Add(tags);
                 int lvl = 1 + Mathf.RoundToInt(si * 4f / Mathf.Max(1, Stages.All.Length - 1));
                 L(tags, "ความยาก", 18, new Color(0.6f, 0.35f, 0.1f)).style.marginRight = 4;
                 for (int k = 0; k < 5; k++) Ico(tags, k < lvl ? "star_on" : "star_off", 20);
+                int hz = GhostSystem.NightHazard(st.id);
+                if (hz > 0)
+                {
+                    L(tags, "ยามค่ำ", 18, new Color(0.4f, 0.16f, 0.2f)).style.marginLeft = 14;
+                    for (int k = 0; k < 3; k++) { var gi = Ico(tags, "ghost", 22); gi.style.marginLeft = 2; gi.style.unityBackgroundImageTintColor = k < hz ? new Color(0.36f, 0.2f, 0.32f) : new Color(0.36f, 0.2f, 0.32f, 0.22f); }
+                }
                 if (!Story.FreePlay && Mystery.Started && !Mystery.Solved && Mystery.Current.stage == st.id)
                 {
                     Ico(tags, "magnifier", 24).style.marginLeft = 12;
@@ -463,7 +501,11 @@ namespace CozyFishing
                 {
                     var bt = new Button(() => { Hide(morning); onMorningGo?.Invoke(id); }) { text = "ไปตกที่นี่" };
                     WoodButton(bt, true); row.Add(bt);
-                    if (narrow) { bt.style.width = Length.Percent(100); bt.style.marginTop = 10; }
+                    bt.style.backgroundImage = TitleTex("go_sign"); bt.style.unitySliceLeft = bt.style.unitySliceRight = bt.style.unitySliceTop = bt.style.unitySliceBottom = 0;
+                    bt.style.backgroundSize = new BackgroundSize(Length.Percent(100), Length.Percent(100)); bt.style.flexShrink = 0;
+                    bt.style.width = narrow ? 260 : 220; bt.style.height = narrow ? 92 : 88; bt.style.paddingTop = 30; bt.style.paddingBottom = 18; bt.style.paddingLeft = 20; bt.style.paddingRight = 46;
+                    bt.style.textShadow = new TextShadow { offset = new Vector2(0, 1.5f), blurRadius = 0.5f, color = new Color(1f, 0.86f, 0.62f, 0.55f) };
+                    if (narrow) { bt.style.alignSelf = Align.Center; bt.style.marginTop = 4; }
                 }
                 else
                 {

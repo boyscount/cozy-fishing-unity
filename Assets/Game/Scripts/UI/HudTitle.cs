@@ -8,7 +8,7 @@ namespace CozyFishing
     public partial class Hud
     {
         VisualElement title, settings, settingsBody, titleHead, titleLogo, titleGrid, titleArt; Button titleSettings;
-        Button titleContinue;
+        Button titleContinue; Sign titleContinueSign;
         Action<string> onTitle;
 
         void BuildTitle()
@@ -42,20 +42,39 @@ namespace CozyFishing
                 if (hot) b.style.unityBackgroundImageTintColor = new Color(1f, 0.72f, 0.42f);
                 grid.Add(b); return b;
             }
-            Btn("เริ่มการเดินทาง", "เนื้อเรื่องใหม่", "new", true);
-            titleContinue = Btn("ตามรอยต่อ", "", "continue");
-            Btn("ตกปลาอิสระ", "เปิดทุกด่าน ไม่มีเนื้อเรื่อง", "free");
-            Btn("สมุดสะสมปลา", "ปลาและความลับที่สะสมไว้", "dex");
-            if (titleArt == null) Btn("ตั้งค่า", null, "settings");
+            if (titleArt == null)
+            {
+                Btn("เริ่มการเดินทาง", "เนื้อเรื่องใหม่", "new", true);
+                titleContinue = Btn("ตามรอยต่อ", "", "continue");
+                Btn("ตกปลาอิสระ", "เปิดทุกด่าน ไม่มีเนื้อเรื่อง", "free");
+                Btn("สมุดสะสมปลา", "ปลาและความลับที่สะสมไว้", "dex");
+                Btn("ตั้งค่า", null, "settings");
+            }
             else
             {
-                titleSettings = new Button(() => onTitle?.Invoke("settings")) { text = "ตั้งค่า" }; WoodButton(titleSettings, true);
-                titleSettings.style.unityFontDefinition = fontTitle; titleSettings.style.fontSize = 24; Pad(titleSettings, 8, 24);
-                titleSettings.AddToClassList("small"); titleGrid.Add(titleSettings); ButtonIcon(titleSettings, "gear", 26, new Color(0.3f, 0.17f, 0.06f));
-                // สลับภาษาไทย/อังกฤษ (ปุ่มแสดงภาษาที่จะเปลี่ยนไป)
-                var langBtn = new Button(() => Loc.Lang = Loc.English ? "th" : "en"); WoodButton(langBtn, true);
-                langBtn.AddToClassList("small"); titleGrid.Add(langBtn); ButtonIcon(langBtn, "globe", 26, new Color(0.3f, 0.17f, 0.06f));
-                langBtn.schedule.Execute(() => langBtn.text = Loc.English ? "ไทย" : "English").Every(200);
+                // ป้ายไม้ดิบ + ของประกอบเล่าเรื่อง (ดู HudTitleSign.cs)
+                InitSignAudio();
+                Sign S(string main, string sub, string plank, string key) { var sg = MakeSign(main, sub, plank, () => onTitle?.Invoke(key)); grid.Add(sg.b); return sg; }
+                var sNew = S("เริ่มการเดินทาง", "เนื้อเรื่องใหม่", "plank_a", "new");
+                Prop(sNew, "prop_map", -0.62f, -0.32f, 1.3f);                                  // แผนที่เก่าพับ หนีบหมุดไม้
+                var sCont = titleContinueSign = S("ตามรอยต่อ", "", "plank_b", "continue"); titleContinue = sCont.b;
+                Prop(sCont, "stamp_red", 0.1f, 0.1f, 0.8f, false, 0.8f);                       // ตราประทับแดงแบบเอกสารคดี
+                Prop(sCont, "prop_key", -0.62f, -0.42f, 1.45f, true);                          // พวงกุญแจเก่า + พู่เชือกถัก
+                var sFree = S("ตกปลาอิสระ", "เปิดทุกด่าน ไม่มีเนื้อเรื่อง", "plank_c", "free");
+                Prop(sFree, "prop_lure", -0.78f, -0.18f, 1.25f);                               // เหยื่อปลอมทำมือ
+                Prop(sFree, "prop_bobber", -0.86f, 0.28f, 1.05f, true);                        // ทุ่นลอย + ตะขอห้อยมุมป้าย
+                var sDex = S("สมุดสะสมปลา", "ปลาและความลับที่สะสมไว้", "plank_d", "dex");
+                Prop(sDex, "prop_scales", -0.42f, 0.18f, 0.85f);                               // เกล็ดปลาแห้ง
+                Prop(sDex, "prop_photo", -1.02f, -0.62f, 1.3f, true);                          // ภาพถ่ายปลา + คลิปหนีบ
+                var sSet = MakeSign("ตั้งค่า", null, "plank_s", () => onTitle?.Invoke("settings"), true); titleSettings = sSet.b;
+                sSet.b.AddToClassList("small"); grid.Add(sSet.b);
+                sSet.icon = Prop(sSet, "icon_windkey", 0, 0, 1).e; sSet.props.RemoveAt(sSet.props.Count - 1);   // กุญแจทองเหลืองไขลาน
+                // สลับภาษาไทย/อังกฤษ (ป้ายแสดงภาษาที่จะเปลี่ยนไป) · ตราครั่งลายประจำยาม
+                var sLang = MakeSign("English", null, "plank_s", () => Loc.Lang = Loc.English ? "th" : "en", true);
+                sLang.b.AddToClassList("small"); grid.Add(sLang.b);
+                sLang.icon = Prop(sLang, "icon_seal", 0, 0, 1).e; sLang.props.RemoveAt(sLang.props.Count - 1);
+                sLang.main.schedule.Execute(() => sLang.main.text = Loc.English ? "ไทย" : "English").Every(200);
+                title.schedule.Execute(TickSigns).Every(33);
             }
             title.style.display = DisplayStyle.None;
             title.RegisterCallback<GeometryChangedEvent>(e => LayoutTitle()); Loc.Changed += LayoutTitle;   // จอเปลี่ยนขนาด/หมุน → จัดภาพหลักและปุ่มใหม่
@@ -75,7 +94,7 @@ namespace CozyFishing
             if (title == null) BuildTitle();
             onTitle = pick;
             titleContinue.style.display = info != null ? DisplayStyle.Flex : DisplayStyle.None;
-            if (info != null) titleContinue.text = $"ตามรอยต่อ\n<size=62%>{info}</size>";
+            if (info != null) { if (titleContinueSign != null) titleContinueSign.sub.text = info; else titleContinue.text = $"ตามรอยต่อ\n<size=62%>{info}</size>"; }
             if (fadeEl != null) { fadeEl.style.display = DisplayStyle.None; fadeEl.style.opacity = 0; }   // จอดำตอนเปิดเกมไม่บังหน้าแรก
             LayoutTitle(); Show(title); title.BringToFront();
             // สมุดปลา/ตั้งค่าที่เพิ่งเปิดจากหน้าแรกต้องอยู่บนสุด (ไม่งั้นหน้าแรกทับจนดูเหมือนกดไม่ติด)
@@ -98,27 +117,22 @@ namespace CozyFishing
                 {
                     float gw = Mathf.Min(w * 0.94f, 760);
                     var ps = titleGrid.style; ps.left = (aw - gw) / 2; ps.right = StyleKeyword.Auto; ps.width = gw; ps.top = ah * 0.78f; ps.bottom = StyleKeyword.Auto; ps.justifyContent = Justify.Center;
-                    foreach (var c in titleGrid.Children())
+                    foreach (var sg in signs)
                     {
-                        bool sm = c.ClassListContains("small");
-                        c.style.width = gw * (sm ? 0.36f : 0.47f); c.style.marginLeft = c.style.marginRight = gw * 0.012f; c.style.marginTop = sm ? 14 : 18;
-                        c.style.fontSize = sm ? 22 : 28; Pad(c, sm ? 15 : 16, 10); c.style.unityTextAlign = TextAnchor.MiddleCenter;
-                        if (sm) c.style.paddingLeft = 44;   // เว้นที่ไอคอน
-                        c.style.flexShrink = 0; c.style.minHeight = sm ? 62 : 0;
+                        float sgw = gw * (sg.small ? 0.4f : 0.47f), bh = sg.small ? sgw / 3.9f : sgw / 3.3f;
+                        sg.b.style.marginLeft = sg.b.style.marginRight = gw * 0.012f; sg.b.style.marginTop = sg.small ? 22 : 30;
+                        SizeSign(sg, sgw, bh, 0.45f);
                     }
                     return;
                 }
-                var gs = titleGrid.style; gs.left = aw * 0.22f; gs.right = StyleKeyword.Auto; gs.width = aw * 0.56f; gs.top = ah * 0.755f; gs.bottom = StyleKeyword.Auto;
-                gs.justifyContent = Justify.Center; gs.top = ah * 0.715f;
-                float fs = Mathf.Clamp(ah * 0.03f, 16, 30) * (Loc.English ? 0.88f : 1f);
-                foreach (var c in titleGrid.Children())
+                // ป้ายใหญ่ 2 คอลัมน์ใต้คำโปรย · แถวล่าง: ตั้งค่า · ภาษา ป้ายเล็กคู่กันกลาง
+                var gs = titleGrid.style; gs.left = aw * 0.16f; gs.right = StyleKeyword.Auto; gs.width = aw * 0.68f; gs.bottom = StyleKeyword.Auto;
+                gs.justifyContent = Justify.Center; gs.top = ah * 0.682f;
+                foreach (var sg in signs)
                 {
-                    bool small = c.ClassListContains("small");   // แถวล่าง: ตั้งค่า · ภาษา ปุ่มเล็กคู่กันกลาง
-                    c.style.width = aw * (small ? 0.16f : 0.256f); c.style.marginLeft = c.style.marginRight = aw * 0.008f;
-                    c.style.marginTop = ah * (small ? 0.01f : 0.011f); c.style.fontSize = small ? fs * 0.78f : fs;
-                    Pad(c, ah * (small ? 0.011f : 0.013f), 8); c.style.unityTextAlign = TextAnchor.MiddleCenter;
-                    if (small) c.style.paddingLeft = 44;   // เว้นที่ไอคอน
-                    c.style.flexShrink = 0; c.style.minHeight = small ? fs * 0.78f * 1.5f + ah * 0.022f : 0;
+                    float sgw = aw * (sg.small ? 0.18f : 0.29f), bh = sg.small ? ah * 0.052f : ah * 0.086f;
+                    sg.b.style.marginLeft = sg.b.style.marginRight = aw * 0.022f; sg.b.style.marginTop = ah * (sg.small ? 0.016f : 0.02f);
+                    SizeSign(sg, sgw, bh, 1f);
                 }
                 return;
             }

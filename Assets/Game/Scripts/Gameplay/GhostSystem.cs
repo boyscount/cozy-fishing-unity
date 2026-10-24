@@ -29,6 +29,13 @@ namespace CozyFishing
             { "headman", new Def { kind = GhostBodies.Kind.Hanging, name = "วิญญาณพรานปลาผูกคอตาย", nearLine = "เชือกเสียดขื่อดังเอี๊ยด… อาด… ร่างนั้นหย่อนลงมาใกล้ขึ้น", legend = "พรานปลาที่ติดหนี้ผู้ใหญ่คนก่อน ผูกคอใต้ชายคาท่าน้ำในคืนเดือนมืด", color = new Color(0.86f, 0.86f, 0.8f), dist = 0, stop = 0, speed = 0, fear = 1.2f } },
         };
 
+        public static int NightHazard(string stage)
+        {
+            if (!Defs.TryGetValue(stage, out var d)) return 0;
+            float k = d.fear + d.speed * 0.25f;
+            return d.fear >= 1.2f || k >= 1.25f ? 3 : k >= 0.9f ? 2 : 1;
+        }
+
         enum S { Hidden, Appearing, Approach, Near, Leaving }
         IWorld world; FishingController fishing; Hud hud; StoryDirector director;
         Def def; Transform ghost; Material mat; S state = S.Hidden;
