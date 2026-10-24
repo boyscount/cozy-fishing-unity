@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-public static class ProceduralMeshes
+public static partial class ProceduralMeshes
 {
     class Builder
     {
@@ -625,14 +625,14 @@ public static class ProceduralMeshes
             Vector3 p0 = TrunkAt(hs) + dir * 0.12f, p1 = TrunkAt(hs) + dir * reach * R(0.3f, 0.6f) + Vector3.up * R(0.25f, 0.8f) + new Vector3(R(-0.3f, 0.3f), 0, R(-0.3f, 0.3f)), p2 = dir * reach + new Vector3(R(-0.4f, 0.4f), -0.45f, R(-0.4f, 0.4f));
             var pts = new System.Collections.Generic.List<Vector3>();
             for (int i = 0; i <= 12; i++) { float t = i / 12f; pts.Add((1 - t) * (1 - t) * p0 + 2 * t * (1 - t) * p1 + t * t * p2); }
-            Tube(bld, 0, pts, R(0.06f, 0.09f), R(0.045f, 0.06f), bark0, bark1 * 0.9f, 5);
+            RootTube(bld, pts, R(0.06f, 0.09f), bark0, rnd);   // ปลายรากเปื้อนโคลน
             if (rnd.NextDouble() < 0.55)
             {
                 var m = pts[rnd.Next(5, 9)]; float az2 = az + R(-0.7f, 0.7f); var d2 = new Vector3(Mathf.Cos(az2), 0, Mathf.Sin(az2));
                 Vector3 q1 = m + d2 * R(0.4f, 0.8f) + Vector3.up * R(0f, 0.25f), q2 = m + d2 * R(1f, 1.8f); q2.y = -0.4f;
                 var p2s = new System.Collections.Generic.List<Vector3>();
                 for (int i = 0; i <= 8; i++) { float t = i / 8f; p2s.Add((1 - t) * (1 - t) * m + 2 * t * (1 - t) * q1 + t * t * q2); }
-                Tube(bld, 0, p2s, 0.045f, 0.035f, bark0, bark1 * 0.85f, 4);
+                RootTube(bld, p2s, 0.045f, bark0, rnd);
             }
         }
         // กิ่งบน + พุ่มใบ

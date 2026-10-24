@@ -1,4 +1,5 @@
-// ด่าน: ป่าชายเลนรากมรณะ — ร่องน้ำกร่อยคดเคี้ยวลอดป่าโกงกางรกทึบ รากค้ำยันโค้งพันกันเหมือนกรงเล็บ ต้นโกงกางตายยืนต้นซีด
+// ด่าน: ป่าชายเลนรากมรณะ — ร่องน้ำกร่อยขุ่นสีน้ำตาลอมเขียวคดเคี้ยวลอดป่าโกงกางรกทึบ รากค้ำยันโค้งพันกันหนาเหมือนกรงเล็บ ต้นโกงกางตายยืนต้นซีด
+//      ลานเลนเปียกแฉะ เปลือกหอย ปูก้ามดาบ ปลาตีน · กะโหลกสัตว์ ขยะ อวนเก่าติดตามราก · ใบไม้เน่า ฟองโฟม ฟองแก๊สผุดปริ่มน้ำ · หมอกเขียวหม่นหนา แมลงหวี่
 //      ซากเรือประมงติดค้างในราก แหเก่าขาดห้อยตามรากไม้ รากหายใจโผล่เต็มลานเลน ฟ้าครึ้มหมอกจาง
 //      ผู้เล่นยืนบนลานเลนริมร่องน้ำ หันเฉียงลงน้ำ กล้องมองตามร่องน้ำลึกเข้าไปในป่า
 using System.Collections.Generic;
@@ -83,14 +84,14 @@ public static partial class SceneBuilder
         m.vertices = v; m.colors = cols; m.RecalculateNormals(); m.RecalculateBounds();
         terrain.AddComponent<MeshFilter>().sharedMesh = SaveMesh(m, "MangroveTerrain");
         var tr = terrain.AddComponent<MeshRenderer>();
-        tr.sharedMaterial = TerrainMat("Mangrove", ("mud_forest", "brown_mud_02", "mud_forest"), new Vector4(0.35f, 0.4f, 0.3f, 0.03f), "#7a6e58", "#5a5244");
+        tr.sharedMaterial = TerrainMat("Mangrove", ("mud_forest", "brown_mud_02", "mud_forest"), new Vector4(0.35f, 0.4f, 0.3f, 0.03f), "#5c4f3c", "#433b30");
         tr.shadowCastingMode = ShadowCastingMode.Off;
         var water = new GameObject("CreekWater");
         water.AddComponent<MeshFilter>().sharedMesh = SaveMesh(Grid(60, 80, 130, new Vector3(0, GW, 20)), "MangroveWater");
         var wm = LoadOrCreate($"{MatDir}/Water_Mangrove.mat", waterShader);
-        wm.SetColor("_Shallow", Hex("#9a9070")); wm.SetColor("_Deep", Hex("#3a3e2c"));
-        wm.SetFloat("_DepthScale", 1.1f); wm.SetFloat("_Clarity", 0.25f); wm.SetFloat("_Glint", 0.05f); wm.SetFloat("_Refraction", 0.02f);
-        wm.SetFloat("_Reflect", 1f); wm.SetFloat("_Waves", 0.012f); wm.SetFloat("_FoamWidth", 0.04f); wm.SetVector("_Flow", new Vector4(0f, 0.04f, 0, 0));
+        wm.SetColor("_Shallow", Hex("#857650")); wm.SetColor("_Deep", Hex("#3e3b27"));
+        wm.SetFloat("_DepthScale", 0.7f); wm.SetFloat("_Clarity", 0.05f); wm.SetFloat("_Glint", 0.16f); wm.SetFloat("_Refraction", 0.012f);
+        wm.SetFloat("_Reflect", 0.75f); wm.SetFloat("_Waves", 0.01f); wm.SetFloat("_FoamWidth", 0.004f); wm.SetVector("_Flow", new Vector4(0f, 0.03f, 0, 0));
         wm.SetVector("_RapidZone", Vector4.zero);
         var wr = water.AddComponent<MeshRenderer>(); wr.sharedMaterial = wm; wr.shadowCastingMode = ShadowCastingMode.Off;
 
@@ -110,14 +111,101 @@ public static partial class SceneBuilder
         }
         // ต้นใหญ่โน้มข้ามร่องน้ำเป็นซุ้ม (ใช้ต้นสูงสุด)
         foreach (var (z, side) in new[] { (7f, -1f), (15f, 1f), (26f, -1f), (35f, 1f) }) Tree(5, GXc(z) + side * (GHw(z) + 0.4f), z, Rf(1f, 1.2f), Rf(0, 360));
-        for (int t = 0, n = 0; t < 600 && n < 46; t++)
+        for (int t = 0, n = 0; t < 1600 && n < 84; t++)
         {
-            float z = Rf(-16, 56), side = rnd.NextDouble() < 0.5 ? -1 : 1, x = GXc(z) + side * (GHw(z) + Rf(-0.4f, 9f));
-            if (Mathf.Abs(x - spX) < 4f && Mathf.Abs(z) < 5f) continue;    // เว้นลานเลนที่ผู้เล่นยืน
+            float z = Rf(-16, 56), side = rnd.NextDouble() < 0.5 ? -1 : 1, x = GXc(z) + side * (GHw(z) + Rf(-0.6f, 8f));
+            if (Mathf.Abs(x - spX) < 5.5f && z < 5f && z > -16f) continue;    // เว้นลานเลนที่ผู้เล่นยืน + แนวกล้องด้านหลัง (ไม่ให้พุ่มไม้บังตัวละคร)
             bool tooClose = false;
-            foreach (var c in world.colliders) if ((new Vector2(c.x - x, c.y - z)).sqrMagnitude < 9f) { tooClose = true; break; }
+            foreach (var c in world.colliders) if ((new Vector2(c.x - x, c.y - z)).sqrMagnitude < 6.25f) { tooClose = true; break; }
             if (tooClose) continue;
             Tree(rnd.NextDouble() < 0.25 ? 4 : rnd.Next(4), x, z, Rf(0.8f, 1.25f), Rf(0, 360)); n++;
+        }
+
+        // ---------- กอรากโกงกางพันกันหนาริมตลิ่ง (ไม่มีลำต้น · ทับซ้อนกับรากของต้นจริง) ----------
+        var rootMeshes = new Mesh[5];
+        for (int i = 0; i < rootMeshes.Length; i++) rootMeshes[i] = SaveMesh(ProceduralMeshes.MangroveRoots(700 + i, Rf(1.8f, 2.8f)), "MangroveRoots" + i);
+        var rootClumps = new List<Vector3>();
+        for (int t = 0, n = 0; t < 900 && n < 52; t++)
+        {
+            float z = Rf(-14, 54), side = rnd.NextDouble() < 0.5 ? -1 : 1, x = GXc(z) + side * (GHw(z) + Rf(-1.1f, 2.2f));
+            if ((new Vector2(x - spX, z)).sqrMagnitude < 12f || (Mathf.Abs(x - spX) < 3.5f && z < 0 && z > -14f)) continue;
+            var g = new GameObject("RootTangle"); g.transform.SetParent(forest, true);
+            g.transform.SetPositionAndRotation(new Vector3(x, Mathf.Max(MangroveGround(x, z), GW - 0.5f), z), Quaternion.Euler(0, Rf(0, 360), 0)); g.transform.localScale = Vector3.one * Rf(0.8f, 1.2f);
+            g.AddComponent<MeshFilter>().sharedMesh = rootMeshes[rnd.Next(rootMeshes.Length)];
+            g.AddComponent<MeshRenderer>().sharedMaterial = barkMat;
+            world.colliders.Add(new Vector4(x, z, 0.8f, 99)); rootClumps.Add(g.transform.position); n++;
+        }
+
+        // ---------- ชีวิตบนลานเลน: เปลือกหอย ปูก้ามดาบ ปลาตีน · กะโหลก/ขยะติดราก · ใบไม้เน่า ฟองโฟมลอยน้ำ ----------
+        {
+            var ci = new List<CombineInstance>();
+            void Put(Mesh mesh, Vector3 pos, Quaternion rot, Vector3 scale) => ci.Add(new CombineInstance { mesh = mesh, transform = Matrix4x4.TRS(pos, rot, scale) });
+            Vector3 OnMud(float x, float z, float up = 0) => new Vector3(x, MangroveGround(x, z) + up, z);
+            bool MudFlat(float x, float z) { float h = MangroveGround(x, z); return h > GW - 0.04f && h < GW + 0.45f; }
+            var shellW = ProceduralMeshes.Blob(new Color(0.86f, 0.82f, 0.72f), 7, 4); var shellD = ProceduralMeshes.Blob(new Color(0.42f, 0.38f, 0.34f), 7, 4);
+            for (int t = 0, n = 0; t < 4000 && n < 260; t++)   // เปลือกหอยแครง/หอยขม กระจายบนเลน
+            {
+                float x = Rf(-16, 16), z = Rf(-10, 40); if (!MudFlat(x, z)) continue;
+                float sz = Rf(0.03f, 0.07f);
+                Put(rnd.NextDouble() < 0.6 ? shellW : shellD, OnMud(x, z, 0.005f), Quaternion.Euler(Rf(-20, 20), Rf(0, 360), Rf(-20, 20)), new Vector3(sz, sz * 0.35f, sz * 0.8f)); n++;
+            }
+            var crabBody = ProceduralMeshes.Blob(new Color(0.36f, 0.3f, 0.26f), 8, 4); var crabClaw = ProceduralMeshes.Blob(new Color(0.9f, 0.45f, 0.18f), 7, 4); var leg = ProceduralMeshes.Blob(new Color(0.3f, 0.25f, 0.2f), 5, 3);
+            for (int t = 0, n = 0; t < 3000 && n < 40; t++)   // ปูก้ามดาบ: กระดองแบน ก้ามข้างเดียวสีส้มโต ขาแหลมรอบตัว
+            {
+                float x = Rf(-12, 12), z = Rf(-8, 30); if (!MudFlat(x, z)) continue;
+                var at = OnMud(x, z, 0.02f); var rot = Quaternion.Euler(0, Rf(0, 360), 0);
+                Put(crabBody, at, rot, new Vector3(0.07f, 0.025f, 0.05f));
+                Put(crabClaw, at + rot * new Vector3(0.05f, 0.012f, 0.03f), rot * Quaternion.Euler(0, -30, 0), new Vector3(0.06f, 0.028f, 0.03f));
+                for (int k = 0; k < 6; k++) Put(leg, at + rot * new Vector3((k % 3 - 1) * 0.02f, -0.005f, k < 3 ? -0.035f : 0.035f), rot * Quaternion.Euler(0, k < 3 ? 70 : -70, 0), new Vector3(0.045f, 0.006f, 0.006f));
+                n++;
+            }
+            var skBody = ProceduralMeshes.Blob(new Color(0.42f, 0.4f, 0.32f), 8, 5); var skEye = ProceduralMeshes.Blob(new Color(0.1f, 0.1f, 0.1f), 6, 3);
+            for (int t = 0, n = 0; t < 3000 && n < 26; t++)   // ปลาตีนคลานตามขอบน้ำ ตาโปนบนหัว
+            {
+                float x = Rf(-12, 12), z = Rf(-8, 34); float h = MangroveGround(x, z); if (h < GW - 0.02f || h > GW + 0.12f) continue;
+                var at = OnMud(x, z, 0.02f); var rot = Quaternion.Euler(-6, Rf(0, 360), 0);
+                Put(skBody, at, rot, new Vector3(0.035f, 0.035f, 0.16f));
+                Put(skEye, at + rot * new Vector3(0.01f, 0.025f, 0.05f), rot, Vector3.one * 0.014f); Put(skEye, at + rot * new Vector3(-0.01f, 0.025f, 0.05f), rot, Vector3.one * 0.014f);
+                n++;
+            }
+            var bone = ProceduralMeshes.Blob(new Color(0.85f, 0.82f, 0.74f), 8, 5); var hole = ProceduralMeshes.Blob(new Color(0.12f, 0.1f, 0.08f), 6, 3);
+            var bottleG = ProceduralMeshes.Lathe(new[] { new Vector2(0.001f, 0), new Vector2(0.035f, 0), new Vector2(0.037f, 0.16f), new Vector2(0.014f, 0.22f), new Vector2(0.012f, 0.27f) }, 8, new Color(0.25f, 0.42f, 0.28f));
+            var bottleB = ProceduralMeshes.Lathe(new[] { new Vector2(0.001f, 0), new Vector2(0.035f, 0), new Vector2(0.037f, 0.16f), new Vector2(0.014f, 0.22f), new Vector2(0.012f, 0.27f) }, 8, new Color(0.45f, 0.28f, 0.12f));
+            var buoy = ProceduralMeshes.Blob(new Color(0.85f, 0.38f, 0.12f), 10, 6); var foam = ProceduralMeshes.Blob(new Color(0.56f, 0.54f, 0.46f), 6, 3);
+            int ri = 0;
+            foreach (var rc in rootClumps)   // ติดตามกอราก: กะโหลกวัวควายฟอกขาว · ขวด · ทุ่นอวน · เศษโฟม
+            {
+                if (ri++ % 2 == 1) continue;
+                var at = new Vector3(rc.x + Rf(-0.8f, 0.8f), GW + 0.02f, rc.z + Rf(-0.8f, 0.8f)); at.y = Mathf.Max(MangroveGround(at.x, at.z), GW) + 0.02f;
+                var rot = Quaternion.Euler(Rf(-25, 25), Rf(0, 360), Rf(-25, 25));
+                switch (rnd.Next(5))
+                {
+                    case 0:
+                        Put(bone, at, rot, new Vector3(0.22f, 0.16f, 0.3f)); Put(bone, at + rot * new Vector3(0, -0.02f, 0.18f), rot, new Vector3(0.12f, 0.08f, 0.16f));
+                        Put(hole, at + rot * new Vector3(0.06f, 0.04f, 0.1f), rot, Vector3.one * 0.06f); Put(hole, at + rot * new Vector3(-0.06f, 0.04f, 0.1f), rot, Vector3.one * 0.06f);
+                        break;
+                    case 1: Put(bottleG, at, rot * Quaternion.Euler(80, 0, 0), Vector3.one); break;
+                    case 2: Put(bottleB, at, rot * Quaternion.Euler(85, 0, 0), Vector3.one); break;
+                    case 3: Put(buoy, at + Vector3.up * 0.05f, rot, Vector3.one * 0.2f); break;
+                    default: Put(foam, at, rot, new Vector3(0.3f, 0.08f, 0.2f)); break;
+                }
+            }
+            var leafM = ProceduralMeshes.Blob(new Color(0.42f, 0.32f, 0.14f), 6, 2); var leafY = ProceduralMeshes.Blob(new Color(0.62f, 0.52f, 0.2f), 6, 2);
+            for (int t = 0, n = 0; t < 3000 && n < 380; t++)   // ใบโกงกางเน่าลอยปริ่มน้ำ + ฟองโฟมเป็นหย่อม
+            {
+                float z = Rf(-12, 50), x = GXc(z) + Rf(-1.1f, 1.1f) * GHw(z);
+                if (MangroveGround(x, z) > GW - 0.05f) continue;
+                bool f = rnd.NextDouble() < 0.06; float sz = f ? Rf(0.12f, 0.3f) : Rf(0.07f, 0.12f);
+                Put(f ? foam : (rnd.NextDouble() < 0.6 ? leafM : leafY), new Vector3(x, GW + 0.008f, z), Quaternion.Euler(0, Rf(0, 360), 0), new Vector3(sz, 0.006f, f ? sz * 0.7f : sz * 0.45f)); n++;
+            }
+            // ข้องไม้ไผ่ + ถังน้ำของพรานปลาวางข้างตัว
+            var sp = world.spawn;
+            Put(ProceduralMeshes.FishBasket(), OnMud(sp.x + 0.9f, sp.z - 0.7f, -0.02f), Quaternion.Euler(0, 30, 6), Vector3.one * 1.1f);
+            Put(ProceduralMeshes.Bucket(), OnMud(sp.x + 1.3f, sp.z - 0.2f, -0.02f), Quaternion.Euler(4, 0, -3), Vector3.one);
+            var lm = new Mesh { indexFormat = IndexFormat.UInt32 }; lm.CombineMeshes(ci.ToArray(), true, true);
+            var lg = new GameObject("MudLife");
+            lg.AddComponent<MeshFilter>().sharedMesh = SaveMesh(lm, "MangroveMudLife");
+            var lr = lg.AddComponent<MeshRenderer>(); lr.sharedMaterial = SurfMat("MangroveLife", Color.white, 0f, vertexColor: true, smooth: 0.55f); lr.shadowCastingMode = ShadowCastingMode.Off;
         }
 
         // ---------- ซากเรือติดราก + แผ่นไม้แตก ----------
@@ -147,7 +235,7 @@ public static partial class SceneBuilder
         netMat.renderQueue = (int)RenderQueue.AlphaTest; netMat.SetOverrideTag("RenderType", "TransparentCutout");
         EditorUtility.SetDirty(netMat);
         int ni = 0;
-        foreach (var (x, z, y, yaw, w, h) in new[] { (GXc(10) - GHw(10) - 1.5f, 10f, 1.9f, 80f, 2.4f, 1.6f), (GXc(4) - GHw(4) - 1.2f, 4f, 2.1f, 100f, 2f, 1.4f), (GXc(19) + GHw(19) + 1.3f, 19f, 2f, -70f, 2.6f, 1.7f), (GXc(30) + GHw(30) + 1f, 30f, 2.2f, -95f, 2.2f, 1.5f) })
+        foreach (var (x, z, y, yaw, w, h) in new[] { (GXc(10) - GHw(10) - 1.5f, 10f, 1.9f, 80f, 2.4f, 1.6f), (GXc(4) - GHw(4) - 1.2f, 4f, 2.1f, 100f, 2f, 1.4f), (GXc(19) + GHw(19) + 1.3f, 19f, 2f, -70f, 2.6f, 1.7f), (GXc(30) + GHw(30) + 1f, 30f, 2.2f, -95f, 2.2f, 1.5f), (GXc(15) - GHw(15) - 0.8f, 15f, 1.4f, 70f, 1.8f, 1.2f), (GXc(24) - GHw(24) - 1f, 24f, 1.7f, 95f, 2.4f, 1.6f), (GXc(1) + GHw(1) + 1.6f, 1f, 1.5f, -80f, 1.6f, 1.1f), (GXc(38) - GHw(38) - 1.2f, 38f, 2f, 85f, 2.2f, 1.5f) })
         {
             var g = new GameObject("OldNet"); g.transform.SetParent(props, true);
             g.transform.SetPositionAndRotation(new Vector3(x, MangroveGround(x, z) + y, z), Quaternion.Euler(0, yaw, 0));
@@ -199,10 +287,19 @@ public static partial class SceneBuilder
         }
 
         // หมอกจางลอยต่ำเหนือร่องน้ำ
-        Particles("MangroveMist", new Vector3(GXc(15), GW + 0.4f, 15), new Vector3(14f, 44f, 0.1f), ParticleMat("Spray", new Color(1, 1, 1, 0.5f)), 16, new Vector2(3f, 6f), new Vector2(7f, 10f), new Vector2(0.03f, 0.1f), new Color(0.85f, 0.9f, 0.88f, 0.1f));
+        Particles("MangroveMist", new Vector3(GXc(15), GW + 0.6f, 15), new Vector3(24f, 50f, 1.2f), ParticleMat("Spray", new Color(1, 1, 1, 0.5f)), 42, new Vector2(4f, 8f), new Vector2(8f, 12f), new Vector2(0.03f, 0.1f), new Color(0.72f, 0.78f, 0.66f, 0.16f));
+        var midgeMat = ParticleMat("Midge", new Color(0.08f, 0.08f, 0.06f, 0.9f));
+        foreach (var (mx, mz) in new[] { (spX - 1.5f, 2.5f), (GXc(6) + 1f, 6f), (spX + 2f, -2f), (GXc(12) - 2f, 11f) })
+        {
+            var mid = Particles("Midges", new Vector3(mx, GW + 1.4f, mz), new Vector3(1.2f, 1.2f, 1f), midgeMat, 40, new Vector2(0.015f, 0.03f), new Vector2(1.5f, 3f), new Vector2(0.2f, 0.6f), Color.white);
+            var nz = mid.noise; nz.enabled = true; nz.strength = 1.6f; nz.frequency = 1.4f; nz.scrollSpeed = 1.2f;
+            var mm = mid.main; mm.maxParticles = 90; var ms = mid.sizeOverLifetime; ms.enabled = false;
+        }
+        var gas = Particles("GasBubbles", new Vector3(GXc(10), GW + 0.01f, 10), new Vector3(5f, 30f, 0.02f), ParticleMat("Bubble", new Color(0.85f, 0.85f, 0.75f, 0.6f)), 6, new Vector2(0.03f, 0.07f), new Vector2(0.8f, 1.6f), new Vector2(0.01f, 0.04f), new Color(0.8f, 0.8f, 0.7f, 0.55f));
+        var gm = gas.main; gm.maxParticles = 60;
 
         // ---------- ตัวละคร กล้อง แสง ระบบเกม ----------
-        var look = new Look { sun = "#d4d8cc", sunIntensity = 1.35f, sunRot = new Vector2(52, 150), fog = "#8e9a90", fogStart = 12, fogEnd = 75, exposure = 0.95f, ambient = 1.15f, skyId = "Overcast", skyTint = "#7a848c" };   // วัสดุฟ้าแยก ไม่ทับฟ้าหลืบแพสุสาน
+        var look = new Look { sun = "#d8d2a8", sunIntensity = 1.2f, sunRot = new Vector2(58, 150), fog = "#6c7662", fogStart = 6, fogEnd = 62, exposure = 0.98f, ambient = 0.95f, skyId = "Overcast", skyTint = "#66705e" };   // วัสดุฟ้าแยก ไม่ทับฟ้าหลืบแพสุสาน
         BuildGameplay(world, model, world.spawn, look, world);
         var foliage = Object.FindFirstObjectByType<FoliageRenderer>(); if (foliage != null) foliage.maxGrass = 0;   // ลานเลนไม่มีหญ้า
         SaveStage(scene, path);

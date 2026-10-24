@@ -204,7 +204,7 @@ namespace CozyFishing
 
         public static void Sleep(Random rng) { S.day++; RollDay(rng); Phase = StoryPhase.Morning; }
 
-        public static string FmtTime(float h) => $"{(int)h:00}:{(int)((h % 1) * 60):00}";
+        public static string FmtTime(float h) { h %= 24; return $"{(int)h:00}:{(int)((h % 1) * 60):00}"; }   // หลังเที่ยงคืน (เวลาเกิน 24) แสดงเป็น 00:xx, 01:xx …
         public static string Baht(int n) => "฿" + n.ToString("N0");
     }
 }

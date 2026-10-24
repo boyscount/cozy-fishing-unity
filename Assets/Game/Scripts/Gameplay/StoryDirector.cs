@@ -22,7 +22,8 @@ namespace CozyFishing
         bool warned, fullAsked, busy, nightAsked;
         bool sneaked; int prayDay = -1;   // แอบออกไปตกปลาตอนดึก (กลับมาเข้านอนเลย) · สวดมนต์ได้คืนละครั้ง
         public static bool NightMode;   // เลือกตกปลากลางคืนต่อ (ถึงเที่ยงคืน)
-        const float NightEnd = 23.9f;
+        // ตกกลางคืนจากด่าน: ถึงเที่ยงคืน · แอบออกจากบ้าน: ตกได้ทั้งคืนจนฟ้าสาง (เวลาเดินต่อเลย 24 = ตี 1, 2, … ถึงตี 5 ครึ่ง)
+        float NightEnd => sneaked ? 29.5f : 23.9f;
         float saveT;
         IWorld world;
 
@@ -89,7 +90,7 @@ namespace CozyFishing
             hud.SetStatus(Story.FmtTime(Story.S.time), Story.S.day, Story.S.basket.Count, Story.Capacity, Story.S.money, Story.Phase == StoryPhase.Fishing);
             if (Story.Phase != StoryPhase.Fishing || busy || hud.CardOpen || hud.ModalOpen) return;
             Story.S.time = Mathf.Min(Story.S.time + Time.deltaTime * Story.HoursPerSec * Speed, (NightMode ? NightEnd : Story.DayEnd) + 0.25f);   // ระหว่างสู้ปลาตอนหกโมงเย็น เวลาไม่เลยไปจนมืด
-            sky.Apply(Story.S.time, Story.CurrentLuck.sun);
+            sky.Apply(Story.S.time % 24, Story.CurrentLuck.sun);   // หลังเที่ยงคืน: ฟ้ามืดต่อ แล้วค่อย ๆ สางตอนตี 5
             if (Story.S.time >= 17 && !warned && !NightMode) { warned = true; hud.Toast("ใกล้ค่ำแล้ว อีกชั่วโมงจะมืด"); }
             if (!NightMode && Story.S.time >= Story.DayEnd && !fishing.Busy && !nightAsked)
             {
@@ -103,7 +104,7 @@ namespace CozyFishing
             if (NightMode && Story.S.time >= NightEnd && !fishing.Busy)
             {
                 Story.S.time = NightEnd;
-                hud.Toast("เที่ยงคืนแล้ว… กลับบ้านก่อนที่จะสายเกินไป");
+                hud.Toast(sneaked ? "ฟ้าเริ่มสางแล้ว… รีบย่องกลับเข้ามุ้งก่อนใครตื่น" : "เที่ยงคืนแล้ว… กลับบ้านก่อนที่จะสายเกินไป");
                 GoHome();
                 return;
             }
@@ -349,7 +350,7 @@ namespace CozyFishing
             StartCoroutine(Morning($"ราตรีสวัสดิ์…  เช้าวันที่ {Story.S.day}", false));
         }
 
-        // แอบออกจากบ้านตอนดึก: ตกปลาบ่อหลังบ้าน 3 ทุ่มครึ่ง–เที่ยงคืน (ผีออกเต็มที่)
+        // แอบออกจากบ้านตอนดึก: ตกปลาบ่อหลังบ้าน 3 ทุ่มครึ่ง–ตี 5 ครึ่ง (ตกได้ทั้งคืน · ผีออกเต็มที่)
         IEnumerator SneakOut()
         {
             busy = true;

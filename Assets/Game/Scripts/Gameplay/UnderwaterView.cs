@@ -17,11 +17,12 @@ namespace CozyFishing
         System.Collections.Generic.List<GameObject> unders = new System.Collections.Generic.List<GameObject>(); GameObject bait; ParticleSystem motes; LineRenderer leader;
         ParticleSystem rays, leaves, lineBubbles, mudBubbles; GameObject bed; Transform[] weeds; Vector3 bedAt = new Vector3(9999, 0, 0);
         bool active, noSpot; float enterT;
+        bool swamp; GameObject shrimp, worm0; ParticleSystem silt; bool wasBite;
         Color fogColor; FogMode savedMode; float savedDensity, savedStart, savedEnd;
 
         public void Init(IWorld w, FishingController f, CameraRig r)
         {
-            world = w; fishing = f; rig = r;
+            world = w; fishing = f; rig = r; swamp = w.StageId == "mangrove";
             // ผิวน้ำมองจากใต้น้ำ: แผ่นใหญ่ระดับผิวน้ำตามกล้องไป (mesh ผิวน้ำของบางด่านเล็ก มองไกลแล้วทะลุเห็นฟ้า) · ตลิ่งที่สูงกว่าน้ำบังส่วนเกินเอง
             Material waterMat = null;
             foreach (var mr in FindObjectsByType<MeshRenderer>(FindObjectsSortMode.None))
@@ -37,6 +38,7 @@ namespace CozyFishing
                 var deep = waterMat.HasProperty("_Deep") ? waterMat.GetColor("_Deep") : new Color(0.2f, 0.35f, 0.3f);
                 var shallow = waterMat.HasProperty("_Shallow") ? waterMat.GetColor("_Shallow") : new Color(0.6f, 0.7f, 0.6f);
                 fogColor = Color.Lerp(deep, shallow, 0.35f);
+                if (swamp) fogColor = new Color(0.46f, 0.42f, 0.25f);   // น้ำกร่อยขุ่นสีชา
                 ur.sharedMaterial.SetColor("_Tint", Color.Lerp(shallow, Color.white, 0.3f));
                 under.SetActive(false);
             }
@@ -49,6 +51,15 @@ namespace CozyFishing
             var hook = new GameObject("Hook"); hook.transform.SetParent(bait.transform, false);
             hook.AddComponent<MeshFilter>().sharedMesh = HookMesh();
             hook.AddComponent<MeshRenderer>().sharedMaterial = Resources.Load<Material>("Rod/Metal");
+            worm0 = worm;
+            if (swamp)   // ป่าเลน: กุ้งเป็นเกี่ยวหลัง ดิ้นพล่าน
+            {
+                worm.SetActive(false);
+                shrimp = new GameObject("LiveShrimp"); shrimp.transform.SetParent(bait.transform, false); shrimp.transform.localPosition = new Vector3(0.006f, -0.012f, 0); shrimp.transform.localScale = Vector3.one * 1.6f;
+                shrimp.AddComponent<MeshFilter>().sharedMesh = ShrimpMesh();
+                var sm = new Material(Resources.Load<Material>("Water/Bait")); sm.SetColor("_BaseColor", new Color(0.9f, 0.68f, 0.56f)); sm.SetFloat("_Smoothness", 0.9f);
+                shrimp.AddComponent<MeshRenderer>().sharedMaterial = sm;
+            }
             bait.SetActive(false);
             leader = new GameObject("Leader").AddComponent<LineRenderer>();
             leader.sharedMaterial = Resources.Load<Material>("Water/Leader"); leader.widthMultiplier = 0.003f; leader.positionCount = 8; leader.enabled = false;
@@ -77,6 +88,16 @@ namespace CozyFishing
             mudBubbles = MakePs("MudBubbles", 1.2f, new Vector2(2.5f, 3.5f), new Color(0.9f, 1f, 1f, 0.75f), new Vector3(0.3f, 0.02f, 0.3f), 40);
             var mb = mudBubbles.main; mb.startSize = new ParticleSystem.MinMaxCurve(0.008f, 0.025f); mb.startSpeed = 0; mb.gravityModifier = -0.03f;
             var mbb = mudBubbles.emission; mbb.SetBursts(new[] { new ParticleSystem.Burst(0, 3, 6, 6, 2.2f) });
+            // ตะกอนโคลนฟุ้งรอบเหยื่อตอนปลาพุ่งงับ
+            silt = MakePs("Silt", 0, new Vector2(1.6f, 3f), new Color(0.38f, 0.32f, 0.2f, 0.55f), new Vector3(0.3f, 0.2f, 0.3f), 160);
+            var sm2 = silt.main; sm2.startSize = new ParticleSystem.MinMaxCurve(0.05f, 0.16f); sm2.startSpeed = new ParticleSystem.MinMaxCurve(0.05f, 0.25f); sm2.gravityModifier = 0.002f;
+            var sn = silt.noise; sn.enabled = true; sn.strength = 0.12f; sn.frequency = 0.6f;
+            if (swamp)
+            {
+                var mm = motes.main; mm.startColor = new Color(0.6f, 0.55f, 0.38f, 0.6f); var me = motes.emission; me.rateOverTime = 140; mm.maxParticles = 600;
+                var lm2 = leaves.emission; lm2.rateOverTime = 14;
+                var rm2 = rays.main; rm2.startColor = new Color(0.85f, 0.8f, 0.55f, 0.05f);
+            }
             BuildBed();
         }
 
@@ -118,7 +139,104 @@ namespace CozyFishing
             var lid = GameObject.CreatePrimitive(PrimitiveType.Cube); lid.name = "Lid"; Destroy(lid.GetComponent<Collider>());
             lid.transform.SetParent(box.transform, false); lid.transform.localScale = new Vector3(1.04f, 0.15f, 1.04f); lid.transform.localPosition = new Vector3(0.05f, 0.6f, -0.05f); lid.transform.localRotation = Quaternion.Euler(0, 0, 22);
             lid.GetComponent<Renderer>().sharedMaterial = Lit(new Color(0.32f, 0.16f, 0.07f), 0.25f);
+            if (swamp) BuildSwampBed(Lit);
             bed.SetActive(false);
+        }
+
+        Transform[] swampRoots; Transform wreck, net;
+        // รากโกงกางบิดเบี้ยวดิ่งจากผิวน้ำลงปักโคลน · ซากเรือไม้ผุจมดิน · อวนเก่าจับคราบโคลน
+        void BuildSwampBed(System.Func<Color, float, Material> lit)
+        {
+            foreach (var wd in weeds) wd.gameObject.SetActive(false);
+            weeds = new Transform[0];
+            var rootMat = lit(new Color(0.34f, 0.28f, 0.2f), 0.3f);
+            swampRoots = new Transform[11];
+            for (int i = 0; i < swampRoots.Length; i++)
+            {
+                var g = new GameObject("UnderRoot"); g.transform.SetParent(bed.transform, false);
+                g.AddComponent<MeshFilter>().sharedMesh = RootMesh(i); g.AddComponent<MeshRenderer>().sharedMaterial = rootMat; swampRoots[i] = g.transform;
+            }
+            var wood = lit(new Color(0.22f, 0.17f, 0.11f), 0.12f);
+            wreck = new GameObject("SunkenBoat").transform; wreck.SetParent(bed.transform, false);
+            for (int k = 0; k < 6; k++)   // แผ่นกราบเรือผุ หักเป็นซี่ ๆ จมเฉียงในโคลน
+            {
+                var pl = GameObject.CreatePrimitive(PrimitiveType.Cube); Destroy(pl.GetComponent<Collider>()); pl.transform.SetParent(wreck, false);
+                pl.transform.localScale = new Vector3(0.08f, 0.04f + k % 2 * 0.02f, 1.2f - k * 0.1f); pl.transform.localPosition = new Vector3((k - 2.5f) * 0.11f, Mathf.Abs(k - 2.5f) * 0.05f, k * 0.04f);
+                pl.transform.localRotation = Quaternion.Euler(0, 0, (k - 2.5f) * 14); pl.GetComponent<Renderer>().sharedMaterial = wood;
+            }
+            wreck.localRotation = Quaternion.Euler(18, 40, 8);
+            net = new GameObject("RottenNet").transform; net.SetParent(bed.transform, false);
+            net.gameObject.AddComponent<MeshFilter>().sharedMesh = NetMesh();
+            net.gameObject.AddComponent<MeshRenderer>().sharedMaterial = lit(new Color(0.32f, 0.24f, 0.14f), 0.2f);
+        }
+
+        static Mesh RootMesh(int seed)
+        {
+            var rnd = new System.Random(seed * 31 + 7); float Rn(float a, float b) => a + (float)rnd.NextDouble() * (b - a);
+            var v = new System.Collections.Generic.List<Vector3>(); var t = new System.Collections.Generic.List<int>();
+            void Tube(System.Collections.Generic.List<Vector3> pts, float r0, float r1)
+            {
+                const int S = 8; int prev = -1;
+                for (int i = 0; i < pts.Count; i++)
+                {
+                    float u = i / (pts.Count - 1f);
+                    var tg = (pts[Mathf.Min(i + 1, pts.Count - 1)] - pts[Mathf.Max(i - 1, 0)]).normalized;
+                    var a = Vector3.Cross(tg, Mathf.Abs(tg.y) > 0.9f ? Vector3.right : Vector3.up).normalized; var b = Vector3.Cross(tg, a);
+                    float r = Mathf.Lerp(r0, r1, u) * (1 + 0.2f * Mathf.Sin(i * 1.9f));
+                    int st = v.Count; for (int k = 0; k <= S; k++) { float an = k / (float)S * Mathf.PI * 2; v.Add(pts[i] + (a * Mathf.Cos(an) + b * Mathf.Sin(an)) * r); }
+                    if (prev >= 0) for (int k = 0; k < S; k++) t.AddRange(new[] { prev + k, st + k, prev + k + 1, prev + k + 1, st + k, st + k + 1 });
+                    prev = st;
+                }
+            }
+            // จากผิวน้ำ (y = 1) โค้งบิดลงปักโคลน (y = 0) · แตกแขนงหนึ่งเส้น
+            var pts0 = new System.Collections.Generic.List<Vector3>(); var dx = Rn(0.5f, 1.1f) * (rnd.NextDouble() < 0.5 ? -1 : 1); var dz = Rn(-0.4f, 0.4f);
+            for (int i = 0; i <= 18; i++)   // ซุ้มรากค้ำยัน: ออกข้างจากผิวน้ำ โค้งดิ่งลงปักโคลน บิดเป็นปุ่มปม
+            {
+                float u = i / 18f;
+                pts0.Add(new Vector3(dx * Mathf.Sin(u * Mathf.PI * 0.5f) + Mathf.Sin(u * 11 + seed) * 0.04f, 1.15f - 1.3f * u * u * (3 - 2 * u), dz * u + Mathf.Cos(u * 9 + seed) * 0.04f));
+            }
+            Tube(pts0, Rn(0.03f, 0.05f), 0.022f);
+            var m0 = pts0[rnd.Next(4, 9)]; var br = new System.Collections.Generic.List<Vector3>();
+            for (int i = 0; i <= 8; i++) { float u = i / 8f; br.Add(m0 + new Vector3(Rn(0.3f, 0.5f) * u, -u * (m0.y + 0.15f), Rn(-0.2f, 0.2f) * u)); }
+            Tube(br, 0.022f, 0.014f);
+            var m = new Mesh { name = "UnderRoot" }; m.SetVertices(v); m.SetTriangles(t, 0); m.RecalculateNormals(); m.RecalculateBounds(); return m;
+        }
+
+        // อวนเก่า: ตาข่ายเส้นหนาจับคราบ ย้วยพับ
+        static Mesh NetMesh()
+        {
+            var v = new System.Collections.Generic.List<Vector3>(); var t = new System.Collections.Generic.List<int>();
+            void Strand(Vector3 a, Vector3 b)
+            {
+                var d = (b - a).normalized; var s = Vector3.Cross(d, Vector3.up).normalized * 0.006f; if (s.sqrMagnitude < 1e-8f) s = Vector3.right * 0.006f;
+                // สองหน้าแยกจุดยอด (จุดร่วม → normal หักล้างเป็นศูนย์ → NaN → bloom ลามขาวทั้งจอ)
+                int i = v.Count; v.Add(a - s); v.Add(a + s); v.Add(b + s); v.Add(b - s); t.AddRange(new[] { i, i + 1, i + 2, i, i + 2, i + 3 });
+                int j = v.Count; v.Add(a - s); v.Add(a + s); v.Add(b + s); v.Add(b - s); t.AddRange(new[] { j, j + 2, j + 1, j, j + 3, j + 2 });
+            }
+            Vector3 P(int i, int j) => new Vector3(i * 0.09f - 0.45f, Mathf.Sin(i * 0.8f) * 0.06f + j * 0.07f * (1 - j * 0.05f), j * 0.05f + Mathf.Cos(i * 1.3f + j) * 0.04f);
+            for (int i = 0; i <= 10; i++) for (int j = 0; j <= 7; j++) { if (i < 10) Strand(P(i, j), P(i + 1, j)); if (j < 7) Strand(P(i, j), P(i, j + 1)); }
+            var m = new Mesh { name = "RottenNet" }; m.SetVertices(v); m.SetTriangles(t, 0); m.RecalculateNormals(); m.RecalculateBounds(); return m;
+        }
+
+        // กุ้งเป็น: ลำตัวปล้องโค้ง หางพัด หนวดยาว (ยาว ~7 ซม.)
+        static Mesh ShrimpMesh()
+        {
+            var v = new System.Collections.Generic.List<Vector3>(); var t = new System.Collections.Generic.List<int>();
+            const int N = 16, S = 8;
+            for (int i = 0; i <= N; i++)
+            {
+                float u = i / (float)N, a = u * Mathf.PI * 0.9f;
+                var c = new Vector3(Mathf.Cos(a) * 0.03f - 0.03f, -Mathf.Sin(a) * 0.022f, 0) + new Vector3(u * 0.045f, 0, 0);
+                float r = Mathf.Lerp(0.009f, 0.0035f, u) * (1 + 0.15f * Mathf.Abs(Mathf.Sin(u * 30)));   // ปล้อง
+                for (int k = 0; k <= S; k++) { float an = k / (float)S * Mathf.PI * 2; v.Add(c + new Vector3(0, Mathf.Cos(an) * r * 1.2f, Mathf.Sin(an) * r)); }
+                if (i > 0) for (int k = 0; k < S; k++) { int a0 = (i - 1) * (S + 1) + k, b0 = a0 + S + 1; t.AddRange(new[] { a0, b0, a0 + 1, a0 + 1, b0, b0 + 1 }); }
+            }
+            void Tri(Vector3 a, Vector3 b, Vector3 c) { int i = v.Count; v.Add(a); v.Add(b); v.Add(c); v.Add(a); v.Add(b); v.Add(c); t.AddRange(new[] { i, i + 1, i + 2, i + 3, i + 5, i + 4 }); }   // สองหน้าแยกจุดยอด
+            var tail = v[N * (S + 1)];
+            Tri(tail, tail + new Vector3(0.012f, -0.01f, 0.008f), tail + new Vector3(0.016f, 0.002f, 0)); Tri(tail, tail + new Vector3(0.016f, 0.002f, 0), tail + new Vector3(0.012f, -0.01f, -0.008f));
+            var head = new Vector3(0.0f, 0, 0);
+            for (int s = -1; s <= 1; s += 2) Tri(head, head + new Vector3(-0.06f, 0.025f, s * 0.02f), head + new Vector3(-0.06f, 0.0255f, s * 0.0205f));   // หนวด
+            var m = new Mesh { name = "Shrimp" }; m.SetVertices(v); m.SetTriangles(t, 0); m.RecalculateNormals(); m.RecalculateBounds(); return m;
         }
 
         // วางพื้นท้องน้ำรอบเหยื่อใหม่เมื่อดำที่จุดใหม่ (สาหร่ายยืนบนพื้นจริง สูงไม่เกินผิวน้ำ)
@@ -144,6 +262,19 @@ namespace CozyFishing
             var log = bed.transform.Find("SunkenLog"); log.position = Ground(b - toCam * 1.6f + side * 1.1f) + Vector3.up * 0.1f;
             var box = bed.transform.Find("RustyBox"); box.position = Ground(b - toCam * 1.1f - side * 0.9f) + Vector3.up * 0.06f;
             mudBubbles.transform.position = Ground(b - toCam * 0.8f + side * 0.3f);
+            if (swampRoots != null)
+            {
+                for (int i = 0; i < swampRoots.Length; i++)   // รากล้อมรอบด้านหลังและข้างเหยื่อ (เว้นหน้ากล้อง)
+                {
+                    var p = Ground(b - toCam * R(1.0f, 3.6f) + side * R(-2.6f, 2.6f));
+                    float hgt = world.WaterY - p.y + 0.15f;
+                    if (hgt < 0.25f) { swampRoots[i].gameObject.SetActive(false); continue; }
+                    swampRoots[i].gameObject.SetActive(true);
+                    swampRoots[i].position = p; swampRoots[i].rotation = Quaternion.Euler(0, R(0, 360), 0); swampRoots[i].localScale = new Vector3(1, hgt, 1);
+                }
+                wreck.position = Ground(b - toCam * 2.2f - side * 0.6f) + Vector3.down * 0.05f;
+                net.position = Ground(b - toCam * 1.3f + side * 0.9f) + Vector3.up * 0.02f; net.rotation = Quaternion.LookRotation(side) * Quaternion.Euler(-10, 0, 0);
+            }
         }
 
         // ไส้เดือน: ท่อเรียวโค้งเป็นรูปตัว S มีปล้อง (ยาว ~7 ซม.)
@@ -240,6 +371,11 @@ namespace CozyFishing
             bait.transform.position = b + Vector3.up * 0.03f;
             bait.transform.rotation = Quaternion.Euler(Mathf.Sin(Time.time * 2.6f) * 10, Time.time * 12, Mathf.Sin(Time.time * 4.1f) * 14);
             var worm = bait.transform.GetChild(0); worm.localRotation = Quaternion.Euler(Mathf.Sin(Time.time * 5) * 18, 0, Mathf.Sin(Time.time * 3.3f) * 22);   // ไส้เดือนดิ้น
+            if (shrimp != null)   // กุ้งดีดตัวเป็นจังหวะ ยิ่งปลาตอดยิ่งดิ้นพล่าน
+            {
+                float flick = Mathf.Pow(Mathf.Abs(Mathf.Sin(Time.time * (fishing.State == FishState.Bite ? 9f : 3.2f))), 6);
+                shrimp.transform.localRotation = Quaternion.Euler(Mathf.Sin(Time.time * 7) * 12, Mathf.Sin(Time.time * 2.3f) * 25, -flick * 35 + Mathf.Sin(Time.time * 11) * 4);
+            }
             // สายหน้าเบ็ด: ตึงเกือบตรง สั่นเบา ๆ ตามกระแสน้ำ · ปลาตอดแล้วสั่นแรง
             float amp = nibble ? 0.012f : 0.003f, fq = nibble ? 38f : 6f;
             for (int i = 0; i < leader.positionCount; i++)
@@ -259,6 +395,8 @@ namespace CozyFishing
                 leaves.transform.position = camT.position + camT.forward * 1.4f + Vector3.up * 0.4f;
             }
             PlaceBed(b, cam);
+            if (nibble && !wasBite) { silt.transform.position = b + Vector3.down * 0.1f; silt.Emit(swamp ? 90 : 30); lineBubbles.Emit(25); }   // ปลาพุ่งงับ: โคลนฟุ้ง ฟองพลุ่ง
+            wasBite = nibble;
             fishing.hud.DepthReading = Mathf.Max(0, world.DepthAt(bob.x, bob.z));
             foreach (var u in unders) u.transform.position = new Vector3(cam.x, world.WaterY, cam.z);
         }
@@ -285,7 +423,7 @@ namespace CozyFishing
             if (!active) return;
             // DayCycle ตั้งสีหมอกทุกเฟรม → ทับด้วยหมอกใต้น้ำหลังจากนั้น · ค่อย ๆ หนาขึ้นตอนเพิ่งดำ
             RenderSettings.fogMode = FogMode.Exponential;
-            RenderSettings.fogDensity = Mathf.Lerp(0.05f, 0.42f, Mathf.Clamp01((Time.time - enterT) / 0.5f));
+            RenderSettings.fogDensity = Mathf.Lerp(0.05f, swamp ? 0.6f : 0.42f, Mathf.Clamp01((Time.time - enterT) / 0.5f));   // ป่าเลน: ขุ่นจัด มองเห็นได้แค่ไม่กี่เมตร
             RenderSettings.fogColor = fogColor * Mathf.Lerp(0.9f, 1.15f, Mathf.Clamp01(world.WaterY));
         }
 
@@ -295,7 +433,7 @@ namespace CozyFishing
             savedMode = RenderSettings.fogMode; savedDensity = RenderSettings.fogDensity; savedStart = RenderSettings.fogStartDistance; savedEnd = RenderSettings.fogEndDistance;
             foreach (var u in unders) u.SetActive(true); bait.SetActive(true); leader.enabled = true; motes.Play();
             bedAt = new Vector3(9999, 0, 0); bed.SetActive(true);
-            rays.Play(); leaves.Play(); lineBubbles.Play(); mudBubbles.Play();
+            rays.Play(); leaves.Play(); lineBubbles.Play(); mudBubbles.Play(); silt.Play(); wasBite = false;
         }
 
         void Exit()
@@ -304,7 +442,7 @@ namespace CozyFishing
             RenderSettings.fogMode = savedMode; RenderSettings.fogDensity = savedDensity; RenderSettings.fogStartDistance = savedStart; RenderSettings.fogEndDistance = savedEnd;
             foreach (var u in unders) u.SetActive(false); bait.SetActive(false); leader.enabled = false; motes.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
             bed.SetActive(false); fishing.hud.DepthReading = -1;
-            foreach (var ps in new[] { rays, leaves, lineBubbles, mudBubbles }) ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            foreach (var ps in new[] { rays, leaves, lineBubbles, mudBubbles, silt }) ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
             rig.ClearOverride();
         }
     }

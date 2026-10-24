@@ -25,17 +25,17 @@ Material:
     m_TexEnvs: []
     m_Ints: []
     m_Floats:
-    - _Clarity: 0.25
-    - _DepthScale: 1.1
-    - _FoamWidth: 0.04
-    - _Glint: 0.05
-    - _Reflect: 1
-    - _Refraction: 0.02
-    - _Waves: 0.012
+    - _Clarity: 0.05
+    - _DepthScale: 0.7
+    - _FoamWidth: 0.004
+    - _Glint: 0.16
+    - _Reflect: 0.75
+    - _Refraction: 0.012
+    - _Waves: 0.01
     m_Colors:
-    - _Deep: {r: 0.22745098, g: 0.24313726, b: 0.17254902, a: 1}
-    - _Flow: {r: 0, g: 0.04, b: 0, a: 0}
+    - _Deep: {r: 0.24313726, g: 0.23137255, b: 0.15294118, a: 1}
+    - _Flow: {r: 0, g: 0.03, b: 0, a: 0}
     - _RapidZone: {r: 0, g: 0, b: 0, a: 0}
-    - _Shallow: {r: 0.6039216, g: 0.5647059, b: 0.4392157, a: 1}
+    - _Shallow: {r: 0.52156866, g: 0.4627451, b: 0.3137255, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

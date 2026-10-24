@@ -9,8 +9,8 @@ namespace CozyFishing
     //  · ลำแสงทแยงจากทิศดวงอาทิตย์ (god rays) · ดวงอาทิตย์เรืองแสงบนฟ้า · ละอองเกสรระยิบในแดด → กลางคืนเป็นหิ่งห้อย · หมอกบางลอยเหนือน้ำตอนรุ่งสาง/กลางคืน
     public class Atmosphere : MonoBehaviour
     {
-        IWorld world; Camera cam; bool cave;
-        Bloom bloom; SplitToning split; ColorAdjustments color; Vignette vig; FilmGrain grain; ChromaticAberration chroma;
+        IWorld world; Camera cam; bool cave, swamp;
+        Bloom bloom; SplitToning split; ColorAdjustments color; Vignette vig; FilmGrain grain; ChromaticAberration chroma; DepthOfField dof;
         Mesh beamMesh; Material beamMat, sunMat, mistMat, moteMat; Transform sun; ParticleSystem motes;
         Transform[] mist; Vector3[] mistOff;
         const int Beams = 11;
@@ -20,13 +20,14 @@ namespace CozyFishing
 
         public void Init(IWorld w, Camera c)
         {
-            world = w; cam = c; cave = w.StageId == "cave";
+            world = w; cam = c; cave = w.StageId == "cave"; swamp = w.StageId == "mangrove";
             // ---------- ปรับภาพ ----------
             var vol = gameObject.AddComponent<Volume>(); vol.isGlobal = true; vol.priority = 50;
             var prof = ScriptableObject.CreateInstance<VolumeProfile>(); vol.profile = prof;
             bloom = prof.Add<Bloom>(); split = prof.Add<SplitToning>(); color = prof.Add<ColorAdjustments>();
             vig = prof.Add<Vignette>(); grain = prof.Add<FilmGrain>(); chroma = prof.Add<ChromaticAberration>();
             grain.type.Override(FilmGrainLookup.Thin1);
+            dof = prof.Add<DepthOfField>(); dof.mode.Override(DepthOfFieldMode.Off);
             var sh = Shader.Find("CozyFishing/NightSky");
             if (sh == null || cam == null) return;
             var rnd = new System.Random(w.StageId.GetHashCode());
@@ -132,14 +133,20 @@ namespace CozyFishing
             split.shadows.Override(Color.Lerp(Color.Lerp(grey, new Color(0.38f, 0.5f, 0.6f), 0.55f + golden * 0.25f), new Color(0.3f, 0.4f, 0.65f), night));   // เงาอมฟ้าเขียว
             split.highlights.Override(Color.Lerp(Color.Lerp(grey, new Color(0.72f, 0.58f, 0.4f), 0.45f + golden * 0.4f), new Color(0.55f, 0.58f, 0.66f), night));   // ไฮไลต์อุ่น
             split.balance.Override(-10);
-            color.saturation.Override(Mathf.Lerp(12 + golden * 8, -14, night) - fear * 25);
-            color.colorFilter.Override(Color.Lerp(Color.Lerp(Color.white, new Color(1f, 0.93f, 0.85f), golden * 0.6f), new Color(0.82f, 0.88f, 1f), night));
-            vig.intensity.Override(0.22f + night * 0.14f + fear * 0.15f); vig.smoothness.Override(0.45f);
+            color.saturation.Override(Mathf.Lerp(12 + golden * 8, -14, night) - fear * 25 - (swamp ? 16 : 0));
+            color.colorFilter.Override(Color.Lerp(Color.Lerp(swamp ? new Color(0.9f, 0.96f, 0.84f) : Color.white, new Color(1f, 0.93f, 0.85f), golden * 0.6f), new Color(0.82f, 0.88f, 1f), night));
+            if (swamp) color.contrast.Override(14);   // แสงเงาตัดกันทึม ๆ (chiaroscuro)
+            vig.intensity.Override(0.22f + night * 0.14f + fear * 0.15f + (swamp ? (under ? 0.2f : 0.12f) : 0)); vig.smoothness.Override(swamp && under ? 0.6f : 0.45f);
+            vig.color.Override(swamp && under ? new Color(0.06f, 0.05f, 0.02f) : Color.black);
+            // ใต้น้ำป่าเลน: เบลอทุกอย่างที่ไกลเกินช่วงเหยื่อ (น้ำขุ่นมองเห็นได้สั้น)
+            if (swamp && under) { dof.mode.Override(DepthOfFieldMode.Gaussian); dof.gaussianStart.Override(1.2f); dof.gaussianEnd.Override(4.5f); dof.gaussianMaxRadius.Override(1f); }
+            else dof.mode.Override(DepthOfFieldMode.Off);
             grain.intensity.Override(night * 0.28f + fear * 0.3f);
             chroma.intensity.Override(0.04f + fear * 0.55f);
             if (beamMat == null) return;
             // ---------- ลำแสง: เช้า/เย็นชัดสุด กลางวันจาง กลางคืนเป็นแสงจันทร์ฟ้าจาง ๆ ----------
             float beamA = cave || under ? 0 : (0.05f + golden * 0.16f) * day * clear + night * 0.05f;
+            if (swamp && !under) beamA = Mathf.Max(beamA, 0.15f * day);   // แดดลอดยอดโกงกางเป็นลำทั้งวันแม้ฟ้าครึ้ม
             var axis = night > 0.5f ? -(DayCycle.MoonRot * Vector3.forward) : DayCycle.SunDir;   // ทิศไปหาแหล่งแสง
             if (axis.y < 0.12f) axis = new Vector3(axis.x, 0.12f, axis.z).normalized;
             var bc = Color.Lerp(Color.Lerp(new Color(1f, 0.95f, 0.8f), new Color(1f, 0.72f, 0.42f), golden), new Color(0.55f, 0.68f, 1f), night);
@@ -199,8 +206,9 @@ namespace CozyFishing
                 k.GetChild(2).rotation = Quaternion.LookRotation(k.GetChild(2).position - cp);   // แสงเทียนหันหากล้อง
             }
             // ---------- หมอกเหนือน้ำ: รุ่งสาง (ก่อน 8 โมง) และกลางคืน ----------
-            float hour = Story.S != null ? Story.S.time : 12;
+            float hour = Story.S != null ? Story.S.time % 24 : 12;
             float mistA = under ? 0 : Mathf.Max(Mathf.Clamp01((8.2f - hour) / 2f) * (hour > 4 ? 1 : 0), night * 0.8f) * 0.07f;
+            if (swamp && !under) mistA = Mathf.Max(mistA, 0.06f);   // ป่าเลนชื้นจัด หมอกลอยต่ำทั้งวัน
             mistMat.SetFloat("_Fade", mistA);
             for (int i = 0; i < mist.Length; i++)
             {
