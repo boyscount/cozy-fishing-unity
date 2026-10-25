@@ -3,6 +3,7 @@
 //      ซากเรือประมงติดค้างในราก แหเก่าขาดห้อยตามรากไม้ รากหายใจโผล่เต็มลานเลน ฟ้าครึ้มหมอกจาง
 //      ผู้เล่นยืนบนลานเลนริมร่องน้ำ หันเฉียงลงน้ำ กล้องมองตามร่องน้ำลึกเข้าไปในป่า
 using System.Collections.Generic;
+using System.Linq;
 using System.IO;
 using CozyFishing;
 using UnityEditor;
@@ -276,10 +277,13 @@ public static partial class SceneBuilder
             }
             return go;
         }
-        for (int i = 0; i < 18; i++)
+        for (int i = 0; i < 18; i++)   // ป่าฉากหลังในหมอก: ต้นโกงกางเบา ๆ ขยายสูง (เดิม island_tree_01 ต้นละ 46k จุด รวมเกือบล้านจุด กระตุกบนมือถือ)
         {
-            float z = Rf(-10, 58), side = rnd.NextDouble() < 0.5 ? -1 : 1;
-            Nature("island_tree_01", GXc(z) + side * (GHw(z) + Rf(10f, 17f)), z, Rf(1.6f, 2.2f), Rf(0, 360), 0.2f);
+            float z = Rf(-10, 58), side = rnd.NextDouble() < 0.5 ? -1 : 1, x = GXc(z) + side * (GHw(z) + Rf(10f, 17f));
+            var g = new GameObject("FarMangrove"); g.transform.SetParent(forest, true);
+            g.transform.SetPositionAndRotation(new Vector3(x, Mathf.Max(MangroveGround(x, z), GW - 0.4f) - 0.2f, z), Quaternion.Euler(0, Rf(0, 360), 0)); g.transform.localScale = Vector3.one * Rf(1.4f, 1.9f);
+            g.AddComponent<MeshFilter>().sharedMesh = treeMeshes[rnd.Next(4)];
+            g.AddComponent<MeshRenderer>().sharedMaterials = new[] { barkMat, leafMat };
         }
         foreach (var (x, z, yaw) in new[] { (GXc(2) - GHw(2) - 2f, 2f, 30f), (GXc(9) + GHw(9) + 2.5f, 9f, -60f), (GXc(-3) + GHw(-3) + 3f, -3f, 110f) })
         {
@@ -287,7 +291,7 @@ public static partial class SceneBuilder
         }
 
         // หมอกจางลอยต่ำเหนือร่องน้ำ
-        Particles("MangroveMist", new Vector3(GXc(15), GW + 0.6f, 15), new Vector3(24f, 50f, 1.2f), ParticleMat("Spray", new Color(1, 1, 1, 0.5f)), 42, new Vector2(4f, 8f), new Vector2(8f, 12f), new Vector2(0.03f, 0.1f), new Color(0.72f, 0.78f, 0.66f, 0.16f));
+        Particles("MangroveMist", new Vector3(GXc(15), GW + 0.6f, 15), new Vector3(24f, 50f, 1.2f), ParticleMat("Spray", new Color(1, 1, 1, 0.5f)), 16, new Vector2(3f, 6f), new Vector2(8f, 12f), new Vector2(0.03f, 0.1f), new Color(0.72f, 0.78f, 0.66f, 0.16f));
         var midgeMat = ParticleMat("Midge", new Color(0.08f, 0.08f, 0.06f, 0.9f));
         foreach (var (mx, mz) in new[] { (spX - 1.5f, 2.5f), (GXc(6) + 1f, 6f), (spX + 2f, -2f), (GXc(12) - 2f, 11f) })
         {
@@ -300,6 +304,16 @@ public static partial class SceneBuilder
 
         // ---------- ตัวละคร กล้อง แสง ระบบเกม ----------
         var look = new Look { sun = "#d8d2a8", sunIntensity = 1.2f, sunRot = new Vector2(58, 150), fog = "#6c7662", fogStart = 6, fogEnd = 62, exposure = 0.98f, ambient = 0.95f, skyId = "Overcast", skyTint = "#66705e" };   // วัสดุฟ้าแยก ไม่ทับฟ้าหลืบแพสุสาน
+        {
+            // ไม่รวมต้นไม้เป็นก้อน: ต้นไม้ร้อยกว่าต้นใช้ mesh ร่วม 6 แบบ · รวมแล้วกลายเป็นสำเนาทุกต้น หน่วยความจำบนเว็บเต็ม (OOM โหลดด่านไม่ขึ้น)
+            // ใช้ GPU instancing วาดต้นแบบเดียวกันทีเดียวแทน + ทอดเงาเฉพาะต้นใกล้ผู้เล่น (ต้นไกลในหมอกปิดเงา)
+            barkMat.enableInstancing = true; leafMat.enableInstancing = true; EditorUtility.SetDirty(barkMat); EditorUtility.SetDirty(leafMat);
+            foreach (var r in forest.GetComponentsInChildren<MeshRenderer>())
+            {
+                var c = r.bounds.ClosestPoint(world.spawn);
+                if ((new Vector2(c.x - world.spawn.x, c.z - world.spawn.z)).magnitude > 6f) r.shadowCastingMode = ShadowCastingMode.Off;
+            }
+        }
         BuildGameplay(world, model, world.spawn, look, world);
         var foliage = Object.FindFirstObjectByType<FoliageRenderer>(); if (foliage != null) foliage.maxGrass = 0;   // ลานเลนไม่มีหญ้า
         SaveStage(scene, path);

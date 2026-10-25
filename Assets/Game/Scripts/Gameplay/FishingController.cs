@@ -402,6 +402,15 @@ namespace CozyFishing
                 float u = i / (linePts.Length - 1f), v = 1 - u;
                 linePts[i] = v * v * tip + 2 * v * u * c + u * u * b;
             }
+            if (State == FishState.Caught && ExternalShowcase && caughtGo)
+            {   // ยกปลาโชว์มุมสายตา: สายผูกที่ปาก (จุดบนสุดของตัวปลาที่ห้อยอยู่) แล้วตรงขึ้นไปหาปลายคันเหนือจอ · ไม่ลากเส้นขาวผ่านข้างตัวปลาลงไปล่างจอ
+                var rr = caughtGo.GetComponentInChildren<Renderer>();
+                if (rr != null)
+                {
+                    var bd = rr.bounds; var mouth = new Vector3(bd.center.x, bd.max.y - bd.size.y * 0.02f, bd.center.z);
+                    for (int i = 0; i < linePts.Length; i++) linePts[i] = mouth + Vector3.up * (4f * (1 - i / (linePts.Length - 1f)));
+                }
+            }
             line.SetPositions(linePts);
             line.widthMultiplier = State == FishState.Caught ? lineW0 * 0.2f : lineW0;   // ปลาห้อยอยู่ใกล้กล้องมาก สายปกติจะดูเป็นแท่งหนา
         }

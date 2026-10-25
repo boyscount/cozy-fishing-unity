@@ -162,7 +162,8 @@ namespace CozyFishing
             busy = true;
             yield return hud.Fade(Stages.Get(world.StageId).name + " · " + Story.FmtTime(Story.S.time), () => SetupFishing(false), Stages.Get(world.StageId).Art, true);
             // เพิ่งเดินทางมาถึงด่าน (เช้า) ครั้งแรก → ฉากเปิดด่านแบบตัวอย่างหนัง
-            if ((Story.S.time <= Story.DayStart + 0.4f || GameUrl.Value.Contains("intro")) && StageIntro.ShouldPlay(world.StageId)) yield return PlayIntro();
+            // คลิปบินโชว์ด่าน: ผู้เล่นส่วนใหญ่กดข้ามทุกครั้ง → เข้าด่านแล้วเล่นเลย · เปิดได้ด้วย ?intro (ไว้อัดคลิปโปรโมต)
+            if (GameUrl.Value.Contains("intro") && StageIntro.ShouldPlay(world.StageId)) yield return PlayIntro();
             hud.Toast(sneaked ? $"{Stages.Get(world.StageId).name} ยามดึก… กดปุ่มไฟฉาย (หรือ F) ส่องไล่ผี · สติหมดจะหมดสติ!" : $"{Stages.Get(world.StageId).name}\n{Story.CurrentLuck.text}");
             busy = false;
         }

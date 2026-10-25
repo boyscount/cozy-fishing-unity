@@ -22,21 +22,24 @@ namespace CozyFishing
         // ปุ่มในร้านให้รู้ว่ากดได้: ชี้แล้วขยายนิด พื้นสว่างขึ้น ขอบทองเรือง · กดแล้วยุบลง (จอสัมผัสเห็นตอนนิ้วแตะ)
         static void Hoverable(VisualElement e, Color hoverBg)
         {
+            e.AddToClassList("pressable");   // มีผลตอบสนองของตัวเองแล้ว ไม่ต้องใส่แบบทั่วไปซ้ำ
             e.style.transitionProperty = new System.Collections.Generic.List<StylePropertyName> { new StylePropertyName("scale"), new StylePropertyName("background-color"), new StylePropertyName("border-top-color"), new StylePropertyName("border-bottom-color"), new StylePropertyName("border-left-color"), new StylePropertyName("border-right-color") };
             e.style.transitionDuration = new System.Collections.Generic.List<TimeValue> { new TimeValue(0.12f) };
-            StyleColor bg = default, bc = default; bool over = false;
+            StyleColor bg = default, bc = default; bool over = false; var hoverBorder = new Color(1f, 0.88f, 0.45f);
             void On()
             {
                 if (over || !e.enabledInHierarchy) return; over = true;
                 bg = e.style.backgroundColor; bc = e.style.borderTopColor;
                 e.style.backgroundColor = hoverBg; e.style.scale = new Scale(Vector3.one * 1.04f);
-                e.style.borderTopColor = e.style.borderBottomColor = e.style.borderLeftColor = e.style.borderRightColor = new Color(1f, 0.88f, 0.45f);
+                e.style.borderTopColor = e.style.borderBottomColor = e.style.borderLeftColor = e.style.borderRightColor = hoverBorder;
             }
             void Off()
             {
                 if (!over) return; over = false;
-                e.style.backgroundColor = bg; e.style.scale = new Scale(Vector3.one);
-                e.style.borderTopColor = e.style.borderBottomColor = e.style.borderLeftColor = e.style.borderRightColor = bc;
+                e.style.scale = new Scale(Vector3.one);
+                // คืนสีเดิมเฉพาะเมื่อยังเป็นสี hover อยู่ · ถ้าระหว่างนั้นปุ่มถูกตั้งเป็น "เลือกอยู่" (แท็บที่กด) อย่าไปทับสีนั้น
+                if (e.style.backgroundColor == hoverBg) e.style.backgroundColor = bg;
+                if (e.style.borderTopColor == hoverBorder) e.style.borderTopColor = e.style.borderBottomColor = e.style.borderLeftColor = e.style.borderRightColor = bc;
             }
             e.RegisterCallback<PointerEnterEvent>(_ => On());
             e.RegisterCallback<PointerLeaveEvent>(_ => Off());

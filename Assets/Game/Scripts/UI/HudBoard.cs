@@ -15,7 +15,10 @@ namespace CozyFishing
             board.style.display = DisplayStyle.None;
             var panel = new VisualElement { pickingMode = PickingMode.Position }; GoldFrame(panel, 3); panel.style.backgroundColor = new Color(0.12f, 0.08f, 0.04f, 0.97f);
             panel.style.width = Length.Percent(Narrow ? 94 : 60); panel.style.maxHeight = Length.Percent(90); Pad(panel, 16, 20); board.Add(panel);
-            var title = L(panel, "ปลาใหญ่ประจำสัปดาห์", Narrow ? 30 : 36, ShopGold); title.style.unityFontDefinition = fontTitle;
+            var trow = new VisualElement { pickingMode = PickingMode.Ignore }; trow.style.flexDirection = FlexDirection.Row; trow.style.alignItems = Align.Center; trow.style.justifyContent = Justify.Center; panel.Add(trow);
+            Ico(trow, "trophy", Narrow ? 40 : 52).style.marginRight = 10;
+            var title = L(trow, "ปลาใหญ่ประจำสัปดาห์", Narrow ? 30 : 36, ShopGold); title.style.unityFontDefinition = fontTitle;
+            Ico(trow, "trophy", Narrow ? 40 : 52).style.marginLeft = 10;
             boardInfo = L(panel, "", 17, new Color(0.9f, 0.84f, 0.7f), false); boardInfo.style.marginTop = 2;
             boardTabs = new VisualElement(); boardTabs.style.flexDirection = FlexDirection.Row; boardTabs.style.flexWrap = Wrap.Wrap; boardTabs.style.marginTop = 10; panel.Add(boardTabs);
             var sv = new ScrollView(ScrollViewMode.Vertical); sv.style.flexGrow = 1; sv.style.flexShrink = 1; sv.style.marginTop = 10; sv.verticalScrollerVisibility = ScrollerVisibility.Hidden; panel.Add(sv);
@@ -44,7 +47,14 @@ namespace CozyFishing
 
         async void FillBoard()
         {
-            foreach (var tb in boardTabs.Children()) tb.style.backgroundColor = tb.name == boardStage ? new Color(0.45f, 0.33f, 0.12f, 0.95f) : (StyleColor)Color.clear;
+            foreach (var tb in boardTabs.Children())
+            {   // แท็บด่านที่เลือก: พื้นทองเข้ม ขอบทองสว่าง ตัวขาว · แท็บอื่นโปร่ง ขอบทองจาง
+                bool on = tb.name == boardStage;
+                tb.style.backgroundColor = on ? new Color(0.55f, 0.4f, 0.12f, 1f) : (StyleColor)Color.clear;
+                tb.style.borderTopColor = tb.style.borderBottomColor = tb.style.borderLeftColor = tb.style.borderRightColor = on ? new Color(1f, 0.85f, 0.4f) : new Color(ShopGold.r, ShopGold.g, ShopGold.b, 0.85f);
+                tb.style.color = on ? Color.white : new Color(0.95f, 0.88f, 0.72f);
+                tb.style.unityFontStyleAndWeight = on ? FontStyle.Bold : FontStyle.Normal;
+            }
             boardList.Clear();
             boardInfo.text = Cloud.Ready ? $"คุณคือ \"{Cloud.PlayerName.Split('#')[0]}\" · ปลาตัวที่หนักที่สุดของแต่ละคนในสัปดาห์นี้" : "ออฟไลน์อยู่ · ต่อเน็ตแล้วเปิดใหม่อีกครั้ง";
             if (!Cloud.Ready) return;
@@ -59,9 +69,16 @@ namespace CozyFishing
             {
                 var row = new VisualElement(); row.style.flexDirection = FlexDirection.Row; row.style.alignItems = Align.Center; row.style.marginTop = 4; Pad(row, 6, 10);
                 row.style.backgroundColor = r.me ? new Color(0.35f, 0.26f, 0.08f, 0.9f) : new Color(0f, 0f, 0f, 0.25f); Radius(row, 8);
-                var rk = L(row, r.rank.ToString(), 22, r.rank == 1 ? new Color(1f, 0.8f, 0.3f) : r.rank == 2 ? new Color(0.85f, 0.88f, 0.92f) : r.rank == 3 ? new Color(0.85f, 0.55f, 0.3f) : new Color(0.9f, 0.85f, 0.7f)); rk.style.width = 44;   // ทอง เงิน ทองแดง (ฟอนต์ไทยไม่มีอีโมจิเหรียญ)
+                if (r.rank <= 3) { var md = Ico(row, "medal_" + r.rank, 40); md.style.marginRight = 4; md.style.width = 40; }   // เหรียญทอง เงิน ทองแดง
+                else { var rk = L(row, r.rank.ToString(), 22, new Color(0.9f, 0.85f, 0.7f)); rk.style.width = 44; }
                 var nm = L(row, r.me ? r.name + " (คุณ)" : r.name, 19, new Color(0.97f, 0.92f, 0.82f), false); nm.style.flexGrow = 1; nm.style.flexShrink = 1; nm.style.unityTextAlign = TextAnchor.MiddleLeft;
-                var fish = L(row, FishDatabase.Get(r.fish)?.name ?? "", 17, new Color(0.85f, 0.8f, 0.68f), false); fish.style.marginRight = 10; fish.style.flexShrink = 1;
+                var sp = FishDatabase.Get(r.fish);
+                if (sp != null && sp.Photo != null)   // รูปปลาเล็ก ๆ หน้าชื่อ
+                {
+                    var ph = new VisualElement { pickingMode = PickingMode.Ignore }; ph.style.width = Narrow ? 46 : 60; ph.style.height = Narrow ? 26 : 34; ph.style.marginRight = 6; ph.style.flexShrink = 0;
+                    ph.style.backgroundImage = sp.Photo; ph.style.backgroundSize = new BackgroundSize(BackgroundSizeType.Contain); row.Add(ph);
+                }
+                var fish = L(row, sp?.name ?? "", 17, new Color(0.85f, 0.8f, 0.68f), false); fish.style.marginRight = 10; fish.style.flexShrink = 1;
                 L(row, $"{r.kg:0.00} กก.", 19, ShopGold).style.flexShrink = 0;
                 boardList.Add(row);
             }

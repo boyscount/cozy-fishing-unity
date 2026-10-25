@@ -17,7 +17,7 @@ namespace CozyFishing
         VisualElement fadeArt;
         VisualElement timeIco, skyIco, viewBtn; Label dayTxt, tempTxt, windTxt;
         Label statusTxt, clockTxt, askTxt, fadeTxt, dialogWho, dialogSay, bagTitle;
-        VisualElement dialogPortL, dialogPortR, dialogWhoIco, quest; Label questMain, questClue, questTitle; VisualElement questClueRow, questMainRow; bool questFolded;
+        VisualElement dialogPortL, dialogPortR, dialogWhoIco, quest; Label questMain, questClue, questTitle; VisualElement questClueRow, questMainRow; bool questFolded, questSqueezed;
         string lastQuest;
         Action<string> onMorningGo; Action onMorningPay;
         Action<bool[]> onEveningDone;
@@ -380,7 +380,16 @@ namespace CozyFishing
             {
                 var ib = IconBar; if (float.IsNaN(ib.layout.height) || ib.layout.height < 1) return;
                 float sc = ib.resolvedStyle.scale.value.x;
-                quest.style.top = Mathf.Max(136, ib.layout.y + ib.layout.height * sc + 12);
+                float top = Mathf.Max(136, ib.layout.y + ib.layout.height * sc + 12);
+                quest.style.top = top;
+                // ไม่ให้ยาวลงไปทับปุ่มตกปลาใหญ่มุมขวาล่าง (จอเตี้ย เช่นโน้ตบุ๊ก/มือถือแนวนอน) · ที่เหลือน้อยมาก → พับเหลือหัวกระดาษ (แตะกางได้)
+                if (actBtn != null && !float.IsNaN(actBtn.layout.height) && actBtn.layout.height > 1)
+                {
+                    float room = actBtn.layout.yMin - 24 - top;
+                    quest.style.maxHeight = Mathf.Max(48, room); quest.style.overflow = Overflow.Hidden;
+                    bool squeeze = room < 170;
+                    if (squeeze != questSqueezed) { questSqueezed = squeeze; lastQuest = null; }
+                }
             }
             IconBar.RegisterCallback<GeometryChangedEvent>(_ => FollowIcons());
             root.RegisterCallback<GeometryChangedEvent>(_ => FollowIcons());
@@ -401,7 +410,7 @@ namespace CozyFishing
             try { questFolded = PlayerPrefs.GetInt("abot.questFold", 0) == 1; } catch (Exception) { }
             // แตะหัวกระดาษ = พับ/กาง · แตะเนื้อหา = เปิดสมุดคดี
             title.pickingMode = PickingMode.Position;
-            title.RegisterCallback<PointerDownEvent>(e => { questFolded = !questFolded; try { PlayerPrefs.SetInt("abot.questFold", questFolded ? 1 : 0); } catch (Exception) { } lastQuest = null; e.StopPropagation(); });
+            title.RegisterCallback<PointerDownEvent>(e => { if (questSqueezed) { questSqueezed = false; lastQuest = null; e.StopPropagation(); return; } questFolded = !questFolded; try { PlayerPrefs.SetInt("abot.questFold", questFolded ? 1 : 0); } catch (Exception) { } lastQuest = null; e.StopPropagation(); });
             quest.RegisterCallback<PointerDownEvent>(e => { if (Mystery.Started) OpenCase(); });
         }
 
@@ -428,13 +437,14 @@ namespace CozyFishing
                     clue = $"{where}{hint} ({Mystery.CluesFound}/{c.clues.Length})";
                 }
             }
-            var key = main + "|" + clue + "|" + questFolded;
+            bool fold = questFolded || questSqueezed;
+            var key = main + "|" + clue + "|" + fold;
             if (key == lastQuest) return;
             lastQuest = key;
             questMain.text = main;
-            SetIco(questChev, questFolded ? "chev_right" : "chev_down");
-            questMainRow.style.display = questFolded ? DisplayStyle.None : DisplayStyle.Flex;
-            questClueRow.style.display = clue != null && !questFolded ? DisplayStyle.Flex : DisplayStyle.None;
+            SetIco(questChev, fold ? "chev_right" : "chev_down");
+            questMainRow.style.display = fold ? DisplayStyle.None : DisplayStyle.Flex;
+            questClueRow.style.display = clue != null && !fold ? DisplayStyle.Flex : DisplayStyle.None;
             questClue.text = clue ?? "";
         }
 
@@ -501,6 +511,8 @@ namespace CozyFishing
             var boardBtn = new Button(() => OpenBoard()) { text = Cloud.Ready ? "กระดานปลาใหญ่ประจำสัปดาห์" : "กระดานปลาใหญ่ประจำสัปดาห์ (ออฟไลน์)" };
             StyleButton(boardBtn, new Color(0.3f, 0.2f, 0.08f, 0.92f)); GoldFrame(boardBtn, 1); boardBtn.style.alignSelf = Align.Center; boardBtn.style.marginTop = 4; boardBtn.style.marginBottom = 4;
             boardBtn.style.fontSize = Narrow ? 18 : 21; boardBtn.style.color = new Color(1f, 0.9f, 0.7f); Pad(boardBtn, 8, 22);
+            boardBtn.style.flexDirection = FlexDirection.Row; boardBtn.style.alignItems = Align.Center;
+            var bIco = Ico(boardBtn, "trophy", Narrow ? 28 : 34); bIco.style.marginRight = 8; bIco.SendToBack();   // ถ้วยรางวัลหน้าข้อความปุ่ม
             Hoverable(boardBtn, new Color(0.42f, 0.3f, 0.1f, 0.95f)); morningBody.Add(boardBtn);
             // เป้าหมายครอบครัว: กรอบไม้ไผ่บนกระดาษ + ภาพสเก็ตช์ของเป้าหมาย
             var g = Story.CurrentGoal;

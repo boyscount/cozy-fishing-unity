@@ -70,6 +70,12 @@ namespace CozyFishing
                 if (hintBox != null) hintBox.style.maxWidth = n ? Length.Percent(74) : new StyleLength(TouchUi ? 680 : 780);
                 cardNameSize = n ? 44 : 62; if (cardName != null) FitCardName();
                 LayoutCard(n);
+                if (lineNum != null && actBtn != null)
+                {   // ป้ายระยะสาย/ความลึก: จอกว้างอยู่ซ้ายของปุ่มหลัก · จอแคบ (มือถือแนวตั้ง) ที่ไม่พอ → อยู่เหนือปุ่มหลักแทน
+                    var lb = lineNum.parent; float sz = actBtn.resolvedStyle.width > 0 ? actBtn.resolvedStyle.width : (TouchUi ? 230 : 170);
+                    bool roomLeft = root.layout.width - (40 + sz + 22) > 520;
+                    lb.style.right = roomLeft ? 40 + sz + 22 : 30; lb.style.bottom = roomLeft ? 40 + sz * 0.5f - 26 : 40 + sz + 34;
+                }
                 LayoutTitle();
                 if (Shown(morning)) RefreshMorning();
             });
@@ -346,8 +352,8 @@ namespace CozyFishing
         void BuildButton()
         {
             float size = TouchUi ? 230 : 170;
-            // ระยะสาย: กรอบไม้พันเชือกแนวตั้งชิดขอบขวา เหนือปุ่มหลัก
-            var lineBox = new VisualElement { pickingMode = PickingMode.Ignore }; Abs(lineBox, null, 30, null, 40 + size + 34); lineBox.style.alignItems = Align.Center;
+            // ระยะสาย/ความลึก: ป้ายเล็กทางซ้ายของปุ่มหลัก (เดิมอยู่เหนือปุ่ม ทับปลายเกจสู้ปลากับกล่องบันทึก)
+            var lineBox = new VisualElement { pickingMode = PickingMode.Ignore }; Abs(lineBox, null, 40 + size + 22, null, 40 + size * 0.5f - 26); lineBox.style.alignItems = Align.Center;
             // ป้ายเล็กแนวนอน (ตัวเลข + หน่วย) ไม่กินที่จอ
             lineBox.style.flexDirection = FlexDirection.Row; lineBox.style.alignItems = Align.FlexEnd;
             lineBox.style.paddingTop = lineBox.style.paddingBottom = 10; lineBox.style.paddingLeft = lineBox.style.paddingRight = 16; Skin(lineBox, "ropeframe", 20); root.Add(lineBox);
@@ -627,6 +633,30 @@ namespace CozyFishing
         float cardNameSize = 62;
         void FitCardName() { int len = cardName.text?.Length ?? 0; cardName.style.fontSize = cardNameSize * Mathf.Clamp(9f / Mathf.Max(9, len), 0.62f, 1f); }   // ไม่เล็กจนอ่านยาก · ยาวกว่านั้นป้ายราคาขึ้นบรรทัดใหม่แทน
 
+        // ทุกปุ่มบอกได้ว่ากดได้: ชี้แล้วขยายนิด + สว่างขึ้น · กดแล้วยุบ (จอสัมผัสเห็นตอนแตะ) — สแกนหาปุ่มใหม่เป็นระยะ ไม่ต้องตามใส่ทีละที่
+        float nextPressScan;
+        const string PressTag = "pressable";
+        static void Pressable(VisualElement e)
+        {
+            if (e.ClassListContains(PressTag)) return;
+            e.AddToClassList(PressTag);
+            if (e.style.transitionDuration.keyword == StyleKeyword.Null || e.style.transitionDuration.value == null || e.style.transitionDuration.value.Count == 0)
+            {
+                e.style.transitionProperty = new System.Collections.Generic.List<StylePropertyName> { new StylePropertyName("scale"), new StylePropertyName("opacity") };
+                e.style.transitionDuration = new System.Collections.Generic.List<TimeValue> { new TimeValue(0.1f) };
+            }
+            bool over = false;   // ไม่แตะสี/tint (หลายปุ่มตั้งสีเฉพาะไว้ เช่นปุ่มร้านสีส้ม ไฟฉายเปิด/ปิด) ใช้ขนาดบอกอย่างเดียว
+            e.RegisterCallback<PointerEnterEvent>(_ =>
+            {
+                if (!e.enabledInHierarchy) return; over = true;
+                if (e.style.scale.value.value.x < 1.01f) e.style.scale = new Scale(Vector3.one * 1.05f);
+            });
+            e.RegisterCallback<PointerLeaveEvent>(_ => { if (!over) return; over = false; e.style.scale = new Scale(Vector3.one); });
+            e.RegisterCallback<PointerDownEvent>(_ => { if (e.enabledInHierarchy) e.style.scale = new Scale(Vector3.one * 0.94f); }, TrickleDown.TrickleDown);
+            e.RegisterCallback<PointerUpEvent>(_ => e.style.scale = new Scale(Vector3.one * (over ? 1.05f : 1f)));
+            e.RegisterCallback<PointerCancelEvent>(_ => { over = false; e.style.scale = new Scale(Vector3.one); });
+        }
+
         public void ShowCatch(Catch c, Texture image, bool isNew, string okText, Action onOk, string altText = null, Action onAlt = null, string note = null)
         {
             var sp = c.species;
@@ -656,6 +686,7 @@ namespace CozyFishing
         void Update()
         {
             Cloud.Tick();
+            if (Time.unscaledTime >= nextPressScan) { nextPressScan = Time.unscaledTime + 0.4f; root.Query<Button>().ForEach(Pressable); }
             toastBox.style.display = Time.time < toastUntil && !CardOpen ? DisplayStyle.Flex : DisplayStyle.None;
             if (CardOpen && cardNote != null && cardNote.style.display == DisplayStyle.Flex) cardNote.style.opacity = 0.65f + 0.35f * Mathf.Sin(Time.time * 5f);
             // จอแนวนอนบนมือถือ: คำแนะนำอยู่ล่างสุดระหว่างจอยกับปุ่ม (ไม่บังตัวละคร) · จอแนวตั้ง: อยู่เหนือปุ่ม
