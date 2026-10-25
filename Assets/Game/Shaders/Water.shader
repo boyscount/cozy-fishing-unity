@@ -1,5 +1,6 @@
 // ผิวน้ำแบบสมจริง: หักเหแสงมองเห็นพื้นบ่อ (opaque texture) · สีจางตามความลึก (depth texture) · สะท้อนฟ้า HDRI ตามมุมมอง (fresnel)
 // · คลื่นเล็กหลายชั้น · ประกายแดด · ฟองบาง ๆ ริมฝั่ง · วงคลื่นจากทุ่น/ปลา
+// · ที่มืด/กลางคืน: แสงตะเกียง-ไฟฉายสาดเป็นประกายบนน้ำ · ทางแสงจันทร์ระยิบ · ฟองริมฝั่งสว่างพอแยกตลิ่ง · วงคลื่นเรืองแสงจาง · หมอกบางลงเหนือผิวน้ำ
 // ต้องเปิด Depth Texture + Opaque Texture ใน URP asset (SceneBuilder.ConfigureUrp ตั้งให้)
 Shader "CozyFishing/Water"
 {
@@ -32,6 +33,8 @@ Shader "CozyFishing/Water"
             #pragma fragment frag
             #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE _MAIN_LIGHT_SHADOWS_SCREEN
             #pragma multi_compile_fog
+            #pragma multi_compile _ _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS
+            #pragma multi_compile _ _CLUSTER_LIGHT_LOOP
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareDepthTexture.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareOpaqueTexture.hlsl"
@@ -43,6 +46,7 @@ Shader "CozyFishing/Water"
             float4 _CozyWind;
             float4 _CozyRipples[6];   // xy = ตำแหน่ง, z = เวลาเริ่ม, w = แรง (ตั้งจาก WaterFx)
             float _CozyDim;           // กลางคืน: หรี่สีน้ำ (1 = กลางวัน)
+            float _CozyNight;         // 0 = กลางวัน → 1 = กลางคืน (WaterFx)
 
             float wv(float2 p, float t)
             {
@@ -142,11 +146,46 @@ Shader "CozyFishing/Water"
                     foam = max(foam, rf);
                 }
                 float dim = _CozyDim > 0 ? _CozyDim : 1;
-                col = lerp(col, (half3)0.9 * lit, foam) * dim;
+                // ความมืด: กลางคืน หรือด่านที่แสงน้อยแม้กลางวัน (คุ้งน้ำมืด ถ้ำ ป่าชายเลน) → ช่วยให้มองเห็นผิวน้ำ
+                float dark = saturate(max(_CozyNight, 1 - Luminance(lit) * 2.2));
+                half3 moonTint = half3(0.42, 0.52, 0.72);
+                half3 foamCol = (half3)0.9 * lit + moonTint * 0.45 * dark;   // ฟองริมฝั่งยังเห็นเป็นเส้นสว่างในที่มืด
+                col = lerp(col, foamCol, saturate(foam * (1 + dark * 0.8))) * dim;
+
+                float tw = n2(p * 6 + float2(t * 0.7, -t * 0.5)) * n2(p * 11 - t * 0.9);
+                // ผิวน้ำมืดไม่แบนสนิท: ระลอกรับแสงฟ้าจาง ๆ ตามมุม (fresnel) + ระยิบเล็ก ๆ ตามคลื่นที่ขยับ
+                col += moonTint * dark * (fr * 0.55 + 0.035 + pow(saturate(dot(R, light.direction)), 10) * 0.18) * (0.6 + tw * 0.8);
+                // ทางแสงจันทร์: แถบประกายระยิบบนคลื่นไปทางดวงจันทร์ (ไม่โดนหรี่)
+                float rl = saturate(dot(R, light.direction));
+                col += light.color * dark * (pow(rl, 60) * 0.9 + pow(rl, 400) * 6 * step(0.55, tw * 2)) * light.shadowAttenuation;
+                // วงคลื่นจากทุ่น/ปลาเรืองแสงจาง ๆ ในที่มืด (เห็นทันทีว่าปลากินเบ็ด)
+                col += saturate(rip) * dark * half3(0.55, 0.75, 0.85) * 0.7;
+
+                // แสงตะเกียง/ไฟฉาย/ไฟส่องผี (ไฟเสริมของฉาก): ประกายเปียก ๆ บนคลื่น + แสงนวลบนผิวน้ำใกล้ไฟ
+                #if defined(_ADDITIONAL_LIGHTS)
+                {
+                    InputData inputData = (InputData)0;
+                    inputData.positionWS = i.positionWS; inputData.normalizedScreenSpaceUV = suv;
+                    uint cnt = GetAdditionalLightsCount();
+                    LIGHT_LOOP_BEGIN(cnt)
+                        Light l = GetAdditionalLight(lightIndex, i.positionWS);
+                        // ไฟฉายคาดหัวอยู่ชิดผิวน้ำมาก (1/d² พุ่งสูง) → จำกัดความสว่างที่ถึงน้ำ ไม่งั้นทั้งจอขาวโพลน (bloom)
+                        // คำนวณเป็น float: บน WebGL half = 16 บิต ค่า 1/d² ใกล้ไฟเกิน 65504 → inf → จอขาว
+                        float3 lc = (float3)l.color * min((float)l.distanceAttenuation, 64.0) * (float)l.shadowAttenuation;
+                        lc *= min(1.0, 0.5 / max(dot(lc, float3(0.2126, 0.7152, 0.0722)), 1e-3));
+                        float3 H = normalize(l.direction + V);
+                        float nh = saturate(dot(N, H));
+                        float spec = pow(nh, 320) * 2.5 + pow(nh, 60) * 0.06;   // ประกายเล็ก ๆ คม ๆ บนระลอก ไม่ใช่ปื้นใหญ่
+                        col += (half3)min(lc * (spec * (0.4 + tw) + 0.05 * saturate(dot(N, l.direction))), 4.0);
+                    LIGHT_LOOP_END
+                }
+                #endif
 
                 // ขอบน้ำนุ่ม ไม่เป็นเส้นตัด
                 float a = smoothstep(0, 0.06, depth0);
-                col = MixFog(col, i.fog);
+                #if defined(FOG_LINEAR) || defined(FOG_EXP) || defined(FOG_EXP2)
+                col = lerp(unity_FogColor.rgb, col, lerp(ComputeFogIntensity(i.fog), 1, 0.35 * dark));   // หมอกบางลงตรงผิวน้ำในที่มืด ให้เห็นน้ำ
+                #endif
                 return half4(col, a);
             }
             ENDHLSL

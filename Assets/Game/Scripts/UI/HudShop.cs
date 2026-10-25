@@ -174,6 +174,23 @@ namespace CozyFishing
             shopSay.text = $"ลุงส้ม: {ShopLine(shopCat, sel)}";
         }
 
+        public bool ShopOpen => shop != null && shop.style.display == DisplayStyle.Flex;
+
+        // ถ่ายคลิป (shopdemo): เปิดร้าน ไล่เลือกของทีละหมวด กดซื้อให้ดู แล้วออกไปตกปลาต่อ
+        System.Collections.IEnumerator ShopDemo(System.Action done)
+        {
+            Story.S.money = Mathf.Max(Story.S.money, 9000);
+            ShowShop(); yield return new WaitForSeconds(1.8f);
+            foreach (var (cat, id) in new[] { (Shop.Rods, "rod1"), (Shop.Rods, "reel1"), (Shop.Bait, "shrimp"), (Shop.Ghost, "lamp"), (Shop.Home, "radio") })
+            {
+                shopCat = cat; shopSel = Shop.Get(id); FillShop(); yield return new WaitForSeconds(1.4f);
+                BuySelected(); yield return new WaitForSeconds(1.1f);
+            }
+            yield return new WaitForSeconds(0.8f);
+            shop.style.display = DisplayStyle.None; GameInput.Blocked = ModalOpen || CardOpen; RefreshMorning();
+            done?.Invoke();
+        }
+
         void BuySelected()
         {
             var it = shopSel; if (it == null || !Shop.Buy(it)) return;

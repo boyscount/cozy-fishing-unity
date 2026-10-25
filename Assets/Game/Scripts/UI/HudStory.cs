@@ -430,12 +430,14 @@ namespace CozyFishing
         }
 
         // ---------- เช้าที่บ้าน ----------
+        bool shopDemoDone;
         public void ShowMorning(Action<string> go, Action pay)
         {
             onMorningGo = go; onMorningPay = pay;
             RefreshMorning();
             Show(morning);
             if (FishingController.Bot && GameUrl.Value.Contains("openshop")) { Story.S.money = Mathf.Max(Story.S.money, 6000); RefreshMorning(); ShowShop(); return; }   // ทดสอบ: เปิดร้านโชห่วยทันที
+            if (FishingController.Bot && GameUrl.Value.Contains("shopdemo") && !shopDemoDone) { shopDemoDone = true; StartCoroutine(ShopDemo(() => StartCoroutine(BotClick(morning, 1.2f, () => { Hide(morning); onMorningGo?.Invoke(BotStage()); })))); return; }   // ถ่ายคลิป: โชว์ร้านค้า
             if (FishingController.Bot) StartCoroutine(BotClick(morning, 2.5f, () => { Hide(morning); onMorningGo?.Invoke(BotStage()); }));
         }
 
