@@ -43,6 +43,10 @@ public static class ProjectTools
     {
         PlayerSettings.companyName = "boyscount";
         PlayerSettings.productName = "A Basket of Tomorrows";
+        // FAST=1: build ทดสอบแบบเร็ว (แปลงโค้ดไม่ปรับแต่ง ไฟล์ใหญ่/ช้ากว่านิด) · ปกติ: เล็กที่สุดสำหรับขึ้นเว็บ
+        bool fast = System.Environment.GetEnvironmentVariable("FAST") == "1";
+        SetWasmOptimization(fast);
+        PlayerSettings.SetIl2CppCompilerConfiguration(UnityEditor.Build.NamedBuildTarget.WebGL, fast ? Il2CppCompilerConfiguration.Debug : Il2CppCompilerConfiguration.Release);
         PlayerSettings.WebGL.compressionFormat = WebGLCompressionFormat.Gzip;   // Brotli ใช้แรมตอน build มากเกิน (เครื่องเหลือแรมน้อยแล้ว build ล้ม)
         PlayerSettings.WebGL.decompressionFallback = true;
         PlayerSettings.WebGL.dataCaching = true;
@@ -53,7 +57,8 @@ public static class ProjectTools
         PlayerSettings.SplashScreen.show = false;   // ไม่ใช้โลโก้ Unity ตอนเปิด (มีจอโหลดของเกมเองแล้ว · ลดไฟล์ ~2.7MB)
         PlayerSettings.WebGL.template = "PROJECT:Cozy";   // หน้าเว็บเต็มจอ รองรับมือถือ (Assets/WebGLTemplates/Cozy)
         PlayerSettings.SetManagedStrippingLevel(UnityEditor.Build.NamedBuildTarget.WebGL, ManagedStrippingLevel.High);
-        PlayerSettings.stripEngineCode = false;   // ฉากอยู่ใน AssetBundle → ตัวตัดโค้ดมองไม่เห็นคลาสที่ฉากใช้ (เช่น Avatar ID 90) ถ้าตัดจะ error รัว ๆ
+        // ตัดโค้ดเอนจินที่ไม่ใช้ (ตัวเกมเล็กลง): ปลอดภัยเพราะส่ง assetBundleManifestPath ให้ตัวตัดรู้ว่าฉากใน bundle ใช้คลาสอะไร (เดิมปิดไว้เพราะเคย error Avatar ID 90 ตอนยังไม่ส่ง manifest)
+        PlayerSettings.stripEngineCode = System.Environment.GetEnvironmentVariable("NO_STRIP") != "1";
 
         var all = EditorBuildSettings.scenes.Where(s => s.enabled).Select(s => s.path).ToArray();
         if (all.Length == 0) { Debug.LogError("[ProjectTools] no scenes in build settings"); EditorApplication.Exit(1); return; }
@@ -82,6 +87,35 @@ public static class ProjectTools
         var top = report.packedAssets.SelectMany(p => p.contents).GroupBy(c => c.sourceAssetPath).Select(g => (path: g.Key, kb: g.Sum(c => (long)c.packedSize) / 1024)).OrderByDescending(t => t.kb).Take(60);
         foreach (var t in top) Debug.Log($"[ProjectTools] size {t.kb,8} KB  {t.path}");
         EditorApplication.Exit(s.result == BuildResult.Succeeded ? 0 : 1);
+    }
+
+    // ตัวเลือกแปลงโค้ด WebAssembly (อยู่ใน UnityEditor.WebGL.Extensions — เรียกผ่าน reflection ไม่ต้องอ้าง assembly ตรง)
+    static void SetWasmOptimization(bool fast)
+    {
+        var t = System.Type.GetType("UnityEditor.WebGL.UserBuildSettings, UnityEditor.WebGL.Extensions");
+        var e = System.Type.GetType("UnityEditor.WebGL.WasmCodeOptimization, UnityEditor.WebGL.Extensions");
+        var p = t?.GetProperty("codeOptimization", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public);
+        if (p == null || e == null) { Debug.LogWarning("[ProjectTools] codeOptimization not found"); return; }
+        p.SetValue(null, System.Enum.Parse(e, fast ? "BuildTimes" : "DiskSize"));
+        Debug.Log("[ProjectTools] wasm optimization = " + (fast ? "BuildTimes" : "DiskSize"));
+    }
+
+    // แก้แค่ด่าน (ฉาก/โมเดล/ภาพ): สร้างเฉพาะ AssetBundle ของด่านแล้วก๊อปไปที่ Builds/WebGL/Bundles · ไม่แปลงโค้ดใหม่ (เร็วกว่าหลายเท่า)
+    //   Unity.exe -batchmode -quit -buildTarget WebGL -projectPath . -executeMethod ProjectTools.BuildBundlesOnly
+    public static void BuildBundlesOnly()
+    {
+        EditorUserBuildSettings.webGLBuildSubtarget = WebGLTextureSubtarget.ASTC;
+        var all = EditorBuildSettings.scenes.Where(s => s.enabled).Select(s => s.path).ToArray();
+        var outDir = Path.GetFullPath(Path.Combine(Application.dataPath, "..", "Builds", "WebGL"));
+        var bundleDir = Path.Combine(outDir, "Bundles");
+        var cacheDir = Path.GetFullPath(Path.Combine(Application.dataPath, "..", "Builds", "BundleCache"));
+        if (!Directory.Exists(Path.Combine(outDir, "Build"))) { Debug.LogError("[ProjectTools] no player build yet — run BuildWebGL once first"); EditorApplication.Exit(1); return; }
+        if (!BuildStageBundles(all, cacheDir)) { EditorApplication.Exit(1); return; }
+        Directory.CreateDirectory(bundleDir);
+        foreach (var f in Directory.GetFiles(cacheDir))
+            if (!f.EndsWith(".manifest") && Path.GetFileName(f) != "BundleCache") File.Copy(f, Path.Combine(bundleDir, Path.GetFileName(f)), true);
+        Debug.Log("[ProjectTools] bundles only: done");
+        EditorApplication.Exit(0);
     }
 
     // ด่านละหนึ่ง bundle (ชื่อ = ชื่อฉากตัวเล็ก) + index.json เก็บแฮชไว้ให้เบราว์เซอร์แคช/โหลดใหม่เมื่อด่านเปลี่ยน

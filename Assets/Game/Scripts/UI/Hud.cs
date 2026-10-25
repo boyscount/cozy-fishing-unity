@@ -323,10 +323,12 @@ namespace CozyFishing
             StyleButton(cardOk, Gold); cardOk.style.minWidth = 300; cardOk.style.fontSize = 30; cardOk.style.marginLeft = 14; btns.Add(cardOk);
             Skin(cardOk, "plank", 22); cardOk.style.unityBackgroundImageTintColor = new Color(1f, 0.62f, 0.32f); cardOk.style.color = new Color(0.22f, 0.08f, 0.02f); Pad(cardOk, 14, 30);
             cardOk.style.paddingLeft = 66; var okIco = Ico(cardOk, "basket", 40); Abs(okIco, 16, null, 8);   // ข้องจิ๋วหน้าปุ่มเก็บ
+            AddShareButton(btns);   // แชร์การ์ดปลาลงโซเชียล
+            btns.style.flexWrap = Wrap.Wrap;   // จอแคบ: ปุ่มแชร์ขึ้นแถวใหม่ ไม่ล้นการ์ด
             card.style.display = DisplayStyle.None;
         }
 
-        VisualElement cardNote, cardHead; Label cardNoteTxt; VisualElement[] cardStarIco;
+        VisualElement cardNote, cardHead; Label cardNoteTxt; VisualElement[] cardStarIco; int cardStarCount; bool shareTested;
         // จอแคบ: น้ำหนัก/ราคาลงไปอยู่ใต้ชื่อปลา (ไม่ทับชื่อ)
         void LayoutCard(bool n)
         {
@@ -667,7 +669,7 @@ namespace CozyFishing
             cardNew.style.display = isNew ? DisplayStyle.Flex : DisplayStyle.None;
             if (dexCount != null) dexCount.text = $"{FishDex.Discovered}/{DexTotal}";
             cardName.text = sp.name; FitCardName();
-            cardStars.text = FishDatabase.Rarity[sp.stars];
+            cardStars.text = FishDatabase.Rarity[sp.stars]; cardStarCount = sp.stars;
             for (int i = 0; i < cardStarIco.Length; i++) SetIco(cardStarIco[i], i < sp.stars ? "star_on" : "star_off");
             cardKg.text = $"{c.kg:0.00} กก.";
             cardPrice.text = Story.Baht(Story.Value(new BasketFish { id = sp.id, kg = c.kg })) + (Story.S.hot == sp.id ? " ราคาพิเศษ!" : "");
@@ -681,6 +683,7 @@ namespace CozyFishing
             card.style.display = DisplayStyle.Flex;
             actBtn.style.display = DisplayStyle.None;
             toastUntil = 0;
+            if (FishingController.Bot && GameUrl.Value.Contains("sharetest") && !shareTested) { shareTested = true; StartCoroutine(ShareCatch()); }   // ทดสอบ: บอทกดแชร์เองหนึ่งครั้ง
         }
 
         void Update()
