@@ -47,14 +47,14 @@ public static class ProjectTools
         bool fast = System.Environment.GetEnvironmentVariable("FAST") == "1";
         SetWasmOptimization(fast);
         PlayerSettings.SetIl2CppCompilerConfiguration(UnityEditor.Build.NamedBuildTarget.WebGL, fast ? Il2CppCompilerConfiguration.Debug : Il2CppCompilerConfiguration.Release);
-        PlayerSettings.WebGL.compressionFormat = WebGLCompressionFormat.Gzip;   // Brotli ใช้แรมตอน build มากเกิน (เครื่องเหลือแรมน้อยแล้ว build ล้ม)
+        PlayerSettings.WebGL.compressionFormat = System.Environment.GetEnvironmentVariable("GZIP") == "1" ? WebGLCompressionFormat.Gzip : WebGLCompressionFormat.Brotli;   // Brotli เล็กกว่า Gzip ~20% (GZIP=1 ถ้าแรมไม่พอตอน build)
         PlayerSettings.WebGL.decompressionFallback = true;
         PlayerSettings.WebGL.dataCaching = true;
         PlayerSettings.WebGL.nameFilesAsHashes = true;   // ชื่อไฟล์เกมเปลี่ยนทุกครั้งที่เนื้อหาเปลี่ยน: มือถือที่ยังถือ index.html เก่าในแคชจะไม่ดึงไฟล์ใหม่มาปนกับไฟล์เก่าจนเปิดไม่ขึ้น
         // ภาพในเกมบีบอัดแบบ ASTC (มือถือ iPhone/Android ถอดได้ในชิปเอง) · แบบเดิม DXT มือถือต้องแตกเป็นภาพเต็มในแรมจนแรมเต็ม เบราว์เซอร์รีโหลดวนเปิดไม่ขึ้น
         EditorUserBuildSettings.webGLBuildSubtarget = WebGLTextureSubtarget.ASTC;
         PlayerSettings.WebGL.showDiagnostics = false;
-        PlayerSettings.SplashScreen.show = false;   // ไม่ใช้โลโก้ Unity ตอนเปิด (มีจอโหลดของเกมเองแล้ว · ลดไฟล์ ~2.7MB)
+        PlayerSettings.SplashScreen.show = false; PlayerSettings.SplashScreen.showUnityLogo = false;   // ไม่ใช้โลโก้ Unity ตอนเปิด (มีจอโหลดของเกมเองแล้ว · ลดไฟล์ ~2.7MB)
         PlayerSettings.WebGL.template = "PROJECT:Cozy";   // หน้าเว็บเต็มจอ รองรับมือถือ (Assets/WebGLTemplates/Cozy)
         PlayerSettings.SetManagedStrippingLevel(UnityEditor.Build.NamedBuildTarget.WebGL, ManagedStrippingLevel.High);
         // ตัดโค้ดเอนจินที่ไม่ใช้ (ตัวเกมเล็กลง): ปลอดภัยเพราะส่ง assetBundleManifestPath ให้ตัวตัดรู้ว่าฉากใน bundle ใช้คลาสอะไร (เดิมปิดไว้เพราะเคย error Avatar ID 90 ตอนยังไม่ส่ง manifest)
@@ -124,26 +124,33 @@ public static class ProjectTools
         if (System.Environment.GetEnvironmentVariable("CLEAN_BUILD") == "1" && Directory.Exists(dir)) Directory.Delete(dir, true);
         Directory.CreateDirectory(dir);
         // ของที่ใช้ตั้งแต่ 2 ฉากขึ้นไป → bundle "common" (โหลดครั้งเดียว) ไม่งั้นแต่ละด่านจะก๊อปตัวละคร/ฟ้า/พื้นผิวไปเองทั้งชุด
-        var uses = new System.Collections.Generic.Dictionary<string, int>();
+        //   ของที่ด่านแรก (ทุ่งนา) ใช้ → common / common-models / common-textures (โหลดก่อนเข้าเกม)
+        //   ที่เหลือแยกตามชุดด่านที่ใช้ → common-s-<ด่าน>-<ด่าน> โหลดเมื่อไปด่านนั้นครั้งแรก (index.json บอกด้วย deps.<ด่าน>)
+        var uses = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.SortedSet<string>>();
         foreach (var sp in scenePaths)
             foreach (var d in AssetDatabase.GetDependencies(sp, true))
             {
                 if (d == sp || d.EndsWith(".cs") || d.EndsWith(".unity") || d.Contains("/Resources/") || d.StartsWith("Packages/com.unity.render-pipelines")) continue;
-                uses[d] = uses.TryGetValue(d, out var n) ? n + 1 : 1;
+                if (!uses.TryGetValue(d, out var set)) uses[d] = set = new System.Collections.Generic.SortedSet<string>();
+                set.Add(Path.GetFileNameWithoutExtension(sp).ToLowerInvariant());
             }
-        var shared = uses.Where(kv => kv.Value >= 2).Select(kv => kv.Key).OrderBy(k => k).ToArray();
+        var shared = uses.Where(kv => kv.Value.Count >= 2).OrderBy(kv => kv.Key).ToArray();
+        string Group(System.Collections.Generic.KeyValuePair<string, System.Collections.Generic.SortedSet<string>> kv) =>
+            kv.Value.Contains(FirstStage) ? CommonGroup(kv.Key) : "common-s-" + string.Join("-", kv.Value);
         var builds = scenePaths.Select(p => new AssetBundleBuild { assetBundleName = Path.GetFileNameWithoutExtension(p).ToLowerInvariant(), assetNames = new[] { p } })
-            .Concat(shared.GroupBy(CommonGroup).Select(g => new AssetBundleBuild { assetBundleName = g.Key, assetNames = g.ToArray() })).ToArray();
+            .Concat(shared.GroupBy(Group).Select(g => new AssetBundleBuild { assetBundleName = g.Key, assetNames = g.Select(kv => kv.Key).ToArray() })).ToArray();
         Debug.Log($"[ProjectTools] common bundle: {shared.Length} shared assets");
         var manifest = BuildPipeline.BuildAssetBundles(dir, builds, BuildAssetBundleOptions.None, BuildTarget.WebGL);   // LZMA: ไฟล์เล็กสุด (เบราว์เซอร์แคชเป็น LZ4 ให้เอง)
         if (manifest == null) { Debug.LogError("[ProjectTools] bundle build failed"); return false; }
-        var entries = builds.Select(b => $"\"{b.assetBundleName}\":\"{manifest.GetAssetBundleHash(b.assetBundleName)}\"");
+        var entries = builds.Select(b => $"\"{b.assetBundleName}\":\"{manifest.GetAssetBundleHash(b.assetBundleName)}\"")
+            .Concat(scenePaths.Select(p => Path.GetFileNameWithoutExtension(p).ToLowerInvariant()).Select(sc => $"\"deps.{sc}\":\"{string.Join("|", manifest.GetAllDependencies(sc))}\""));
         File.WriteAllText(Path.Combine(dir, "index.json"), "{" + string.Join(",", entries) + "}");
         foreach (var b in builds) Debug.Log($"[ProjectTools] bundle {b.assetBundleName} {new FileInfo(Path.Combine(dir, b.assetBundleName)).Length / 1024 / 1024}MB");
         return true;
     }
 
     // แบ่งของใช้ร่วมเป็นหลายไฟล์ (ไม่ให้ไฟล์ไหนเกิน 100MB ของ GitHub): โมเดล/ท่าทาง · พื้นผิว/ภาพ · ที่เหลือ (วัสดุ shader mesh)
+    const string FirstStage = "paddy";
     static string CommonGroup(string path)
     {
         var ext = Path.GetExtension(path).ToLowerInvariant();

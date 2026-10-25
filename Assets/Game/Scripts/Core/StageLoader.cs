@@ -16,6 +16,7 @@ namespace CozyFishing
         static StageLoader inst;
         static AssetBundle loaded;
         static bool commonLoaded;
+        static readonly HashSet<string> commonDone = new HashSet<string>();
         static bool booted;
 #if UNITY_WEBGL && !UNITY_EDITOR
         [DllImport("__Internal")] static extern void CozyBootProgress(float p, string msg);
@@ -71,11 +72,14 @@ namespace CozyFishing
                         else err = req.error;
                     }
                 }
-                // ของใช้ร่วมทุกฉาก (common*: ตัวละคร ฟ้า พื้นผิว ต้นไม้) โหลดครั้งเดียวเก็บไว้ตลอด
+                // ของใช้ร่วม (common*: ตัวละคร ฟ้า พื้นผิว ต้นไม้) โหลดครั้งเดียวเก็บไว้ตลอด
+                //   index.json มี deps.<ด่าน> → โหลดเฉพาะชุดที่ด่านนี้ใช้และยังไม่มี · ไม่มี (ไฟล์รุ่นเก่า) → โหลด common* ทั้งหมด
                 bool didCommon = false;
-                if (index != null && !commonLoaded)
+                if (index != null)
                 {
-                    var keys = new List<string>(); foreach (var k in index.Keys) if (k.StartsWith("common")) keys.Add(k);
+                    var keys = new List<string>();
+                    if (index.TryGetValue("deps." + key, out var deps)) { foreach (var k in deps.Split('|')) if (k.Length > 0 && !commonDone.Contains(k)) keys.Add(k); }
+                    else if (!commonLoaded) foreach (var k in index.Keys) if (k.StartsWith("common") && !commonDone.Contains(k)) keys.Add(k);
                     keys.Sort();
                     for (int ci = 0; ci < keys.Count && err == null; ci++)
                     {
@@ -83,11 +87,11 @@ namespace CozyFishing
                         {
                             var op = req.SendWebRequest();
                             while (!op.isDone) { Report(progress, (ci + req.downloadProgress) / keys.Count * 0.85f, "กำลังเตรียมเรือและคันเบ็ด…"); yield return null; }
-                            if (req.result == UnityWebRequest.Result.Success) DownloadHandlerAssetBundle.GetContent(req);   // เก็บค้างไว้ในหน่วยความจำ
+                            if (req.result == UnityWebRequest.Result.Success) { DownloadHandlerAssetBundle.GetContent(req); commonDone.Add(keys[ci]); }   // เก็บค้างไว้ในหน่วยความจำ
                             else err = req.error;
                         }
                     }
-                    if (err == null) commonLoaded = didCommon = true; else index = null;
+                    if (err == null) { if (!index.ContainsKey("deps." + key)) commonLoaded = true; didCommon = keys.Count > 0; } else index = null;
                 }
                 bool hasCommon = didCommon;   // รอบนี้โหลดของใช้ร่วมด้วย → แถบคืบหน้าแบ่งช่วง
                 if (index != null && index.TryGetValue(key, out var hash))
