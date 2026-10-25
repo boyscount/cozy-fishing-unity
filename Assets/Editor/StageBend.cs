@@ -45,9 +45,9 @@ public static partial class SceneBuilder
         world.heights = new float[world.nx * world.nz];
         for (int j = 0; j < world.nz; j++) for (int i = 0; i < world.nx; i++) world.heights[j * world.nx + i] = BendGround(world.origin.x + i * world.cell, world.origin.y + j * world.cell);
         world.walkBounds = new Rect(-20, -14, 40, 40);
-        float boatZ = BZc(0) - BHw(0) + 1.1f, deckY = BW + 0.18f;
+        float boatZ = BZc(0) - BHw(0) + 2.1f, deckY = BW + 0.18f;   // เรือยาวขึ้น → ขยับออกจากตลิ่ง ท้ายเรือไม่จมดิน
         world.spawn = new Vector3(0, deckY, boatZ); world.spawnYaw = 0;
-        world.docks.Add(new Rect(-0.45f, boatZ - 1.6f, 0.9f, 3.2f)); world.dockY.Add(deckY);
+        world.docks.Add(new Rect(-0.6f, boatZ - 2.4f, 1.2f, 4.8f)); world.dockY.Add(deckY);
         world.camBounds = new Rect(-14, -9, 28, 24); world.camBias = new Vector2(0, BZc(0)); world.camBiasK = 0.35f;
 
         // ---------- พื้นดิน + น้ำ ----------
@@ -117,22 +117,22 @@ public static partial class SceneBuilder
             }
         }
 
-        // ---------- เรือไม้ลำเล็กของผู้เล่น + ตะเกียง ----------
-        var boat = Obj("PlayerBoat", SaveMesh(ProceduralMeshes.Rowboat(3.4f, 1.0f, 0.35f), "Rowboat"), new[] { boatMat }, new Vector3(0, BW + 0.12f, boatZ), 0);
+        // ---------- เรือพายของผู้เล่น (ขนาดจริง ~5.4 ม.) + ตะเกียง ----------
+        var boat = Obj("PlayerBoat", SaveMesh(ProceduralMeshes.Rowboat(5.4f, 1.45f, 0.45f), "PlayerRowboat"), new[] { boatMat }, new Vector3(0, BW + 0.16f, boatZ), 0);
         for (int k = -1; k <= 1; k++)
         {
-            var th = Prim(PrimitiveType.Cube, "Thwart", Vector3.zero, new Vector3(0.85f, 0.04f, 0.2f), plank);
-            th.transform.SetParent(boat.transform, false); th.transform.localPosition = new Vector3(0, 0.03f, k * 0.95f);
+            var th = Prim(PrimitiveType.Cube, "Thwart", Vector3.zero, new Vector3(1.25f, 0.05f, 0.24f), plank);
+            th.transform.SetParent(boat.transform, false); th.transform.localPosition = new Vector3(0, 0.05f, k * 1.55f);
         }
-        var stake = Prim(PrimitiveType.Cylinder, "MooringStake", new Vector3(-0.9f, BW + 0.3f, boatZ - 1.5f), new Vector3(0.1f, 1f, 0.1f), plank); stake.transform.SetParent(root, true);
-        var lanternPos = new Vector3(0.25f, deckY + 0.02f, boatZ + 1.25f);
+        var stake = Prim(PrimitiveType.Cylinder, "MooringStake", new Vector3(-1.1f, BW + 0.3f, boatZ - 2.6f), new Vector3(0.1f, 1f, 0.1f), plank); stake.transform.SetParent(root, true);
+        var lanternPos = new Vector3(0.3f, deckY + 0.02f, boatZ + 2.0f);
         var lsrc = AssetDatabase.LoadAssetAtPath<GameObject>($"{NatureDir}/brass_diya_lantern.glb");
         if (lsrc != null) { var l = Object.Instantiate(lsrc); l.transform.position = lanternPos; l.transform.localScale = Vector3.one * 1.7f; }
         var lg = new GameObject("LanternLight").AddComponent<Light>();
         lg.type = LightType.Point; lg.range = 7f; lg.intensity = 2.6f; lg.color = Hex("#ffa850"); lg.shadows = LightShadows.None;
         lg.transform.position = lanternPos + Vector3.up * 0.45f;
         // ตะเกียงรั้วตั้งริมฝั่งหน้าเรือ: แสงส้มสาดลงผิวน้ำ
-        var shorePos = new Vector3(-1.4f, BendGround(-1.4f, boatZ - 1.9f) + 0.02f, boatZ - 1.9f);
+        var shorePos = new Vector3(-1.4f, BendGround(-1.4f, boatZ - 2.9f) + 0.02f, boatZ - 2.9f);
         if (lsrc != null) { var l2 = Object.Instantiate(lsrc); l2.transform.position = shorePos; l2.transform.localScale = Vector3.one * 1.6f; }
         var lg2 = new GameObject("ShoreLanternLight").AddComponent<Light>();
         lg2.type = LightType.Point; lg2.range = 8f; lg2.intensity = 3f; lg2.color = Hex("#ff9a40"); lg2.shadows = LightShadows.None; lg2.transform.position = shorePos + Vector3.up * 0.5f;

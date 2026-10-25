@@ -100,7 +100,7 @@ public static partial class SceneBuilder
         world.walkBounds = new Rect(-8, -12, 16, 30);
         float boatX = CXc(0) + 2.4f, deckY = CW + 0.18f;
         world.spawn = new Vector3(boatX, deckY, 0); world.spawnYaw = 0;
-        world.docks.Add(new Rect(boatX - 0.45f, -1.6f, 0.9f, 3.2f)); world.dockY.Add(deckY);
+        world.docks.Add(new Rect(boatX - 0.6f, -2.4f, 1.2f, 4.8f)); world.dockY.Add(deckY);
         world.camBounds = new Rect(-6, -9, 12, 24); world.camBias = new Vector2(CXc(8), 8); world.camBiasK = 0.3f;
         world.special = new Vector3(CXc(11) - 2.8f, CW, 11); world.specialRadius = 3f;   // ใต้ภาพสลักดวงตาฝั่งซ้าย
 
@@ -250,7 +250,7 @@ public static partial class SceneBuilder
             var r = g.AddComponent<MeshRenderer>(); r.sharedMaterial = UnlitMat("CaveGlow", new Color(0.45f, 1.1f, 1.5f)); r.shadowCastingMode = ShadowCastingMode.Off;
         }
 
-        // ---------- เรือไม้ลำเล็กของผู้เล่น + ตะเกียง ----------
+        // ---------- เรือพายของผู้เล่น (ขนาดจริง ~5.4 ม.) + ตะเกียง ----------
         var root = new GameObject("Props").transform;
         GameObject Obj(string name, Mesh mesh, Material[] mats, Vector3 p, float yaw)
         {
@@ -260,17 +260,17 @@ public static partial class SceneBuilder
         }
         var boatMat = SurfMat("HBBoat", Hex("#8a6e52"), 0.05f, smooth: 0.25f, tex: "weathered_brown_planks", tiles: 0.9f, cull: CullMode.Off);
         var plank = SurfMat("HBPlank", Hex("#c0a888"), 0.04f, smooth: 0.12f, tex: "weathered_brown_planks", tiles: 0.7f);
-        var boat = Obj("PlayerBoat", SaveMesh(ProceduralMeshes.Rowboat(3.4f, 1.0f, 0.35f), "Rowboat"), new[] { boatMat }, new Vector3(boatX, CW + 0.12f, 0), 0);
+        var boat = Obj("PlayerBoat", SaveMesh(ProceduralMeshes.Rowboat(5.4f, 1.45f, 0.45f), "PlayerRowboat"), new[] { boatMat }, new Vector3(boatX, CW + 0.16f, 0), 0);
         for (int k = -1; k <= 1; k++)
         {
-            var th = Prim(PrimitiveType.Cube, "Thwart", Vector3.zero, new Vector3(0.85f, 0.04f, 0.2f), plank);
-            th.transform.SetParent(boat.transform, false); th.transform.localPosition = new Vector3(0, 0.03f, k * 0.95f);
+            var th = Prim(PrimitiveType.Cube, "Thwart", Vector3.zero, new Vector3(1.25f, 0.05f, 0.24f), plank);
+            th.transform.SetParent(boat.transform, false); th.transform.localPosition = new Vector3(0, 0.05f, k * 1.55f);
         }
-        var box = Prim(PrimitiveType.Cube, "SupplyBox", new Vector3(boatX + 0.05f, deckY + 0.14f, -1.15f), new Vector3(0.5f, 0.26f, 0.36f), plank); box.transform.SetParent(root, true);
+        var box = Prim(PrimitiveType.Cube, "SupplyBox", new Vector3(boatX + 0.1f, deckY + 0.14f, -1.9f), new Vector3(0.5f, 0.26f, 0.36f), plank); box.transform.SetParent(root, true);
         box.transform.rotation = Quaternion.Euler(0, 8, 0);
-        Obj("FishBasket", SaveMesh(ProceduralMeshes.FishBasket(), "CaveFishBasket"), new[] { SurfMat("CaveBasket", Color.white, 0.1f, vertexColor: true, smooth: 0.2f) }, new Vector3(boatX + 0.25f, deckY, 0.6f), 30);
-        Obj("Bucket", SaveMesh(ProceduralMeshes.Bucket(), "CaveBucket"), new[] { SurfMat("CaveBucketMat", Color.white, 0f, vertexColor: true, smooth: 0.55f) }, new Vector3(boatX - 0.22f, deckY, -0.55f), 0);
-        var lanternPos = new Vector3(boatX - 0.25f, deckY + 0.02f, 1.25f);
+        Obj("FishBasket", SaveMesh(ProceduralMeshes.FishBasket(), "CaveFishBasket"), new[] { SurfMat("CaveBasket", Color.white, 0.1f, vertexColor: true, smooth: 0.2f) }, new Vector3(boatX + 0.35f, deckY, 0.9f), 30);
+        Obj("Bucket", SaveMesh(ProceduralMeshes.Bucket(), "CaveBucket"), new[] { SurfMat("CaveBucketMat", Color.white, 0f, vertexColor: true, smooth: 0.55f) }, new Vector3(boatX - 0.32f, deckY, -0.9f), 0);
+        var lanternPos = new Vector3(boatX - 0.3f, deckY + 0.02f, 2.0f);
         var lsrc = AssetDatabase.LoadAssetAtPath<GameObject>($"{NatureDir}/brass_diya_lantern.glb");
         if (lsrc != null) { var l = Object.Instantiate(lsrc); l.transform.position = lanternPos; l.transform.localScale = Vector3.one * 1.7f; }
         var lg = new GameObject("LanternLight").AddComponent<Light>();
