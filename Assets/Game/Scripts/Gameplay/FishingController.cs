@@ -334,6 +334,7 @@ namespace CozyFishing
             caughtGo.transform.position = bob;
             from = bob;
             caughtIsNew = FishDex.Record(fish.species.id, fish.kg);
+            Cloud.SubmitFish(world.StageId, fish.species.id, fish.kg);   // กระดานปลาใหญ่ประจำสัปดาห์ของด่านนี้ (ออนไลน์เท่านั้น)
             if (Shop.ActiveBait != "worm" && Shop.UseBait()) hud.Toast("เหยื่อหมดแล้ว กลับไปใช้ไส้เดือน");
             caughtClue = Mystery.OnCatch(world.StageId, fish.species.id, Story.S.time, NearSpecial, NearDock, rng);
             caughtSecret = Mystery.CheckCatchSecret(fish.species.id, fish.kg, Story.S.time, Story.S.luck);

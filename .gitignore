@@ -28,3 +28,6 @@ crashlytics-build.properties
 /Assets/LocalOnly/
 /Assets/LocalOnly.meta
 /Raw/
+
+# ผลทดสอบอัตโนมัติ (สร้างใหม่ทุกครั้ง)
+tools/qa/out/

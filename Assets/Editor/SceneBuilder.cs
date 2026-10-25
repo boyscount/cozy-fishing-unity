@@ -430,6 +430,7 @@ public static partial class SceneBuilder
     {
         var path = $"{GenDir}/{name}.asset";
         var old = AssetDatabase.LoadAssetAtPath<Mesh>(path);
+        if (m.blendShapeCount == 0) MeshUtility.SetMeshCompression(m, ModelImporterMeshCompression.Medium);   // บีบ mesh ระดับกลาง (ไฟล์โหลดเล็กลง)
         if (old != null) { EditorUtility.CopySerialized(m, old); return old; }
         AssetDatabase.CreateAsset(m, path);
         return m;

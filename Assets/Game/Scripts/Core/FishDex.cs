@@ -28,7 +28,9 @@ namespace CozyFishing
             var s = new Save(); s.fish.AddRange(map.Values);
             PlayerPrefs.SetString(Key, JsonUtility.ToJson(s));
             PlayerPrefs.Save();
+            Cloud.MarkDirty();
         }
+        public static void Reload() { map = null; }   // ดึงเซฟจากคลาวด์แล้ว
 
         /// บันทึกปลาที่ตกได้ · คืน true ถ้าเป็นชนิดใหม่ในสมุด
         public static bool Record(string id, float kg)

@@ -62,6 +62,9 @@ public static class CompressTools
                 ti.SetPlatformTextureSettings(ps);
                 if (ti.textureCompression == TextureImporterCompression.Uncompressed) ti.textureCompression = TextureImporterCompression.CompressedHQ;
                 ti.mipmapEnabled = mips || ti.textureType == TextureImporterType.NormalMap; if (ti.mipmapEnabled) ti.filterMode = FilterMode.Trilinear;
+                // ภาพขนาดไม่ใช่ยกกำลังสอง (เช่นฉากหลัง 1536x1250) + mipmap → Unity บน WebGL แอบถอยไปเก็บแบบไม่บีบอัด (RGBA32 ใหญ่ 4–8 เท่า) · ภาพ UI แบบนี้ปิด mipmap
+                ti.GetSourceTextureWidthAndHeight(out int sw, out int sh);
+                if (ti.npotScale == TextureImporterNPOTScale.None && (!Mathf.IsPowerOfTwo(sw) || !Mathf.IsPowerOfTwo(sh)) && !pbr) { ti.mipmapEnabled = false; ti.filterMode = FilterMode.Bilinear; }
                 ti.SaveAndReimport(); n++;
             }
         Debug.Log($"[CompressTools] {n} textures");

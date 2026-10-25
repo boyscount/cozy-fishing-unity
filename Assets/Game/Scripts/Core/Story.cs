@@ -107,7 +107,9 @@ namespace CozyFishing
         /// โหมดตกปลาอิสระ: ทุกด่านเปิด ไม่มีเนื้อเรื่อง/คดี · บันทึกแยกจากเนื้อเรื่อง
         public static bool FreePlay { get; private set; }
         public static bool HasStorySave => S.day > 1 || Phase != StoryPhase.New;
-        public static void Save() { try { PlayerPrefs.SetString(FreePlay ? FreeKey : Key, JsonUtility.ToJson(S)); PlayerPrefs.Save(); } catch (Exception) { } }
+        public static void Save() { try { PlayerPrefs.SetString(FreePlay ? FreeKey : Key, JsonUtility.ToJson(S)); PlayerPrefs.Save(); } catch (Exception) { } Cloud.MarkDirty(); }
+        /// ดึงเซฟจากคลาวด์ลงเครื่องแล้ว → อ่านใหม่ (เรียกตอนยังไม่เริ่มเล่นเท่านั้น)
+        public static void ReloadFromPrefs() { if (!FreePlay) S = Load(); }
         public static void EnterFreePlay()
         {
             FreePlay = true;

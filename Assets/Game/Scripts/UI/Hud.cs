@@ -655,6 +655,7 @@ namespace CozyFishing
 
         void Update()
         {
+            Cloud.Tick();
             toastBox.style.display = Time.time < toastUntil && !CardOpen ? DisplayStyle.Flex : DisplayStyle.None;
             if (CardOpen && cardNote != null && cardNote.style.display == DisplayStyle.Flex) cardNote.style.opacity = 0.65f + 0.35f * Mathf.Sin(Time.time * 5f);
             // จอแนวนอนบนมือถือ: คำแนะนำอยู่ล่างสุดระหว่างจอยกับปุ่ม (ไม่บังตัวละคร) · จอแนวตั้ง: อยู่เหนือปุ่ม

@@ -194,7 +194,8 @@ namespace CozyFishing
             catch (Exception) { }
             return new MysteryState();
         }
-        public static void Save() { try { PlayerPrefs.SetString(Key, JsonUtility.ToJson(M)); PlayerPrefs.Save(); } catch (Exception) { } }
+        public static void Save() { try { PlayerPrefs.SetString(Key, JsonUtility.ToJson(M)); PlayerPrefs.Save(); } catch (Exception) { } Cloud.MarkDirty(); }
+        public static void Reload() { M = Load(); }   // ดึงเซฟจากคลาวด์แล้ว
         public static void UseForTests(MysteryState s) => M = s;
 
         // ---------- คดี ----------

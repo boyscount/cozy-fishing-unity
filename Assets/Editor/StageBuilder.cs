@@ -148,6 +148,7 @@ public static partial class SceneBuilder
     // บันทึกฉาก + อบแสงฟ้า + ตั้ง Build Settings ตามฉากที่มีอยู่
     static void SaveStage(Scene scene, string path)
     {
+        GlbTextureBaker.BakeScene();   // ภาพใน glb → PNG บีบอัด ASTC (ไม่งั้นไฟล์โหลดบวม)
         EditorSceneManager.SaveScene(scene, path);
         Lightmapping.bakedGI = false; Lightmapping.realtimeGI = false;
         Lightmapping.Clear(); Lightmapping.ClearDiskCache();   // แคชจากการอบที่ไม่มี GPU (-nographics) ทำให้แสงรอบทิศเป็น NaN → ฉากดำทั้งฉาก

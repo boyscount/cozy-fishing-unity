@@ -497,6 +497,11 @@ namespace CozyFishing
             var st1 = L(scol, "ร้านลุงส้ม", Narrow ? 28 : 32, new Color(0.24f, 0.11f, 0.03f)); st1.style.unityTextAlign = TextAnchor.MiddleLeft; st1.style.unityFontDefinition = fontTitle;
             var st2 = L(scol, "คันเบ็ด · รอก · เหยื่อ · ของกันผี · ของในบ้าน", Narrow ? 16 : 19, new Color(0.36f, 0.18f, 0.06f), false); st2.style.unityTextAlign = TextAnchor.MiddleLeft;
             morningBody.Add(shopBtn);
+            // กระดานปลาใหญ่ประจำสัปดาห์ (ออนไลน์) — ปุ่มเล็กใต้ร้านลุงส้ม
+            var boardBtn = new Button(() => OpenBoard()) { text = Cloud.Ready ? "กระดานปลาใหญ่ประจำสัปดาห์" : "กระดานปลาใหญ่ประจำสัปดาห์ (ออฟไลน์)" };
+            StyleButton(boardBtn, new Color(0.3f, 0.2f, 0.08f, 0.92f)); GoldFrame(boardBtn, 1); boardBtn.style.alignSelf = Align.Center; boardBtn.style.marginTop = 4; boardBtn.style.marginBottom = 4;
+            boardBtn.style.fontSize = Narrow ? 18 : 21; boardBtn.style.color = new Color(1f, 0.9f, 0.7f); Pad(boardBtn, 8, 22);
+            Hoverable(boardBtn, new Color(0.42f, 0.3f, 0.1f, 0.95f)); morningBody.Add(boardBtn);
             // เป้าหมายครอบครัว: กรอบไม้ไผ่บนกระดาษ + ภาพสเก็ตช์ของเป้าหมาย
             var g = Story.CurrentGoal;
             var gb = new VisualElement { pickingMode = PickingMode.Ignore }; Skin(gb, "bamboo_paper", 26); gb.style.paddingTop = 22; gb.style.paddingBottom = 24; gb.style.paddingLeft = 30; gb.style.paddingRight = 26;
