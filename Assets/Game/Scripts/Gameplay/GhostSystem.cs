@@ -252,7 +252,7 @@ namespace CozyFishing
                 gp.y = Mathf.Max(world.GroundH(gp.x, gp.z), world.WaterY); pos = gp;
                 ghost.gameObject.SetActive(true); ghost.position = gp; glimpseT = 2.6f;
                 sting.volume = 0.35f; sting.Play(); Sfx.GhostBuzz();
-                hud.Toast("เมื่อกี้… มีใครยืนอยู่ฝั่งโน้นหรือเปล่า?");
+                // แวบเห็นเงาฝั่งโน้น: ให้ภาพบอกเอง ไม่ต้องมีข้อความ
             }
             if (glimpseT > 0)
             {
@@ -261,7 +261,7 @@ namespace CozyFishing
                 if (glimpseT <= 0) { mat.SetFloat("_Alpha", 0); if (hairMat) hairMat.SetFloat("_Alpha", 0); if (state == S.Hidden) ghost.gameObject.SetActive(false); sting.volume = 0.8f; }
             }
             if (!IsNight) { if (state != S.Hidden) Hide(); Sanity = Mathf.MoveTowards(Sanity, 100, dt * 10); Battery = 100; Publish(false, cam); return; }
-            if (nightAnnounced == 0 && def != null) { nightAnnounced = 1; hud.Toast($"ค่ำแล้ว… ระวังให้ดี ที่นี่มี{def.name}"); }
+            if (nightAnnounced == 0 && def != null) { nightAnnounced = 1; hud.Toast($"ที่นี่มี{def.name}…"); }
             if (def == null) { Sanity = Mathf.MoveTowards(Sanity, 100, dt * 2); Publish(night, cam); return; }   // บ่อหลังบ้าน: ไม่มีผี
             Step(dt, cam);
             // เกจสติ
@@ -269,7 +269,7 @@ namespace CozyFishing
             if (state == S.Hidden) Sanity = Mathf.Min(100, Sanity + dt * 2.5f); else Sanity -= drain * dt;
             if (Sanity <= 0)
             {
-                if (Story.S.amulets > 0) { Story.S.amulets--; Story.Save(); Sanity = 45; hud.Toast("สายสิญจน์ขาดสะบั้น… แต่ช่วยดึงสติไว้ได้"); Leave(30); }
+                if (Story.S.amulets > 0) { Story.S.amulets--; Story.Save(); Sanity = 45; hud.Toast("สายสิญจน์ช่วยไว้!"); Leave(30); }
                 else { Sanity = 100; Hide(); cooldown = 20; director?.Faint(def.name); }
             }
             Publish(night, cam);
@@ -321,7 +321,7 @@ namespace CozyFishing
                     break;
                 case S.Approach:
                     Move(p, dt);
-                    if (Dist(p) <= def.stop + 0.3f || timer > 22) { state = S.Near; timer = 0; hud.Toast(def.nearLine); }
+                    if (Dist(p) <= def.stop + 0.3f || timer > 22) { state = S.Near; timer = 0; }   // ไอคอนผีเต้นแรงบอกแทนข้อความ
                     break;
                 case S.Near:
                     Move(p, dt);
@@ -338,7 +338,7 @@ namespace CozyFishing
             if (FlashOn && cam != null && state != S.Leaving)
             {
                 var to = pos + Vector3.up * 1f - flash.transform.position;
-                if (Vector3.Angle(flash.transform.forward, to) < 22 && to.magnitude < 24) { expose += dt; if (expose > 1f) { hud.Toast($"ไล่{def.name}ไปได้แล้ว!"); Leave(40); } }
+                if (Vector3.Angle(flash.transform.forward, to) < 22 && to.magnitude < 24) { expose += dt; if (expose > 1f) { hud.Toast("ไล่ไปแล้ว!"); Leave(40); } }
                 else expose = Mathf.Max(0, expose - dt);
             }
             var want = pos + Vector3.up * (def.kind == GhostBodies.Kind.LotusMaiden ? 0.25f + Mathf.Sin(Time.time * 1.3f) * 0.06f
@@ -515,14 +515,14 @@ namespace CozyFishing
                 case GhostBodies.Kind.Drowned:   // จ้องตานานเกินไป สายขาด
                     var to = pos + Vector3.up * 0.7f - cam.position;
                     if (fishing.LineOut && Vector3.Angle(cam.forward, to) < 14) stare += dt; else stare = Mathf.Max(0, stare - dt * 0.5f);
-                    if (stare > 2.6f && !stoleOrSnapped) { stoleOrSnapped = true; fishing.GhostSnap(); hud.Toast("สบตาพรายหินนานเกินไป… สายเบ็ดขาดผึง!"); Leave(25); }
+                    if (stare > 2.6f && !stoleOrSnapped) { stoleOrSnapped = true; fishing.GhostSnap(); hud.Toast("สายเบ็ดขาด!"); Leave(25); }
                     break;
                 case GhostBodies.Kind.MudWraith:   // คลานถึงตัว ดึงปลาจากข้องไปหนึ่งตัว
                     if (Dist(p) < 1.8f && !stoleOrSnapped)
                     {
                         stoleOrSnapped = true;
-                        if (Story.S.basket.Count > 0) { var i = Random.Range(0, Story.S.basket.Count); var f = Story.S.basket[i]; Story.S.basket.RemoveAt(i); Story.Save(); hud.Toast($"มือเปื้อนโคลนดึง{FishDatabase.Get(f.id)?.name}ออกจากข้องไปแล้ว!"); }
-                        else hud.Toast("มือเปื้อนโคลนคว้าข้องว่างเปล่า… แล้วจมหายลงเลน");
+                        if (Story.S.basket.Count > 0) { var i = Random.Range(0, Story.S.basket.Count); var f = Story.S.basket[i]; Story.S.basket.RemoveAt(i); Story.Save(); hud.Toast($"{FishDatabase.Get(f.id)?.name}ถูกขโมยไป!"); }
+                        // ข้องว่าง: ไม่ต้องแจ้ง
                         Leave(25);
                     }
                     break;

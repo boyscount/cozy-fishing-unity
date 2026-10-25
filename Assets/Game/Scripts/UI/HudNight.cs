@@ -6,7 +6,7 @@ namespace CozyFishing
     // หน้าจอกลางคืน: เกจสติ (หัวใจ ← แถบ → สมอง) ใต้นาฬิกา · ขอบจอแดงตามความกลัว · คำเตือนผีกลางจอ · ปุ่มไฟฉาย (แสดงแบต)
     public partial class Hud
     {
-        VisualElement nightBox, sanityFill, vignette, flashBtn; Label nightWarn, flashBadge, amuletTxt;
+        VisualElement nightBox, sanityFill, vignette, flashBtn, ghostIco; Label nightWarn, flashBadge, amuletTxt;
         bool nightBuilt;
 
         void BuildNight()
@@ -23,6 +23,8 @@ namespace CozyFishing
             sanityFill = new VisualElement { pickingMode = PickingMode.Ignore }; sanityFill.style.height = Length.Percent(100); Radius(sanityFill, 8); track.Add(sanityFill);
             Ico(nightBox, "brain", 30);
             amuletTxt = L(nightBox, "", 20, new Color(1f, 0.85f, 0.55f)); amuletTxt.style.marginLeft = 8;
+            // ผีกำลังเข้าใกล้: ไอคอนผีข้างแถบสติ เต้นแรงขึ้นตามความกลัว (แทนข้อความเตือนยาว ๆ ที่ขึ้นค้างจนรำคาญ)
+            ghostIco = Ico(nightBox, "ghost", 34); ghostIco.style.marginLeft = 8; ghostIco.style.display = DisplayStyle.None;
             // คำเตือนผี: ต่อใต้กล่องข้อความแจ้ง (ไม่ลอยทับกัน) · พื้นมืดโปร่ง ๆ ให้อ่านออกทุกฉาก
             nightWarn = L(toastRow, "", 26, new Color(1f, 0.55f, 0.48f)); nightWarn.style.unityFontDefinition = fontTitle; Shadow(nightWarn);
             nightWarn.style.backgroundColor = new Color(0.05f, 0.02f, 0.02f, 0.5f); Pad(nightWarn, 6, 18); nightWarn.style.marginTop = 8;
@@ -42,16 +44,17 @@ namespace CozyFishing
                 revealTint = new VisualElement { pickingMode = PickingMode.Ignore }; Abs(revealTint, 0, 0, 0, 0); revealEl.Add(revealTint);
                 revealTint.style.backgroundImage = Resources.Load<Texture2D>("UI/Frames/vignette"); revealTint.style.backgroundSize = new BackgroundSize(BackgroundSizeType.Cover);
                 // ชื่อผี + ตำนาน: กลางจอค่อนบน (ไม่ทับจอย/ปุ่มด้านล่าง) · กว้างไม่เกินช่วงระหว่างปุ่ม
-                var col = new VisualElement { pickingMode = PickingMode.Ignore }; Abs(col, 0, 0, null, null); col.style.top = Length.Percent(24); col.style.alignItems = Align.Center; revealEl.Add(col);
+                var col = new VisualElement { pickingMode = PickingMode.Ignore }; Abs(col, 0, 0, null, null); col.style.top = Length.Percent(36); col.style.alignItems = Align.Center; revealEl.Add(col);
                 revealName = L(col, "", 68, Color.white); revealName.style.unityFontDefinition = fontTitle; Shadow(revealName);
                 revealLegend = L(col, "", 26, new Color(0.95f, 0.88f, 0.75f)); revealLegend.style.maxWidth = Length.Percent(66); revealLegend.style.marginTop = 6; Shadow(revealLegend);
                 revealLegend.style.unityTextAlign = TextAnchor.MiddleCenter; revealLegend.style.whiteSpace = WhiteSpace.Normal;
                 revealLegend.style.backgroundColor = new Color(0, 0, 0, 0.35f); Pad(revealLegend, 6, 16);
                 revealFlash = new VisualElement { pickingMode = PickingMode.Ignore }; Abs(revealFlash, 0, 0, 0, 0); revealFlash.style.backgroundColor = Color.white; revealEl.Add(revealFlash);
             }
-            revealName.text = name ?? ""; revealLegend.text = legend ?? ""; revealName.style.fontSize = Narrow ? 52 : 68;
-            revealLegend.style.display = string.IsNullOrEmpty(legend) ? DisplayStyle.None : DisplayStyle.Flex;
+            revealName.text = name ?? ""; revealLegend.text = ""; revealName.style.fontSize = Narrow ? 40 : 54;   // ชื่อผีอย่างเดียว · ตำนานไปอ่านในสมุดคดี (ระหว่างเล่นข้อความยาวรำคาญ)
+            revealLegend.style.display = DisplayStyle.None;
             revealName.style.color = Color.Lerp(glow, new Color(1f, 0.35f, 0.3f), 0.55f);
+            toastUntil = 0;   // ซ่อนข้อความแจ้ง (ชื่อด่าน/อากาศ) ไม่ให้ทับชื่อผี
             revealEl.BringToFront(); revealEl.style.display = DisplayStyle.Flex;
             StartCoroutine(RevealRun(len, name != null));
         }
@@ -126,8 +129,15 @@ namespace CozyFishing
             // ขอบจอแดง: ตามความกลัว + เต้นตามจังหวะหัวใจเมื่อสติต่ำ
             float pulse = s < 0.4f ? (0.5f + 0.5f * Mathf.Sin(Time.time * (6 + (1 - s) * 6))) * (0.4f - s) : 0;
             vignette.style.opacity = night ? Mathf.Clamp01(fear * 0.75f + pulse * 1.4f + (1 - s) * 0.25f) : 0;
-            nightWarn.style.display = show && !string.IsNullOrEmpty(warn) ? DisplayStyle.Flex : DisplayStyle.None;
-            if (!string.IsNullOrEmpty(warn)) { nightWarn.text = warn; nightWarn.style.opacity = 0.7f + 0.3f * Mathf.Sin(Time.time * 4); }
+            nightWarn.style.display = DisplayStyle.None;
+            bool near = show && !string.IsNullOrEmpty(warn);
+            ghostIco.style.display = near ? DisplayStyle.Flex : DisplayStyle.None;
+            if (near)
+            {
+                float beat = Mathf.Abs(Mathf.Sin(Time.time * (3f + fear * 6f)));
+                ghostIco.style.scale = new Scale(Vector3.one * (1f + beat * (0.15f + fear * 0.25f)));
+                ghostIco.style.unityBackgroundImageTintColor = Color.Lerp(new Color(1f, 0.85f, 0.85f), new Color(1f, 0.25f, 0.2f), Mathf.Clamp01(fear * 1.4f) * (0.5f + 0.5f * beat));
+            }
             flashBadge.text = $"{Mathf.RoundToInt(battery)}%";
             flashBtn.ElementAt(0).style.unityBackgroundImageTintColor = flashOn ? new Color(1.3f, 1.25f, 0.8f) : Color.white;
         }
