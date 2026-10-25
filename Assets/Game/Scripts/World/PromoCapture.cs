@@ -78,6 +78,7 @@ namespace CozyFishing
             if (StageIntro.Playing) want = "intro";
             else if (GhostSystem.Revealing) want = "ghost";
             else if (withUi && FindAnyObjectByType<Hud>() is Hud h && h.ShopOpen) want = "shop";
+            else if (UnderwaterView.Diving && fishDone < maxFish) want = "under";   // ใต้น้ำ: ปลาว่ายมาดู/งับเหยื่อ จนตีเบ็ดแล้วกล้องโผล่ขึ้น
             else if (fishDone < maxFish && (st == FishState.Bite || st == FishState.Strike || st == FishState.Fight || st == FishState.Caught)) { want = "fish"; tail = withUi ? 5f : 3.5f; }
             else if (kind == "fish" && tail > 0) { tail -= Time.deltaTime; want = "fish"; if (tail <= 0) fishDone++; }
             else if (t >= nextAmbient && bound != null) { if (ambientEnd < 0) ambientEnd = t + 5; want = "ambient"; if (t >= ambientEnd) { ambientEnd = -1; nextAmbient = t + 25; want = null; } }

@@ -8,6 +8,7 @@ namespace CozyFishing
     //  · กอผักตบชวา/ใบไม้/กิ่งไม้ลอยน้ำ กระเพื่อมขึ้นลงตามคลื่น ลอยวนช้า ๆ (ใบมันวาว รับแสงตะเกียง/ไฟฉายเป็นประกาย)
     //  · มอสเรืองแสงตามขอบตลิ่ง (ด่านมืด) — สว่างขึ้นเมื่อมืด เป็นเส้นบอกขอบน้ำกับฝั่ง
     //  · หิ่งห้อยบินต่ำเหนือน้ำใกล้ฝั่งตอนมืด
+    //  · หลืบแพสุสาน: ผักตบเน่าสีน้ำตาล ขยะลอยน้ำ (ขวดพลาสติก โฟม เศษอวน) · ตะเกียงบนแพกระพริบริบหรี่
     public class WaterLife : MonoBehaviour
     {
         IWorld world;
@@ -32,7 +33,8 @@ namespace CozyFishing
                 bool hy = System.Array.IndexOf(Hyacinth, id) >= 0, de = System.Array.IndexOf(Debris, id) >= 0;
                 if (hy)
                 {
-                    var leaf = Col(new Color(0.2f, 0.42f, 0.14f), 0.82f); var flower = Col(new Color(0.72f, 0.6f, 0.95f), 0.4f);
+                    bool rot = id == "houseboat";   // แพสุสาน: ผักตบเน่าตาย ใบน้ำตาลเหลือง ดอกเหี่ยวซีด
+                    var leaf = Col(rot ? new Color(0.36f, 0.3f, 0.12f) : new Color(0.2f, 0.42f, 0.14f), rot ? 0.55f : 0.82f); var flower = Col(rot ? new Color(0.45f, 0.4f, 0.42f) : new Color(0.72f, 0.6f, 0.95f), 0.4f);
                     var mesh = HyacinthMesh(rng);
                     foreach (var p in FloatSpots(rng, shore, 14, 0.25f)) AddFloat(mesh, new[] { leaf, flower }, p, 0.8f + (float)rng.NextDouble() * 0.6f, rng);
                 }
@@ -44,6 +46,19 @@ namespace CozyFishing
                     foreach (var p in FloatSpots(rng, shore, 22, 0.05f)) AddFloat(lf, new[] { dead }, p, 0.8f + (float)rng.NextDouble() * 0.7f, rng);
                 }
             }
+            if (id == "houseboat" && surf != null)
+            {
+                Material Mat(Color c, float sm) { var m = new Material(surf); m.SetColor("_BaseColor", c); if (m.HasProperty("_Smoothness")) m.SetFloat("_Smoothness", sm); return m; }
+                var bottle = BoxMesh(new Vector3(0.07f, 0.07f, 0.24f)); var foam = BoxMesh(new Vector3(0.35f, 0.08f, 0.22f)); var net = NetMesh();
+                var bottleMats = new[] { Mat(new Color(0.45f, 0.62f, 0.55f), 0.85f), Mat(new Color(0.7f, 0.72f, 0.68f), 0.8f), Mat(new Color(0.3f, 0.45f, 0.65f), 0.85f) };
+                var foamMat = Mat(new Color(0.78f, 0.76f, 0.68f), 0.15f); var netMat = Mat(new Color(0.32f, 0.36f, 0.3f), 0.2f);
+                foreach (var p in FloatSpots(rng, shore, 16, 0.2f)) AddFloat(bottle, new[] { bottleMats[rng.Next(3)] }, p, 0.9f + (float)rng.NextDouble() * 0.4f, rng);
+                foreach (var p in FloatSpots(rng, shore, 7, 0.2f)) AddFloat(foam, new[] { foamMat }, p, 0.8f + (float)rng.NextDouble() * 0.6f, rng);
+                foreach (var p in FloatSpots(rng, shore, 6, 0.3f)) AddFloat(net, new[] { netMat }, p, 1f + (float)rng.NextDouble() * 0.8f, rng);
+            }
+            // ตะเกียงบนแพ (วางไว้ในฉาก): แสงริบหรี่กระพริบไม่สม่ำเสมอ
+            foreach (var l in FindObjectsByType<Light>(FindObjectsSortMode.None))
+                if (l.name == "LanternLight" || l.name == "PlayerLanternLight") { flicker.Add(l); flickerBase.Add(l.intensity); }
             var sh = Shader.Find("CozyFishing/NightSky");
             if (darkStage && sh != null && shore.Count > 0)
             {
@@ -75,6 +90,7 @@ namespace CozyFishing
         }
 
         List<Vector3> shoreForFlies; float flyAcc;
+        readonly List<Light> flicker = new List<Light>(); readonly List<float> flickerBase = new List<float>();
 
         ParticleSystem MakePS(string name, Material m, int max)
         {
@@ -148,6 +164,8 @@ namespace CozyFishing
                 var e = tr.eulerAngles;
                 tr.rotation = Quaternion.Euler(Mathf.Sin(t * 1.1f + d.z) * 3f, e.y + Time.deltaTime * d.w * 25f, Mathf.Cos(t * 0.9f + d.z) * 3f);
             }
+            for (int i = 0; i < flicker.Count; i++)
+                if (flicker[i] != null) flicker[i].intensity = flickerBase[i] * (0.78f + 0.22f * Mathf.PerlinNoise(t * 7f + i * 13.1f, i) - (Mathf.PerlinNoise(t * 2.3f, i * 5f) > 0.82f ? 0.25f : 0));
             if (moss == null) return;
             float dark = alwaysDark ? 1 : Mathf.Clamp01(DayCycle.Night * 1.2f + (darkStage ? 0.25f : 0));
             mossMat.SetFloat("_Fade", dark * 0.9f);
@@ -236,6 +254,45 @@ namespace CozyFishing
             }
             Bar(new Vector3(-0.45f, 0, 0), new Vector3(0.45f, 0, 0.05f), 0.025f);
             Bar(new Vector3(0.05f, 0, 0.02f), new Vector3(0.28f, 0, 0.22f), 0.014f);
+            return Finish(v, t);
+        }
+
+        // กล่องสี่เหลี่ยม (ขวด/โฟม): หน้าละ 4 จุดยอดของตัวเอง เส้นตั้งฉากคม
+        static Mesh BoxMesh(Vector3 size)
+        {
+            var v = new List<Vector3>(); var t = new List<int>(); var h = size * 0.5f;
+            Vector3[] dirs = { Vector3.right, Vector3.left, Vector3.up, Vector3.down, Vector3.forward, Vector3.back };
+            foreach (var d in dirs)
+            {
+                var a = Vector3.Cross(d, Mathf.Abs(d.y) > 0.5f ? Vector3.forward : Vector3.up); var b2 = Vector3.Cross(d, a);
+                int o = v.Count;
+                foreach (var (su, sv) in new[] { (-1, -1), (1, -1), (1, 1), (-1, 1) })
+                    v.Add(Vector3.Scale(d + a * su + b2 * sv, h) + Vector3.up * h.y * 0.4f);
+                t.AddRange(new[] { o, o + 1, o + 2, o, o + 2, o + 3 });   // หมุนตามเข็ม (มองจากนอก) = หน้าหันออก
+            }
+            var m = Finish(v, t);
+            return m;
+        }
+
+        // เศษอวนลอยน้ำ: ตารางเส้นบาง ๆ (แถบแบนสองหน้า) ยับเป็นคลื่น
+        static Mesh NetMesh()
+        {
+            var v = new List<Vector3>(); var t = new List<int>();
+            void Strip(Vector3 a, Vector3 b)
+            {
+                var side = Vector3.Cross(Vector3.up, (b - a).normalized) * 0.008f;
+                for (int face = 0; face < 2; face++)
+                {
+                    int o = v.Count; v.Add(a - side); v.Add(a + side); v.Add(b + side); v.Add(b - side);
+                    if (face == 0) t.AddRange(new[] { o, o + 1, o + 2, o, o + 2, o + 3 }); else t.AddRange(new[] { o, o + 2, o + 1, o, o + 3, o + 2 });
+                }
+            }
+            float Y(float x, float z) => 0.01f + Mathf.Sin(x * 9 + z * 4) * 0.012f;
+            for (int i = 0; i <= 6; i++)
+            {
+                float u = -0.3f + i * 0.1f;
+                for (int k = 0; k < 6; k++) { float z0 = -0.3f + k * 0.1f, z1 = z0 + 0.1f; Strip(new Vector3(u, Y(u, z0), z0), new Vector3(u, Y(u, z1), z1)); Strip(new Vector3(z0, Y(z0, u), u), new Vector3(z1, Y(z1, u), u)); }
+            }
             return Finish(v, t);
         }
 

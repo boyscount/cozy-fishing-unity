@@ -88,6 +88,8 @@ namespace CozyFishing
                         var away = s.pos - fishing.BobberPos; away.y = 0;
                         s.target = s.pos + away.normalized * 5; s.flee = 1.4f;
                     }
+            // ปลากินแล้วหนีไป (ตีเบ็ดช้า) เกมสุ่มปลาตัวใหม่ → ปล่อยตัวเดิมไป ให้ชนิดที่จะติดจริงว่ายเข้ามาแทน
+            if (biter != null && st == FishState.Waiting && biter.sp != fishing.HookedSpecies) biter = null;
             // ใกล้เวลาปลากิน: ปลาชนิดที่จะติดเบ็ดว่ายมาที่เหยื่อ
             if (st == FishState.Waiting && biter == null && fishing.TimeToBite > 0 && fishing.TimeToBite < 4.5f && fishing.HookedSpecies != null)
             {

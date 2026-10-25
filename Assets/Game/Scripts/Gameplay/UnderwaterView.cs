@@ -17,6 +17,7 @@ namespace CozyFishing
         System.Collections.Generic.List<GameObject> unders = new System.Collections.Generic.List<GameObject>(); GameObject bait; ParticleSystem motes; LineRenderer leader;
         ParticleSystem rays, leaves, lineBubbles, mudBubbles; GameObject bed; Transform[] weeds; Vector3 bedAt = new Vector3(9999, 0, 0);
         bool active, noSpot; float enterT;
+        public static bool Diving;   // กล้องอยู่ใต้น้ำข้างเหยื่อ (ใช้ตอนอัดคลิปโปรโมต)
         bool swamp, manor, cave; GameObject shrimp, worm0; ParticleSystem silt; bool wasBite;
         Color fogColor; FogMode savedMode; float savedDensity, savedStart, savedEnd;
 
@@ -462,7 +463,7 @@ namespace CozyFishing
 
         void Enter()
         {
-            active = true; enterT = Time.time;
+            active = true; Diving = true; enterT = Time.time;
             savedMode = RenderSettings.fogMode; savedDensity = RenderSettings.fogDensity; savedStart = RenderSettings.fogStartDistance; savedEnd = RenderSettings.fogEndDistance;
             foreach (var u in unders) u.SetActive(true); bait.SetActive(true); leader.enabled = true; motes.Play();
             bedAt = new Vector3(9999, 0, 0); bed.SetActive(true);
@@ -471,7 +472,7 @@ namespace CozyFishing
 
         void Exit()
         {
-            active = false;
+            active = false; Diving = false;
             RenderSettings.fogMode = savedMode; RenderSettings.fogDensity = savedDensity; RenderSettings.fogStartDistance = savedStart; RenderSettings.fogEndDistance = savedEnd;
             foreach (var u in unders) u.SetActive(false); bait.SetActive(false); leader.enabled = false; motes.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
             bed.SetActive(false); fishing.hud.DepthReading = -1;

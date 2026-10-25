@@ -19,6 +19,32 @@ namespace CozyFishing
             e.style.borderTopLeftRadius = e.style.borderTopRightRadius = e.style.borderBottomLeftRadius = e.style.borderBottomRightRadius = 6;
         }
 
+        // ปุ่มในร้านให้รู้ว่ากดได้: ชี้แล้วขยายนิด พื้นสว่างขึ้น ขอบทองเรือง · กดแล้วยุบลง (จอสัมผัสเห็นตอนนิ้วแตะ)
+        static void Hoverable(VisualElement e, Color hoverBg)
+        {
+            e.style.transitionProperty = new System.Collections.Generic.List<StylePropertyName> { new StylePropertyName("scale"), new StylePropertyName("background-color"), new StylePropertyName("border-top-color"), new StylePropertyName("border-bottom-color"), new StylePropertyName("border-left-color"), new StylePropertyName("border-right-color") };
+            e.style.transitionDuration = new System.Collections.Generic.List<TimeValue> { new TimeValue(0.12f) };
+            StyleColor bg = default, bc = default; bool over = false;
+            void On()
+            {
+                if (over || !e.enabledInHierarchy) return; over = true;
+                bg = e.style.backgroundColor; bc = e.style.borderTopColor;
+                e.style.backgroundColor = hoverBg; e.style.scale = new Scale(Vector3.one * 1.04f);
+                e.style.borderTopColor = e.style.borderBottomColor = e.style.borderLeftColor = e.style.borderRightColor = new Color(1f, 0.88f, 0.45f);
+            }
+            void Off()
+            {
+                if (!over) return; over = false;
+                e.style.backgroundColor = bg; e.style.scale = new Scale(Vector3.one);
+                e.style.borderTopColor = e.style.borderBottomColor = e.style.borderLeftColor = e.style.borderRightColor = bc;
+            }
+            e.RegisterCallback<PointerEnterEvent>(_ => On());
+            e.RegisterCallback<PointerLeaveEvent>(_ => Off());
+            e.RegisterCallback<PointerDownEvent>(_ => { On(); if (e.enabledInHierarchy) e.style.scale = new Scale(Vector3.one * 0.96f); }, TrickleDown.TrickleDown);
+            e.RegisterCallback<PointerUpEvent>(_ => { if (over) e.style.scale = new Scale(Vector3.one * 1.04f); });
+            e.RegisterCallback<PointerCancelEvent>(_ => Off());
+        }
+
         void BuildShop()
         {
             shop = new VisualElement { pickingMode = PickingMode.Position }; Abs(shop, 0, 0, 0, 0); root.Add(shop);
@@ -41,6 +67,7 @@ namespace CozyFishing
                 string c = cat;
                 var tb = new Button(() => { shopCat = c; shopSel = null; FillShop(); }) { text = label }; StyleButton(tb, Color.clear); GoldFrame(tb, 1);
                 tb.style.fontSize = 17; tb.style.color = new Color(0.95f, 0.88f, 0.72f); Pad(tb, 5, 10); tb.style.marginRight = 5; tb.style.marginTop = 4; tb.name = c;
+                Hoverable(tb, new Color(0.38f, 0.28f, 0.1f, 0.95f));
                 shopTabs.Add(tb);
             }
             var sv = new ScrollView(ScrollViewMode.Vertical); sv.horizontalScrollerVisibility = ScrollerVisibility.Hidden; sv.verticalScrollerVisibility = ScrollerVisibility.Hidden;
@@ -57,6 +84,7 @@ namespace CozyFishing
             dPrice = L(shopDetail, "", 20, new Color(1f, 0.85f, 0.5f)); dPrice.style.unityTextAlign = TextAnchor.MiddleLeft; dPrice.style.marginTop = 6;
             dBuy = new Button(() => BuySelected()) { text = "ซื้อ" }; StyleButton(dBuy, new Color(0.18f, 0.42f, 0.2f)); dBuy.style.marginTop = 10; dBuy.style.fontSize = 22; Pad(dBuy, 8, 20);
             dBuy.style.borderTopWidth = dBuy.style.borderBottomWidth = dBuy.style.borderLeftWidth = dBuy.style.borderRightWidth = 1; dBuy.style.borderTopColor = dBuy.style.borderBottomColor = dBuy.style.borderLeftColor = dBuy.style.borderRightColor = ShopGold;
+            Hoverable(dBuy, new Color(0.26f, 0.56f, 0.28f));
             shopDetail.Add(dBuy);
 
             // ---------- คำพูดลุงส้ม ----------
@@ -70,7 +98,7 @@ namespace CozyFishing
 
             var back = new Button(() => { shop.style.display = DisplayStyle.None; GameInput.Blocked = ModalOpen || CardOpen; RefreshMorning(); }) { text = "กลับ" };
             StyleButton(back, Color.clear); GoldFrame(back, 2); back.style.position = Position.Absolute; back.style.left = 16; back.style.bottom = 14; back.style.color = new Color(1f, 0.9f, 0.75f); back.style.fontSize = 22; Pad(back, 6, 18);
-            back.name = "back"; shop.Add(back);
+            back.name = "back"; Hoverable(back, new Color(0.3f, 0.22f, 0.08f, 0.9f)); shop.Add(back);
             shop.RegisterCallback<GeometryChangedEvent>(_ => LayoutShop());
         }
 
@@ -149,6 +177,7 @@ namespace CozyFishing
                 var nm = L(row, item.name, 20, new Color(0.97f, 0.92f, 0.82f), false); nm.style.flexGrow = 1; nm.style.flexShrink = 1; nm.style.unityTextAlign = TextAnchor.MiddleLeft;
                 bool owned = !Shop.CanBuy(item, out var why) && (why == "มีแล้ว" || why == "ทำบุญวันนี้แล้ว");
                 var pr = L(row, owned ? "มีแล้ว" : Story.Baht(item.price), 19, owned ? new Color(0.6f, 0.9f, 0.6f) : ShopGold); pr.style.flexShrink = 0; pr.style.marginLeft = 8;
+                Hoverable(row, new Color(0.3f, 0.22f, 0.08f, 0.95f));
                 shopList.Add(row);
             }
             // กล่องรายละเอียดของที่เลือก
@@ -168,6 +197,7 @@ namespace CozyFishing
                 if (sel.cat == Shop.Bait && Shop.Owned(sel) > 0 && Shop.ActiveBait != sel.id)
                 {
                     var u = new Button(() => { Shop.SelectBait(sel.id); FillShop(); }) { text = "ใช้เหยื่อนี้" }; u.name = "use"; StyleButton(u, new Color(0.35f, 0.28f, 0.14f)); u.style.marginTop = 6; u.style.fontSize = 18; Pad(u, 6, 16);
+                    Hoverable(u, new Color(0.48f, 0.38f, 0.18f));
                     shopDetail.Add(u);
                 }
             }

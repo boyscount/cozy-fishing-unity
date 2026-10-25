@@ -375,6 +375,15 @@ namespace CozyFishing
             quest.style.width = 250; Skin(quest, "parchment", 20); quest.style.paddingTop = 10; quest.style.paddingBottom = 12; quest.style.paddingLeft = 16; quest.style.paddingRight = 14;
             quest.style.opacity = 0.86f;
             root.Add(quest);
+            // อยู่ใต้แถบปุ่มมุมขวาบนเสมอ: จอสัมผัสปุ่มใหญ่มีป้ายใต้ปุ่ม และจอแคบปุ่มขึ้นสองแถว → ตำแหน่งตายตัวไปทับปุ่มกลับบ้าน
+            void FollowIcons()
+            {
+                var ib = IconBar; if (float.IsNaN(ib.layout.height) || ib.layout.height < 1) return;
+                float sc = ib.resolvedStyle.scale.value.x;
+                quest.style.top = Mathf.Max(136, ib.layout.y + ib.layout.height * sc + 12);
+            }
+            IconBar.RegisterCallback<GeometryChangedEvent>(_ => FollowIcons());
+            root.RegisterCallback<GeometryChangedEvent>(_ => FollowIcons());
             var qhead = new VisualElement { pickingMode = PickingMode.Ignore }; qhead.style.flexDirection = FlexDirection.Row; qhead.style.alignItems = Align.Center; qhead.style.justifyContent = Justify.Center; quest.Add(qhead);
             var title = L(qhead, "บันทึกภารกิจ", 24, new Color(0.3f, 0.18f, 0.08f)); title.style.unityFontDefinition = fontTitle; questTitle = title;
             questChev = Ico(qhead, "chev_down", 18); questChev.style.marginLeft = 6; questChev.style.unityBackgroundImageTintColor = new Color(0.3f, 0.18f, 0.08f);

@@ -292,7 +292,8 @@ namespace CozyFishing
             cardNew = Box(cardImg, Gold, 6, false); Abs(cardNew, null, 12, 12); Pad(cardNew, 4, 14);
             L(cardNew, "ใหม่! บันทึกลงสมุด", 20, Color.white);
             var head = cardHead = new VisualElement { pickingMode = PickingMode.Ignore }; head.style.flexDirection = FlexDirection.Row; head.style.alignItems = Align.FlexEnd; head.style.marginTop = 12; head.style.flexShrink = 0; cb.Add(head);
-            var names = new VisualElement { pickingMode = PickingMode.Ignore }; names.style.flexGrow = 1; names.style.flexShrink = 1; names.style.minWidth = 0; names.style.overflow = Overflow.Hidden; head.Add(names);
+            head.style.flexWrap = Wrap.Wrap;   // ชื่อปลายาวมาก (ปลากระเบนราหูน้ำจืด): ป้ายน้ำหนัก/ราคาลงไปบรรทัดใหม่ ไม่ทับชื่อ
+            var names = new VisualElement { pickingMode = PickingMode.Ignore }; names.style.flexGrow = 1; names.style.flexShrink = 0; head.Add(names);   // ไม่หด: ชื่อยาวแล้วป้ายราคาขึ้นบรรทัดใหม่แทน (หดแล้วชื่อโดนตัดท้าย)
             var rarRow = new VisualElement { pickingMode = PickingMode.Ignore }; rarRow.style.flexDirection = FlexDirection.Row; rarRow.style.alignItems = Align.Center; names.Add(rarRow);
             cardStars = L(rarRow, "", 24, new Color(0.62f, 0.32f, 0.08f)); cardStars.style.unityTextAlign = TextAnchor.MiddleLeft; cardStars.style.whiteSpace = WhiteSpace.NoWrap;
             cardStarIco = new VisualElement[4];   // ดาวไม้ (ฟอนต์ไทยไม่มีตัว ★)
@@ -624,7 +625,7 @@ namespace CozyFishing
         /// การ์ด "ได้ปลาแล้ว!" · okText/onOk = ปุ่มหลัก · altText/onAlt = ปุ่มที่สอง (ข้องเต็ม: ปล่อยคืนน้ำ)
         // ชื่อปลายาว (ปลาช่อนงูเห่า · ปลาผีเสื้อถ้ำตาบอด) ย่อฟอนต์ไม่ให้ทับป้ายน้ำหนัก/ราคา
         float cardNameSize = 62;
-        void FitCardName() { int len = cardName.text?.Length ?? 0; cardName.style.fontSize = cardNameSize * Mathf.Min(1f, 9f / Mathf.Max(9, len)); }
+        void FitCardName() { int len = cardName.text?.Length ?? 0; cardName.style.fontSize = cardNameSize * Mathf.Clamp(9f / Mathf.Max(9, len), 0.62f, 1f); }   // ไม่เล็กจนอ่านยาก · ยาวกว่านั้นป้ายราคาขึ้นบรรทัดใหม่แทน
 
         public void ShowCatch(Catch c, Texture image, bool isNew, string okText, Action onOk, string altText = null, Action onAlt = null, string note = null)
         {
