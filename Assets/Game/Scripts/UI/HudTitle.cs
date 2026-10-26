@@ -166,6 +166,10 @@ namespace CozyFishing
             }
             Toggle("มุมมองบุคคลที่หนึ่ง (เห็นมือถือคันเบ็ด)", () => FirstPersonView.Enabled, v => FirstPersonView.Enabled = v);
             Toggle("ภาพใต้น้ำตอนรอปลา", () => UnderwaterView.Enabled, v => UnderwaterView.Enabled = v);
+            string BrightName(int v) => v < 0 ? "มืดลง" : v == 0 ? "ปกติ" : v == 1 ? "สว่าง" : "สว่างมาก";
+            var bb = new Button(); bb.text = $"ความสว่างหน้าจอ: {BrightName(Atmosphere.Brightness)}";
+            bb.clicked += () => { int v = Atmosphere.Brightness + 1; if (v > 2) v = -1; Atmosphere.Brightness = v; bb.text = $"ความสว่างหน้าจอ: {BrightName(v)}"; };
+            WoodButton(bb, true); bb.style.marginTop = 10; bb.style.alignSelf = Align.Stretch; settingsBody.Add(bb);
             var lb = new Button(); lb.text = Loc.English ? "Language: English" : "ภาษา: ไทย";
             lb.clicked += () => { Loc.Lang = Loc.English ? "th" : "en"; lb.text = Loc.English ? "Language: English" : "ภาษา: ไทย"; };
             WoodButton(lb, true); lb.style.marginTop = 10; lb.style.alignSelf = Align.Stretch; settingsBody.Add(lb);

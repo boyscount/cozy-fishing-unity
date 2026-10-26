@@ -140,7 +140,7 @@ namespace CozyFishing
         static string ShopIcon(ShopItem it) => it.id switch
         {
             _ when it.id.StartsWith("rod") => "cast", _ when it.id.StartsWith("reel") => "reel",
-            "lamp" => "fire", "torch" => "flashlight", "amulet" => "seal", "merit" => "incense",
+            "lamp" => "fire", "torch" => "flashlight", "amulet" => "seal", "merit" => "incense", "uwlight" => "eye",
             _ => it.cat == Shop.Bait ? "hook" : "home",
         };
 

@@ -12,6 +12,12 @@ namespace CozyFishing
         IWorld world; Camera cam; bool cave, swamp, manor, gloom, raft;
         Light fillLamp; Transform playerT;   // ด่านมืด: ตะเกียงติดตัวส่องรอบตัวละครเสมอ
         SphericalHarmonicsL2 baseProbe; bool probeSaved;   // แสงรอบทิศที่อบไว้จากท้องฟ้าของฉาก (ด่านมืดอบจากฟ้ามืดจึงดำสนิท)
+        /// ความสว่างที่ผู้เล่นตั้ง (หน้าตั้งค่า): -1 มืดลง · 0 ปกติ · 1 สว่าง · 2 สว่างมาก
+        public static int Brightness
+        {
+            get { try { return PlayerPrefs.GetInt("cozy.bright", 0); } catch (System.Exception) { return 0; } }
+            set { try { PlayerPrefs.SetInt("cozy.bright", value); PlayerPrefs.Save(); } catch (System.Exception) { } }
+        }
         Bloom bloom; SplitToning split; ColorAdjustments color; Vignette vig; FilmGrain grain; ChromaticAberration chroma; DepthOfField dof;
         Mesh beamMesh; Material beamMat, sunMat, mistMat, moteMat; Transform sun; ParticleSystem motes;
         Transform[] mist; Vector3[] mistOff;
@@ -155,10 +161,13 @@ namespace CozyFishing
             chroma.intensity.Override(0.04f + fear * 0.55f);
             // ---------- ด่านมืด/กลางคืน: เพิ่มความสว่างให้เล่นบนจอมือถือได้ (ยังคงอารมณ์หลอน) ----------
             float lift = (cave ? 0.55f : gloom ? 0.5f : swamp ? 0.35f : manor ? 0.35f : raft ? 0.2f : 0f) + night * 0.35f;
-            color.postExposure.Override(0.35f + (under ? lift * 0.5f : lift));   // ฐาน 0.35 = ค่าเดิมของฉาก
+            // ด่านมืดตอนกลางวัน: ยกพื้นความสว่างขึ้น ให้เห็นพื้นและน้ำชัด (ความมืดจริงจังเก็บไว้กลางคืน) · ใต้น้ำ: สว่างขึ้นทุกด่านให้เห็นเหยื่อ
+            bool darkStage = cave || gloom || swamp || manor || raft;
+            float dayFloor = darkStage ? day * 0.3f : 0f, underLift = under ? 0.35f : 0f;
+            color.postExposure.Override(0.35f + (under ? lift * 0.5f : lift) + dayFloor + underLift + Brightness * 0.3f);   // ฐาน 0.35 = ค่าเดิมของฉาก
             // แสงจันทร์รอบทิศขั้นต่ำ: ambientIntensity ไม่มีผลหลังอบแล้ว จึงเติมสีฟ้าอ่อนลงใน ambient probe ตรง ๆ ให้เงามืดไม่ดำสนิท
             if (!probeSaved) { baseProbe = RenderSettings.ambientProbe; probeSaved = true; }
-            float floorK = (cave || gloom ? 0.16f : swamp || manor || raft ? 0.1f : 0f) + night * 0.12f;
+            float floorK = (cave || gloom ? 0.16f : swamp || manor || raft ? 0.1f : 0f) + night * 0.12f + (darkStage ? day * 0.12f : 0f);
             var probe = baseProbe; probe.AddAmbientLight(new Color(0.42f, 0.5f, 0.72f) * floorK); RenderSettings.ambientProbe = probe;
             if (fillLamp == null && (cave || gloom || swamp || manor || raft))
             {

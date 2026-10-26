@@ -18,6 +18,7 @@ namespace CozyFishing
         ParticleSystem rays, leaves, lineBubbles, mudBubbles; GameObject bed; Transform[] weeds; Vector3 bedAt = new Vector3(9999, 0, 0);
         bool active, noSpot; float enterT;
         public static bool Diving;   // กล้องอยู่ใต้น้ำข้างเหยื่อ (ใช้ตอนอัดคลิปโปรโมต)
+        Light baitLight;
         bool swamp, manor, cave, clear; GameObject shrimp, worm0; ParticleSystem silt; bool wasBite;
         Color fogColor; FogMode savedMode; float savedDensity, savedStart, savedEnd;
 
@@ -62,6 +63,9 @@ namespace CozyFishing
                 shrimp.AddComponent<MeshRenderer>().sharedMaterial = sm;
             }
             bait.SetActive(false);
+            // แสงนวลรอบเหยื่อ: เห็นเหยื่อและปลาที่ว่ายเข้ามาชัดขึ้นในน้ำขุ่น/ด่านมืด (ซื้อไฟล่อใต้น้ำ = สว่างกว้างกว่า)
+            baitLight = new GameObject("BaitLight").AddComponent<Light>(); baitLight.type = LightType.Point; baitLight.shadows = LightShadows.None;
+            baitLight.transform.SetParent(bait.transform, false); baitLight.transform.localPosition = new Vector3(0, 0.15f, 0);
             leader = new GameObject("Leader").AddComponent<LineRenderer>();
             leader.sharedMaterial = Resources.Load<Material>("Water/Leader"); leader.widthMultiplier = 0.003f; leader.positionCount = 8; leader.enabled = false;
             leader.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
@@ -477,7 +481,7 @@ namespace CozyFishing
             // DayCycle ตั้งสีหมอกทุกเฟรม → ทับด้วยหมอกใต้น้ำหลังจากนั้น · ค่อย ๆ หนาขึ้นตอนเพิ่งดำ
             // หมอกแบบเส้นตรงเหมือนบนบก (เปลี่ยนเป็นแบบ exponential ทำให้ WebGL ต้องคอมไพล์ shader ใหม่ทั้งฉาก ภาพค้างตอนดำครั้งแรก) · ระยะมองเห็นสั้นลงแทน
             RenderSettings.fogMode = FogMode.Linear; RenderSettings.fogStartDistance = 0.2f;
-            RenderSettings.fogEndDistance = Mathf.Lerp(60f, swamp ? 4.5f : clear ? 26f : 7f, Mathf.Clamp01((Time.time - enterT) / 0.5f));   // ป่าเลน: ขุ่นจัด · เขื่อนบนดอย: น้ำใสมองไกล   // ป่าเลน: ขุ่นจัด มองเห็นได้แค่ไม่กี่เมตร
+            RenderSettings.fogEndDistance = Mathf.Lerp(60f, (swamp ? 6f : clear ? 26f : 10f) * (Shop.HasUwLight ? 1.35f : 1f), Mathf.Clamp01((Time.time - enterT) / 0.5f));   // ป่าเลน: ขุ่นจัด · เขื่อนบนดอย: น้ำใสมองไกล   // ป่าเลน: ขุ่นจัด มองเห็นได้แค่ไม่กี่เมตร
             RenderSettings.fogColor = fogColor * Mathf.Lerp(0.9f, 1.15f, Mathf.Clamp01(world.WaterY));
         }
 
@@ -486,6 +490,7 @@ namespace CozyFishing
             active = true; Diving = true; enterT = Time.time;
             savedMode = RenderSettings.fogMode; savedDensity = RenderSettings.fogDensity; savedStart = RenderSettings.fogStartDistance; savedEnd = RenderSettings.fogEndDistance;
             foreach (var u in unders) u.SetActive(true); bait.SetActive(true); leader.enabled = true; motes.Play();
+            bool uw = Shop.HasUwLight; baitLight.color = uw ? new Color(0.75f, 1f, 0.85f) : new Color(1f, 0.92f, 0.78f); baitLight.range = uw ? 4.5f : 2.6f; baitLight.intensity = uw ? 2.4f : 1.3f;
             bedAt = new Vector3(9999, 0, 0); bed.SetActive(true);
             rays.Play(); leaves.Play(); lineBubbles.Play(); mudBubbles.Play(); silt.Play(); wasBite = false;
         }

@@ -27,6 +27,7 @@ namespace CozyFishing
             new ShopItem { id = "shrimp", cat = Bait, pack = 10, price = 40, name = "กุ้งเป็น (10 ตัว)", desc = "ปลาหายากและปลาดาวสูงชอบ โอกาสเจอสูงขึ้น" },
             new ShopItem { id = "bran", cat = Bait, pack = 10, price = 20, name = "รำข้าวปั้น (10 ก้อน)", desc = "ปลากินเหยื่อเร็วขึ้นราวหนึ่งในสาม" },
             new ShopItem { id = "frog", cat = Bait, pack = 10, price = 60, name = "กบน้อย (10 ตัว)", desc = "ล่อปลาตัวใหญ่ น้ำหนักเฉลี่ยมากขึ้น" },
+            new ShopItem { id = "uwlight", cat = Rods, price = 700, name = "ไฟล่อใต้น้ำ", desc = "แท่งไฟเรืองแสงผูกเหนือเหยื่อ · มองเห็นเหยื่อและปลาใต้น้ำชัดขึ้นมาก · ปลากินเหยื่อเร็วขึ้นนิดหน่อย" },
             new ShopItem { id = "lamp", cat = Ghost, price = 800, name = "ตะเกียงน้ำมันอย่างดี", desc = "แสงสว่างกว้างขึ้น · สติลดช้าลง 15%" },
             new ShopItem { id = "torch", cat = Ghost, price = 600, name = "ไฟฉายถ่านก้อนใหญ่", desc = "ส่องไกลขึ้น · ถ่านอยู่ได้นานขึ้นเกือบเท่าตัว" },
             new ShopItem { id = "amulet", cat = Ghost, pack = 1, price = 150, name = "สายสิญจน์", desc = "ดึงสติกลับมาได้หนึ่งครั้งเมื่อสติหมด (มีได้ 5 เส้น)" },
@@ -65,7 +66,7 @@ namespace CozyFishing
             else if (it.id.StartsWith("reel") && S.reel != it.level - 1) reason = S.reel >= it.level ? "มีแล้ว" : "ต้องมีรอกขั้นก่อนหน้า";
             else if (it.id == "amulet" && S.amulets >= 5) reason = "มีครบ 5 เส้นแล้ว";
             else if (it.id == "merit" && S.meritDay == S.day) reason = "ทำบุญวันนี้แล้ว";
-            else if (it.cat == Home || it.id == "lamp" || it.id == "torch") { if (S.items.Contains(it.id)) reason = "มีแล้ว"; }
+            else if (it.cat == Home || it.id == "lamp" || it.id == "torch" || it.id == "uwlight") { if (S.items.Contains(it.id)) reason = "มีแล้ว"; }
             if (reason == null && S.money < it.price) reason = "เงินไม่พอ";
             return reason == null;
         }
@@ -117,7 +118,8 @@ namespace CozyFishing
         public static float CastDist => 18f + 4f * S.rod;                                        // 18 / 22 / 26 / 30 ม.
         public static float RodTension => 1f - 0.12f * S.rod;                                    // สายตึงช้าลงเมื่อคันดีขึ้น
         public static float ReelSpeed => 1f + 0.15f * S.reel;                                    // กรอสายได้ระยะมากขึ้น
-        public static float BiteMul => ActiveBait == "bran" ? 0.65f : 1f;                        // รำข้าว: ปลากินเร็วขึ้น
+        public static float BiteMul => (ActiveBait == "bran" ? 0.65f : 1f) * (HasUwLight ? 0.9f : 1f);   // รำข้าว: ปลากินเร็วขึ้น · ไฟล่อใต้น้ำ: เร็วขึ้นนิด
+        public static bool HasUwLight => S.items.Contains("uwlight");
         public static float RareMul => ActiveBait == "shrimp" ? 1.7f : 1f;                       // กุ้งเป็น: ปลาหายาก/ดาวสูง
         public static float SizeBoost => ActiveBait == "frog" ? 0.22f : 0f;                      // กบ: ตัวใหญ่ขึ้น
         public static float SanityDrainMul => (S.items.Contains("lamp") ? 0.85f : 1f) * (S.meritDay == S.day ? 0.5f : 1f);
