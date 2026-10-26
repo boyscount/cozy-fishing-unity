@@ -18,12 +18,12 @@ namespace CozyFishing
         ParticleSystem rays, leaves, lineBubbles, mudBubbles; GameObject bed; Transform[] weeds; Vector3 bedAt = new Vector3(9999, 0, 0);
         bool active, noSpot; float enterT;
         public static bool Diving;   // กล้องอยู่ใต้น้ำข้างเหยื่อ (ใช้ตอนอัดคลิปโปรโมต)
-        bool swamp, manor, cave; GameObject shrimp, worm0; ParticleSystem silt; bool wasBite;
+        bool swamp, manor, cave, clear; GameObject shrimp, worm0; ParticleSystem silt; bool wasBite;
         Color fogColor; FogMode savedMode; float savedDensity, savedStart, savedEnd;
 
         public void Init(IWorld w, FishingController f, CameraRig r)
         {
-            world = w; fishing = f; rig = r; swamp = w.StageId == "mangrove"; manor = w.StageId == "headman"; cave = w.StageId == "cave";
+            world = w; fishing = f; rig = r; swamp = w.StageId == "mangrove"; manor = w.StageId == "headman"; cave = w.StageId == "cave"; clear = w.StageId == "reservoir";   // เขื่อนบนดอย: น้ำใสเย็น มองไกล
             // ผิวน้ำมองจากใต้น้ำ: แผ่นใหญ่ระดับผิวน้ำตามกล้องไป (mesh ผิวน้ำของบางด่านเล็ก มองไกลแล้วทะลุเห็นฟ้า) · ตลิ่งที่สูงกว่าน้ำบังส่วนเกินเอง
             Material waterMat = null;
             foreach (var mr in FindObjectsByType<MeshRenderer>(FindObjectsSortMode.None))
@@ -457,7 +457,7 @@ namespace CozyFishing
             if (!active) return;
             // DayCycle ตั้งสีหมอกทุกเฟรม → ทับด้วยหมอกใต้น้ำหลังจากนั้น · ค่อย ๆ หนาขึ้นตอนเพิ่งดำ
             RenderSettings.fogMode = FogMode.Exponential;
-            RenderSettings.fogDensity = Mathf.Lerp(0.05f, swamp ? 0.6f : 0.42f, Mathf.Clamp01((Time.time - enterT) / 0.5f));   // ป่าเลน: ขุ่นจัด มองเห็นได้แค่ไม่กี่เมตร
+            RenderSettings.fogDensity = Mathf.Lerp(0.05f, swamp ? 0.6f : clear ? 0.11f : 0.42f, Mathf.Clamp01((Time.time - enterT) / 0.5f));   // ป่าเลน: ขุ่นจัด มองเห็นได้แค่ไม่กี่เมตร
             RenderSettings.fogColor = fogColor * Mathf.Lerp(0.9f, 1.15f, Mathf.Clamp01(world.WaterY));
         }
 

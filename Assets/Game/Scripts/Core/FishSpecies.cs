@@ -10,6 +10,7 @@ namespace CozyFishing
     public class FishSpecies
     {
         public string id, stage, name, en, pattern, time, desc;
+        public string photoId;   // ใช้รูป/โมเดลรูปของชนิดอื่น (ชนิดเดียวกันต่างด่าน เช่น ชะโดเขื่อน = chado) · ว่าง = ใช้ id
         public string top, belly, fin;
         public int stars, chance, price;
         public float kgMin, kgMax, cmMin, cmMax;
@@ -24,9 +25,9 @@ namespace CozyFishing
 
         // ภาพถ่ายปลาจริง (Resources/Fish/<id>.png ตัดพื้นหลังแล้ว หัวหันซ้าย) + โมเดลพองจากภาพ (<id>_mesh) — ไม่มีก็ใช้ปลาโมเดลเดิม
         [NonSerialized] Texture2D photo; [NonSerialized] bool photoLoaded;
-        public Texture2D Photo { get { if (!photoLoaded) { photo = Resources.Load<Texture2D>("Fish/" + id); photoLoaded = true; } return photo; } }
-        public Mesh PhotoMesh => Resources.Load<Mesh>("Fish/" + id + "_mesh");
-        public string Credit => FishCredits.Get(id);
+        public Texture2D Photo { get { if (!photoLoaded) { photo = Resources.Load<Texture2D>("Fish/" + (string.IsNullOrEmpty(photoId) ? id : photoId)); photoLoaded = true; } return photo; } }
+        public Mesh PhotoMesh => Resources.Load<Mesh>("Fish/" + (string.IsNullOrEmpty(photoId) ? id : photoId) + "_mesh");
+        public string Credit => FishCredits.Get(string.IsNullOrEmpty(photoId) ? id : photoId);
     }
 
     // เครดิตภาพปลา (Resources/Fish/credits.txt: id|ข้อความ) — ภาพจาก Wikimedia Commons สัญญาอนุญาตเสรี

@@ -617,7 +617,7 @@ namespace CozyFishing
         }
 
         // ---------- มื้อเย็น: ภาพครอบครัวล้อมเตาปิ้งปลาหน้าบ้านยามค่ำ · ซ้าย = ปลาในข้อง (ป้ายไม้) + ความอิ่ม · ขวา = เป้าหมายครอบครัว · ล่างขวา = ปุ่ม ----------
-        VisualElement eveTitle, eveLeft, eveGoals, eveBtns;
+        VisualElement eveTitle, eveLeft, eveGoals, eveBtns; Button eveGrillBtn, eveSellBtn, eveOkBtn;
         void BuildEvening()
         {
             evening = new VisualElement { pickingMode = PickingMode.Position }; Abs(evening, 0, 0, 0, 0); root.Add(evening);
@@ -649,9 +649,9 @@ namespace CozyFishing
                 b.style.paddingLeft = primary ? 72 : 56; var ic = Ico(b, icon, primary ? 40 : 30); Abs(ic, primary ? 20 : 16, null, primary ? 12 : 9);
                 eveBtns.Add(b); return b;
             }
-            Plank("ปิ้งทุกตัว", "fire", new Color(0.82f, 0.72f, 0.6f), () => { for (int i = 0; i < eveGrill.Length; i++) eveGrill[i] = true; FillEvening(); }, false);
-            Plank("ขายทุกตัว", "coin", new Color(0.82f, 0.72f, 0.6f), () => { for (int i = 0; i < eveGrill.Length; i++) eveGrill[i] = false; FillEvening(); }, false);
-            Plank("ตกลง", "stamp_on", new Color(0.35f, 0.78f, 0.32f), () => { Hide(evening); onEveningDone?.Invoke(eveGrill); }, true);
+            eveGrillBtn = Plank("ปิ้งทุกตัว", "fire", new Color(0.82f, 0.72f, 0.6f), () => { for (int i = 0; i < eveGrill.Length; i++) eveGrill[i] = true; FillEvening(); }, false);
+            eveSellBtn = Plank("ขายทุกตัว", "coin", new Color(0.82f, 0.72f, 0.6f), () => { for (int i = 0; i < eveGrill.Length; i++) eveGrill[i] = false; FillEvening(); }, false);
+            eveOkBtn = Plank("ตกลง", "stamp_on", new Color(0.35f, 0.78f, 0.32f), () => { Hide(evening); onEveningDone?.Invoke(eveGrill); }, true);
         }
 
         // จอกว้าง: รายการปลาซ้าย · เป้าหมายขวา · ปุ่มล่างขวา · จอแคบ (แนวตั้ง): ซ้อนเต็มกว้าง ซ่อนเป้าหมาย (ดูได้ที่หน้าเช้า)
@@ -663,8 +663,16 @@ namespace CozyFishing
             eveGoals.style.display = n ? DisplayStyle.None : DisplayStyle.Flex;
             Abs(eveGoals, null, 28, 104); eveGoals.style.width = Length.Percent(30); eveGoals.style.maxWidth = 440;
             ((Label)eveTitle.ElementAt(0)).style.fontSize = n ? 24 : 30; ls.top = n ? 130 : 104;
-            var bs = eveBtns.style; bs.position = Position.Absolute; bs.bottom = n ? 24 : 28; bs.right = n ? 16 : 28; bs.left = n ? 16 : StyleKeyword.Auto;
+            var bs = eveBtns.style; bs.position = Position.Absolute; bs.bottom = n ? 20 : 24; bs.right = n ? 16 : 28; bs.left = n ? 16 : StyleKeyword.Auto;
             bs.justifyContent = n ? Justify.Center : Justify.FlexEnd;
+            // จอกว้าง: สามปุ่มแถวเดียวมุมขวาล่าง (เดิมตัดขึ้นแถวสอง "ตกลง" หลุดขอบจอ) · จอแคบ: ปิ้ง/ขายครึ่งแถวบน "ตกลง" เต็มแถวล่าง และรายการปลาเว้นที่ให้ (เดิมปุ่มทับแผงความอิ่ม กดไม่ได้)
+            bs.flexWrap = n ? Wrap.Wrap : Wrap.NoWrap;
+            if (eveOkBtn != null)
+            {
+                foreach (var b in new[] { eveGrillBtn, eveSellBtn }) { b.style.width = n ? Length.Percent(48) : StyleKeyword.Auto; b.style.minWidth = n ? 0 : 250; b.style.marginLeft = n ? Length.Percent(1) : 10; b.style.marginRight = n ? Length.Percent(1) : 0; }
+                eveOkBtn.style.width = n ? Length.Percent(100) : StyleKeyword.Auto; eveOkBtn.style.marginLeft = n ? 0 : 26; eveOkBtn.style.marginTop = n ? 10 : 8;
+            }
+            ls.bottom = n ? 200 : 28;
             eveTitle.style.maxWidth = n ? root.layout.width - 32 : StyleKeyword.None;
         }
 

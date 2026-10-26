@@ -328,6 +328,8 @@ namespace CozyFishing
             cardOk.style.paddingLeft = 66; var okIco = Ico(cardOk, "basket", 40); Abs(okIco, 16, null, 8);   // ข้องจิ๋วหน้าปุ่มเก็บ
             AddShareButton(btns);   // แชร์การ์ดปลาลงโซเชียล
             btns.style.flexWrap = Wrap.Wrap;   // จอแคบ: ปุ่มแชร์ขึ้นแถวใหม่ ไม่ล้นการ์ด
+            foreach (var b in new VisualElement[] { cardAlt, cardOk, shareBtn }) { b.style.minHeight = 72; b.style.flexShrink = 0; }   // ขึ้นแถวใหม่แล้วไม่ถูกบีบแบน (คอม/จอกว้างเคยเป็น)
+            shareBtn.style.marginTop = 10;
             card.style.display = DisplayStyle.None;
         }
 

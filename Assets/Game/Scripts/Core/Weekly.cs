@@ -24,7 +24,8 @@ namespace CozyFishing
         public static TimeSpan Left => WeekStart.AddDays(7) - Now;
         static int WeekIndex => (int)((WeekStart - new DateTime(2026, 1, 5)).TotalDays / 7);   // 5 ม.ค. 2026 = จันทร์
 
-        public static StageDef Stage { get { var all = Stages.All; return all[((WeekIndex % all.Length) + all.Length) % all.Length]; } }
+        // หมุนตามลำดับด่าน โดยยึดสัปดาห์ 26 ต.ค. 2026 (index 42) = ถ้ำ (ลำดับที่ 6) ไว้ · เพิ่มด่านใหม่ท้ายรายการแล้วสัปดาห์ปัจจุบันไม่เปลี่ยน
+        public static StageDef Stage { get { var all = Stages.All; int i = WeekIndex - 42 + 6; return all[((i % all.Length) + all.Length) % all.Length]; } }
         public static bool CanJoin => Stages.Unlocked(Stage.id);
 
         /// เกณฑ์ (กก.) แต่ละขั้น จากปลาตัวโตสุดปกติของด่าน (ไม่นับปลาหายาก) ปัดทีละ 0.1
