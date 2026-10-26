@@ -10,7 +10,7 @@ public static class ShrinkBuild3
     public static void Run()
     {
         int n = 0;
-        foreach (var guid in AssetDatabase.FindAssets("t:Texture", new[] { "Assets/Game/Resources/UI/Frames", "Assets/Game/Resources/UI/Title", "Assets/Game/Resources/UI/Shop", "Assets/Game/Resources/UI/Stages", "Assets/Game/Resources/UI/Portraits" }))
+        foreach (var guid in AssetDatabase.FindAssets("t:Texture", new[] { "Assets/Game/Resources/UI/Frames", "Assets/Game/Resources/UI/Title", "Assets/Game/Resources/UI/Shop", "Assets/Game/Resources/UI/Stages", "Assets/Game/Resources/UI/Portraits", "Assets/Game/Resources/UI/Journal" }))
         {
             var path = AssetDatabase.GUIDToAssetPath(guid);
             if (!(AssetImporter.GetAtPath(path) is TextureImporter ti)) continue;

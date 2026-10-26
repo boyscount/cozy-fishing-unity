@@ -142,12 +142,18 @@ namespace CozyFishing
             morning.style.backgroundImage = Resources.Load<Texture2D>("UI/Frames/backdrop"); morning.style.backgroundSize = new BackgroundSize(BackgroundSizeType.Cover);
             mBox.style.borderTopWidth = mBox.style.borderBottomWidth = mBox.style.borderLeftWidth = mBox.style.borderRightWidth = 0;
             mBox.style.borderTopLeftRadius = mBox.style.borderTopRightRadius = mBox.style.borderBottomLeftRadius = mBox.style.borderBottomRightRadius = 0;
-            mBox.style.backgroundColor = Color.clear; mBox.style.backgroundImage = TitleTex("board");
-            mBox.style.unitySliceLeft = mBox.style.unitySliceRight = mBox.style.unitySliceTop = mBox.style.unitySliceBottom = 96;
-            mBox.style.paddingTop = mBox.style.paddingBottom = 56; mBox.style.paddingLeft = 52; mBox.style.paddingRight = 74; mBox.style.overflow = Overflow.Visible;
+            // หน้าสมุดบันทึกชาวประมง: กระดาษเย็บเชือก ปกหนังซ้าย · ประกาศ = กระดาษฉีกแบน · ปุ่ม = แผ่นไม้หนามีเงา (แยกออกจากกันชัด)
+            mBox.style.backgroundColor = Color.clear; mBox.style.backgroundImage = JTex("page");
+            mBox.style.unitySliceLeft = 110; mBox.style.unitySliceRight = mBox.style.unitySliceTop = mBox.style.unitySliceBottom = 60;
+            mBox.style.paddingTop = mBox.style.paddingBottom = 40; mBox.style.paddingLeft = 96; mBox.style.paddingRight = 70; mBox.style.overflow = Overflow.Visible;
             var ms = morningScroll = new ScrollView(ScrollViewMode.Vertical); ms.horizontalScrollerVisibility = ScrollerVisibility.Hidden; ms.verticalScrollerVisibility = ScrollerVisibility.Hidden;
             ms.style.flexGrow = 1; ms.style.flexShrink = 1; mBox.Add(ms);
             morningBody = new VisualElement(); ms.Add(morningBody);
+            // ของวางบนสมุด (ไม่เลื่อนตามเนื้อหา): ปากกาคอแร้งพาดขอบซ้ายล่าง · ไฟแช็กทองเหลืองขอบขวา
+            var penEl = new VisualElement { pickingMode = PickingMode.Ignore }; Abs(penEl, -46, null, null, 120); penEl.style.width = 90; penEl.style.height = 200;
+            penEl.style.backgroundImage = JTex("prop_pen"); penEl.style.backgroundSize = new BackgroundSize(BackgroundSizeType.Contain); mBox.Add(penEl);
+            var ltr = new VisualElement { pickingMode = PickingMode.Ignore }; Abs(ltr, null, -34, null, 300); ltr.style.width = 70; ltr.style.height = 100;
+            ltr.style.backgroundImage = JTex("prop_lighter"); ltr.style.backgroundSize = new BackgroundSize(BackgroundSizeType.Contain); mBox.Add(ltr);
             // ขอบขวากระดาน: เชือกถักลูกรอก + ลูกศรหัวไม้ไผ่ขึ้น/ลง (แตะเลื่อน · ลาก/ล้อเมาส์เลื่อนได้ตามเดิม)
             var rope = new VisualElement { pickingMode = PickingMode.Ignore }; Abs(rope, null, 26, 66, 66); rope.style.width = 32;
             rope.style.backgroundImage = TitleTex("rope_v"); rope.style.backgroundSize = new BackgroundSize(Length.Percent(100), Length.Percent(100)); mBox.Add(rope);
@@ -457,45 +463,65 @@ namespace CozyFishing
             Show(morning);
             if (FishingController.Bot && GameUrl.Value.Contains("openshop")) { Story.S.money = Mathf.Max(Story.S.money, 6000); RefreshMorning(); ShowShop(); return; }   // ทดสอบ: เปิดร้านโชห่วยทันที
             if (FishingController.Bot && GameUrl.Value.Contains("shopdemo") && !shopDemoDone) { shopDemoDone = true; StartCoroutine(ShopDemo(() => StartCoroutine(BotClick(morning, 1.2f, () => { Hide(morning); onMorningGo?.Invoke(BotStage()); })))); return; }   // ถ่ายคลิป: โชว์ร้านค้า
+            if (FishingController.Bot && GameUrl.Value.Contains("morningdemo")) { Story.S.money = Mathf.Max(Story.S.money, 9614); RefreshMorning(); return; }   // ทดสอบ: ค้างหน้าเช้าไว้ดูหน้าตา
             if (FishingController.Bot) StartCoroutine(BotClick(morning, 2.5f, () => { Hide(morning); onMorningGo?.Invoke(BotStage()); }));
         }
 
+        static Texture2D JTex(string n) => Resources.Load<Texture2D>("UI/Journal/" + n);
         public void RefreshMorning()
         {
             var s = Story.S;
             morningBody.Clear();
             var brown = new Color(0.24f, 0.14f, 0.06f); var cream = new Color(1f, 0.93f, 0.78f);
+            // สเก็ตช์ลายเส้นตามขอบหน้า (เลื่อนตามเนื้อหา)
+            void Sketch(string tex, float? left, float? right, float top, float w, float h)
+            {
+                var sk = new VisualElement { pickingMode = PickingMode.Ignore }; sk.style.position = Position.Absolute; sk.style.top = top; sk.style.width = w; sk.style.height = h;
+                if (left != null) sk.style.left = left.Value; if (right != null) sk.style.right = right.Value;
+                sk.style.backgroundImage = JTex(tex); sk.style.backgroundSize = new BackgroundSize(BackgroundSizeType.Contain); sk.style.opacity = 0.45f;   // สเก็ตช์จาง ไม่แย่งสายตาจากตัวหนังสือ morningBody.Add(sk);
+            }
+            Sketch("sketch_fish_a", -20, null, 4, Narrow ? 110 : 150, Narrow ? 60 : 80);
+            Sketch("sketch_fish_c", null, -10, 30, Narrow ? 100 : 140, Narrow ? 56 : 76);
+            Sketch("sketch_fish_b", null, -16, Narrow ? 120 : 140, Narrow ? 96 : 130, Narrow ? 56 : 74);
+            Sketch("sketch_hand", -30, null, Narrow ? 400 : 420, Narrow ? 90 : 120, Narrow ? 54 : 72);
             var beam = new VisualElement { pickingMode = PickingMode.Ignore }; beam.style.alignSelf = Align.Center;
-            beam.style.backgroundImage = TitleTex("beam"); beam.style.backgroundSize = new BackgroundSize(Length.Percent(100), Length.Percent(100));
-            beam.style.paddingTop = 30; beam.style.paddingBottom = 34; beam.style.paddingLeft = Narrow ? 50 : 80; beam.style.paddingRight = Narrow ? 50 : 80; morningBody.Add(beam);
+            beam.style.backgroundImage = JTex("label_ink"); beam.style.unitySliceLeft = beam.style.unitySliceRight = beam.style.unitySliceTop = beam.style.unitySliceBottom = 28;
+            beam.style.paddingTop = 14; beam.style.paddingBottom = 16; beam.style.paddingLeft = Narrow ? 34 : 50; beam.style.paddingRight = Narrow ? 34 : 50; morningBody.Add(beam);
             var title = L(beam, Story.FreePlay ? "ตกปลาอิสระ · เลือกที่ตกปลา" : $"เช้าวันที่ {s.day}", Narrow ? (Loc.English ? 26 : 32) : (Loc.English ? 36 : 46), new Color(0.2f, 0.1f, 0.03f)); title.style.unityFontDefinition = fontTitle; title.style.whiteSpace = WhiteSpace.NoWrap;
             title.style.textShadow = new TextShadow { offset = new Vector2(0, 1.5f), blurRadius = 0.5f, color = new Color(1f, 0.86f, 0.62f, 0.6f) };
             // ข่าวหมู่บ้าน: แผ่นกระดาษประกาศ (อากาศ · ราคาตลาด)
-            VisualElement Notice(string text, Color col, string icon = null)
+            int noteN = 0;
+            VisualElement Notice(string text, Color col, string icon = null, string paperTex = null)
             {
-                var n = new VisualElement { pickingMode = PickingMode.Ignore }; n.style.marginTop = 8; n.style.alignSelf = Align.Center;
-                n.style.backgroundImage = TitleTex("note"); n.style.unitySliceLeft = n.style.unitySliceRight = n.style.unitySliceTop = n.style.unitySliceBottom = 34;
-                Pad(n, 18, 38); n.style.flexDirection = FlexDirection.Row; n.style.alignItems = Align.Center;
+                var n = new VisualElement { pickingMode = PickingMode.Ignore }; n.style.marginTop = 10; n.style.alignSelf = Align.Center; n.style.width = Length.Percent(Narrow ? 96 : 88);   // ประกาศกว้างเท่ากันทุกแผ่น
+                n.style.backgroundImage = JTex(paperTex ?? (noteN % 2 == 0 ? "note_a" : "note_b")); n.style.unitySliceLeft = n.style.unitySliceRight = n.style.unitySliceTop = n.style.unitySliceBottom = 36;
+                Pad(n, Narrow ? 16 : 18, Narrow ? 20 : 30); n.style.flexDirection = FlexDirection.Row; n.style.alignItems = Align.Center; n.style.rotate = new Rotate(noteN % 2 == 0 ? -1.2f : 1f); noteN++;
                 morningBody.Add(n);
-                if (icon != null) { var ic = Ico(n, icon, 38); ic.style.unityBackgroundImageTintColor = new Color(0.36f, 0.22f, 0.1f); ic.style.marginRight = 10; }
-                L(n, text, 26, col);
-                var pin = Ico(n, "pin", 28); pin.style.position = Position.Absolute; pin.style.top = -12; pin.style.left = Length.Percent(50); pin.style.marginLeft = -14;
+                if (icon != null) { var ic = Ico(n, icon, 40); ic.style.unityBackgroundImageTintColor = new Color(0.36f, 0.22f, 0.1f); ic.style.marginRight = 12; ic.style.flexShrink = 0; }
+                var tl = L(n, text, Narrow ? 27 : 30, new Color(col.r * 0.7f, col.g * 0.7f, col.b * 0.7f, 1f));   // คูณสีทั้งก้อนเคยลดความทึบไปด้วย ตัวจาง tl.style.unityFontDefinition = fontTitle; tl.style.flexShrink = 1;   // ตัวหนาเข้ม อ่านชัดบนกระดาษ
+                 tl.style.whiteSpace = WhiteSpace.Normal; tl.style.unityTextAlign = TextAnchor.MiddleCenter;
                 return n;
             }
             var lk0 = Story.CurrentLuck;
             Notice(lk0.text, brown, lk0.rain ? "rain" : lk0.sun > 0.8f ? "sun" : lk0.sun > 0.45f ? "partly" : "cloud");
             var hot = s.hot != null ? FishDatabase.Get(s.hot) : null;
             if (hot != null && !Story.FreePlay) Notice($"วันนี้แม่ค้ารับซื้อ{(FishDex.Has(hot.id) ? hot.name : "ปลาลึกลับ")}ราคาพิเศษ {Story.Baht(Story.PriceOf(hot.id))}/กก.", new Color(0.55f, 0.2f, 0.05f));
-            Notice(Weekly.CanJoin ? $"เทศกาลปลาใหญ่สัปดาห์นี้ที่{Weekly.Stage.name} · รางวัลสูงสุด {Story.Baht(Weekly.TierReward[2])}" : $"เทศกาลปลาใหญ่สัปดาห์นี้ที่{Weekly.Stage.name} · ร่วมได้ในโหมดตกปลาอิสระ", new Color(0.45f, 0.25f, 0.02f), "trophy");
+            var fest = Notice(Weekly.CanJoin ? $"เทศกาลปลาใหญ่สัปดาห์นี้ที่{Weekly.Stage.name} · รางวัลสูงสุด {Story.Baht(Weekly.TierReward[2])}" : $"เทศกาลปลาใหญ่สัปดาห์นี้ที่{Weekly.Stage.name} · ร่วมได้ในโหมดตกปลาอิสระ", new Color(0.3f, 0.12f, 0.06f), "trophy", "note_stained");
+            fest.style.paddingRight = Narrow ? 70 : 110; fest.style.overflow = Overflow.Visible;   // รูปสเก็ตช์ด่านเทศกาลหนีบคลิปทับมุมขวา
+            var festPic = new VisualElement { pickingMode = PickingMode.Ignore }; Abs(festPic, null, Narrow ? -14 : -40, -20); festPic.style.width = Narrow ? 84 : 120; festPic.style.height = Narrow ? 100 : 144;
+            festPic.style.backgroundImage = Weekly.Stage.id == "cave" ? JTex("prop_cave") : Weekly.Stage.Art; festPic.style.backgroundSize = new BackgroundSize(BackgroundSizeType.Contain); festPic.style.rotate = new Rotate(5); fest.Add(festPic);
             // ป้ายไม้: เงินเก็บ · ความสุขครอบครัว
-            var stats = Row(morningBody); stats.style.marginTop = 10; stats.style.display = Story.FreePlay ? DisplayStyle.None : DisplayStyle.Flex;
-            VisualElement Plaque(string icon, string text, Color col)
+            // สถานะ: ป้ายกระดาษกรอบหมึก (ไม่ใช่ไม้ ไม่ดูเป็นปุ่ม)
+            var stats = new VisualElement { pickingMode = PickingMode.Ignore }; stats.style.marginTop = 12; stats.style.alignItems = Align.Center; stats.style.justifyContent = Justify.Center;
+            stats.style.flexDirection = Narrow ? FlexDirection.Column : FlexDirection.Row; stats.style.display = Story.FreePlay ? DisplayStyle.None : DisplayStyle.Flex; morningBody.Add(stats);
+            VisualElement Plaque(string icon, string text, Color col, string tex)
             {
-                var pl = new VisualElement { pickingMode = PickingMode.Ignore }; Skin(pl, "wood", 18); Pad(pl, 10, 22); pl.style.flexDirection = FlexDirection.Row; pl.style.alignItems = Align.Center;
-                pl.style.marginLeft = pl.style.marginRight = 6; stats.Add(pl); Ico(pl, icon, 32); L(pl, text, 26, col).style.marginLeft = 8; return pl;
+                var pl = new VisualElement { pickingMode = PickingMode.Ignore }; pl.style.backgroundImage = JTex(tex); pl.style.unitySliceLeft = pl.style.unitySliceRight = pl.style.unitySliceTop = pl.style.unitySliceBottom = 28;
+                Pad(pl, 16, 34); pl.style.flexDirection = FlexDirection.Row; pl.style.alignItems = Align.Center; pl.style.marginLeft = pl.style.marginRight = 6; pl.style.marginTop = pl.style.marginBottom = 4;
+                stats.Add(pl); Ico(pl, icon, 34); var pt = L(pl, text, Narrow ? 27 : 29, col); pt.style.marginLeft = 8; pt.style.unityFontDefinition = fontTitle; return pl;
             }
-            Plaque("coin", $"เงินเก็บ {Story.Baht(s.money)}", Money);
-            Plaque("heart", $"ครอบครัว {(s.happy >= 75 ? "มีความสุข" : s.happy >= 40 ? "สบายดี" : "หิวโหย")} {s.happy}%", cream);
+            Plaque("coin", $"เงินเก็บ {Story.Baht(s.money)}", new Color(0.28f, 0.14f, 0.02f), "label_ink");
+            Plaque("heart", $"ครอบครัว {(s.happy >= 75 ? "มีความสุข" : s.happy >= 40 ? "สบายดี" : "หิวโหย")} {s.happy}%", new Color(0.08f, 0.12f, 0.36f), "label_ink_blue");
             // ร้านโชห่วย: คันเบ็ด รอก เหยื่อ ของกันผี ของในบ้าน
             // ป้ายร้านเด่น ๆ: แผ่นไม้ส้มอุ่น รูปรอกสีจริง ชื่อร้าน + บรรทัดบอกว่ามีอะไรขาย · ไม่ให้ถูกบีบในรายการ
             var shopBtn = new Button(ShowShop) { text = "" }; WoodButton(shopBtn, true);
@@ -507,10 +533,13 @@ namespace CozyFishing
             var scol = new VisualElement { pickingMode = PickingMode.Ignore }; shopBtn.Add(scol);
             var st1 = L(scol, "ร้านลุงส้ม", Narrow ? 28 : 32, new Color(1f, 0.96f, 0.86f)); st1.style.unityTextAlign = TextAnchor.MiddleLeft; st1.style.unityFontDefinition = fontTitle; Shadow(st1);   // ตัวสว่างบนไม้ส้ม (เดิมน้ำตาลเข้มบนส้ม อ่านแทบไม่ออก)
             var st2 = L(scol, "คันเบ็ด · รอก · เหยื่อ · ของกันผี · ของในบ้าน", Narrow ? 16 : 19, new Color(1f, 0.9f, 0.72f), false); st2.style.unityTextAlign = TextAnchor.MiddleLeft; Shadow(st2);
-            morningBody.Add(shopBtn);
+            morningBody.Add(shopBtn); shopBtn.style.overflow = Overflow.Visible; shopBtn.style.marginTop = 22;
+            var stamp = new VisualElement { pickingMode = PickingMode.Ignore }; Abs(stamp, null, 10, -14); stamp.style.width = Narrow ? 96 : 120; stamp.style.height = Narrow ? 50 : 62;   // ตราปั๊มแดง "ร้านลุงส้ม"
+            stamp.style.backgroundImage = JTex("stamp_shop"); stamp.style.backgroundSize = new BackgroundSize(BackgroundSizeType.Contain); stamp.style.alignItems = Align.Center; stamp.style.justifyContent = Justify.Center; stamp.style.rotate = new Rotate(-8); shopBtn.Add(stamp);
+            var stl = L(stamp, "ร้านลุงส้ม", Narrow ? 15 : 18, new Color(0.7f, 0.12f, 0.08f)); stl.style.unityFontDefinition = fontTitle;
             // กระดานปลาใหญ่ประจำสัปดาห์ (ออนไลน์) — ปุ่มเล็กใต้ร้านลุงส้ม
             // แผ่นไม้เต็มขนาดแบบเดียวกับป้ายร้าน (เดิมเป็นข้อความในปุ่มเล็ก มือถือแล้วตัวหนังสือล้นกรอบ ไม่ดูเป็นปุ่ม)
-            var boardBtn = new Button(() => OpenBoard()) { text = "" }; WoodButton(boardBtn, true);
+            var boardBtn = new Button(() => OpenBoard()) { text = "" }; WoodButton(boardBtn, true); boardBtn.style.unityBackgroundImageTintColor = new Color(1f, 0.9f, 0.6f);
             boardBtn.style.alignSelf = Align.Center; boardBtn.style.flexShrink = 0; boardBtn.style.marginTop = 8; boardBtn.style.marginBottom = 4;
             boardBtn.style.flexDirection = FlexDirection.Row; boardBtn.style.alignItems = Align.Center; Pad(boardBtn, 10, 26); boardBtn.style.minWidth = Narrow ? 300 : 460;
             var bIco = Ico(boardBtn, "trophy", Narrow ? 44 : 52); bIco.style.marginRight = 14; bIco.style.flexShrink = 0;
@@ -538,9 +567,16 @@ namespace CozyFishing
                 sk.style.backgroundImage = Resources.Load<Texture2D>("UI/Icons/" + (s.goal == 0 ? "goal_roof" : s.goal == 1 ? "goal_bike" : "goal_fair")); gb.Add(sk);
             }
             else L(gcol, "ทำครบทุกเป้าหมายแล้ว! ตกปลาสบาย ๆ ได้ตลอดไป", 26, brown);
-            if (!Story.RoofFixed && !Story.FreePlay) { var lk = L(morningBody, "หลังคาบ้านยังรั่วอยู่ เมื่อคืนต้องเอาถังรองน้ำฝน…", 22, cream, false); lk.style.marginTop = 8; Shadow(lk); }
+            if (!Story.RoofFixed && !Story.FreePlay) { var lk = L(morningBody, "หลังคาบ้านยังรั่วอยู่ เมื่อคืนต้องเอาถังรองน้ำฝน…", 22, new Color(0.42f, 0.24f, 0.12f), false); lk.style.marginTop = 8; }
             // เลือกที่ตกปลา: การ์ดกระดาษ + ภาพโพลารอยด์ปักหมุด · ความยาก · แว่นขยายถ้ามีคดีค้างที่ด่านนั้น
-            var q = L(morningBody, "วันนี้จะไปตกปลาที่ไหน?", 34, cream); q.style.marginTop = 18; q.style.unityFontDefinition = fontTitle; Shadow(q);
+            // ปุ่มหลักของหน้า "ออกไปตกปลา": แผ่นไม้ใหญ่เต็มกว้าง แตะแล้วเลื่อนลงไปที่รายการที่ตกปลา
+            var goBtn = new Button() { text = "ออกไปตกปลา" }; WoodButton(goBtn, true);
+            goBtn.style.alignSelf = Align.Stretch; goBtn.style.marginTop = 16; goBtn.style.fontSize = Narrow ? 40 : 48; goBtn.style.unityFontDefinition = fontTitle; goBtn.style.minHeight = Narrow ? 84 : 96;
+            goBtn.style.unityBackgroundImageTintColor = new Color(0.78f, 0.6f, 0.44f); goBtn.style.color = new Color(1f, 0.95f, 0.85f);
+            goBtn.style.textShadow = new TextShadow { offset = new Vector2(0, 2), blurRadius = 4, color = new Color(0.15f, 0.08f, 0.02f, 0.9f) };
+            morningBody.Add(goBtn);
+            var q = L(morningBody, "วันนี้จะไปตกปลาที่ไหน?", 34, new Color(0.3f, 0.17f, 0.06f)); q.style.marginTop = 22; q.style.unityFontDefinition = fontTitle;
+            goBtn.clicked += () => morningScroll.ScrollTo(q);
             for (int si = 0; si < Stages.All.Length; si++)
             {
                 var st = Stages.All[si];
