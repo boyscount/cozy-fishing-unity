@@ -17,8 +17,8 @@ Mesh:
     firstVertex: 0
     vertexCount: 22
     localAABB:
-      m_Center: {x: 0.0021792054, y: 0.3485371, z: 0.011447666}
-      m_Extent: {x: 0.056740586, y: 0.3485371, z: 0.015532054}
+      m_Center: {x: 0.0021792054, y: 0.3451588, z: 0.011447666}
+      m_Extent: {x: 0.056740586, y: 0.3451588, z: 0.015532054}
   m_Shapes:
     vertices: []
     shapes: []
@@ -101,9 +101,9 @@ Mesh:
   m_CompressedMesh:
     m_Vertices:
       m_NumItems: 66
-      m_Range: 0.75163555
+      m_Range: 0.74487895
       m_Start: -0.05456138
-      m_Data: aa0695129512811e95129512a405532a6f137b1d532a6f13bc0511421515931d114215154907cf593017201fcf593017f9098c715219d0218c715219e30c4a89001bba244a89001bcf0e08a1c61ba62608a1c61ba10ec6b8491b7926c6b8491bc80b83d05519a02383d05519870641e8e7155e1e41e8e7150000ffff3111d717ffff3111y
+      m_Data: b906c012c012c81ec012c012b1057a2a9c13c01d7a2a9c13c90533424615d81d334246155907ed596617681fed596617100aa6718d191e22a6718d19010d60893e1b102560893e1bf20e19a1061c002719a1061cc30ed3b8881bd226d3b8881be40b8cd09019f2238cd09019960646e81916a51e46e819160000ffff59110f18ffff5911y
       m_BitSize: 16
     m_UV:
       m_NumItems: 0
@@ -113,9 +113,9 @@ Mesh:
       m_BitSize: 0
     m_Normals:
       m_NumItems: 44
-      m_Range: 0.28366616
-      m_Start: -0.1945613
-      m_Data: afcfafcfafd9afe3aff3aff9afffafffaffaaff4afe3afd8afbcafacaf8aaf78af53af41af1faf0faf00af00y
+      m_Range: 0.2863625
+      m_Start: -0.19639255
+      m_Data: afcfafcfafd9afe3aff3aff9afffafffaffaaff4afe3afd8afbcafacaf8aaf78af53af40af1faf0faf00af00y
       m_BitSize: 8
     m_Tangents:
       m_NumItems: 0
@@ -151,8 +151,8 @@ Mesh:
       m_BitSize: 5
     m_UVInfo: 0
   m_LocalAABB:
-    m_Center: {x: 0.0021792054, y: 0.3485371, z: 0.011447666}
-    m_Extent: {x: 0.056740586, y: 0.3485371, z: 0.015532054}
+    m_Center: {x: 0.0021792054, y: 0.3451588, z: 0.011447666}
+    m_Extent: {x: 0.056740586, y: 0.3451588, z: 0.015532054}
   m_CookingOptions: 30
   m_PreBakeConvexCollisionMesh: 0
   m_PreBakeTriangleCollisionMesh: 0

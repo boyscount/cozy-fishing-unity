@@ -41,7 +41,7 @@ def thin_leaves(o):
     groups = {}
     for f in leaf_faces:
         groups.setdefault(find(f.verts[0].index), []).append(f)
-    scale = min(2.6, (1 / max(leaf_keep, 1e-3)) ** 0.5)
+    scale = min(4.0, (1 / max(leaf_keep, 1e-3)) ** 0.5)
     kill = []
     for faces in groups.values():
         if random.random() < leaf_keep:

@@ -17,8 +17,8 @@ Mesh:
     firstVertex: 0
     vertexCount: 22
     localAABB:
-      m_Center: {x: -0.0020494238, y: 0.34805992, z: -0.011225775}
-      m_Extent: {x: 0.05685597, y: 0.34805992, z: 0.015660914}
+      m_Center: {x: -0.0020494238, y: 0.38942465, z: -0.011225775}
+      m_Extent: {x: 0.05685597, y: 0.38942465, z: 0.015660914}
   m_Shapes:
     vertices: []
     shapes: []
@@ -101,9 +101,9 @@ Mesh:
   m_CompressedMesh:
     m_Vertices:
       m_NumItems: 66
-      m_Range: 0.75502527
+      m_Range: 0.8377547
       m_Start: -0.058905393
-      m_Data: 1b08f913f913d71ff913f9131e09932b1d13d920932b1d1303092d437811bf202d4378117507c85a5f0f311fc85a5f0fc8046272420d841c6272420de401fc899b0ba019fc899b0b000096a1db0abc1796a1db0a360030b95e0bf21730b95e0b1303cbd0560dcf1acbd0560d530865e8c6100f2065e8c610d20effff7a158e26ffff7a15y
+      m_Data: 4e0700120012b21c001200123708cd293a119b1dcd293a111f089941bf0f831d9941bf0fb9066659db0d1d1c6659db0d4f043371f30bb3193371f30bb401ff88750a1817ff88750a0000cca0c9096415cca0c909310099b83f0a941599b83f0ac60266d0050c2a1866d0050c810732e81e0fe51c32e81e0f5b0dffff5b13bf22ffff5b13y
       m_BitSize: 16
     m_UV:
       m_NumItems: 0
@@ -113,9 +113,9 @@ Mesh:
       m_BitSize: 0
     m_Normals:
       m_NumItems: 44
-      m_Range: 0.2843529
-      m_Start: -0.08897694
-      m_Data: 502f502f5025501b500c5006500050005006500b501d5028504350535076508850ad50bf50e050f050ff50ffy
+      m_Range: 0.25488663
+      m_Start: -0.079589196
+      m_Data: 502f502f5025501b500c5006500050005006500b501c5028504350535075508850ac50bf50e050f050ff50ffy
       m_BitSize: 8
     m_Tangents:
       m_NumItems: 0
@@ -151,8 +151,8 @@ Mesh:
       m_BitSize: 5
     m_UVInfo: 0
   m_LocalAABB:
-    m_Center: {x: -0.0020494238, y: 0.34805992, z: -0.011225775}
-    m_Extent: {x: 0.05685597, y: 0.34805992, z: 0.015660914}
+    m_Center: {x: -0.0020494238, y: 0.38942465, z: -0.011225775}
+    m_Extent: {x: 0.05685597, y: 0.38942465, z: 0.015660914}
   m_CookingOptions: 30
   m_PreBakeConvexCollisionMesh: 0
   m_PreBakeTriangleCollisionMesh: 0

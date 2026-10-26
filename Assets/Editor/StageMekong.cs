@@ -108,7 +108,7 @@ public static partial class SceneBuilder
         for (int i = 0; i < 34; i++)   // หินโผล่กลางแก่ง + ละอองน้ำแตกรอบหินก้อนใหญ่
         {
             float x = Rf(-30f, -3f), z = KZc(x) + Rf(-0.85f, 0.85f) * KHw, sc = Rf(0.6f, 1.6f);
-            Nature(i % 3 == 0 ? "namaqualand_boulder_02" : "boulder_01", x, z, sc, Rf(0, 360), 0, true, 0.3f, KW - 0.3f);
+            Nature(new[] { "namaqualand_boulder_02", "boulder_01", "namaqualand_boulder_03", "boulder_01", "namaqualand_boulder_04", "rock_face_02" }[i % 6], x, z, i % 6 == 5 ? sc * 0.55f : sc, Rf(0, 360), 0, true, 0.3f, KW - 0.3f);   // หินแก่งหลายแบบ ไม่ซ้ำหน้าตา
             if (sc > 1.1f && i % 2 == 0) Particles("RockSplash", new Vector3(x - 0.8f, KW + 0.1f, z), new Vector3(1.2f, 1.6f, 0.1f), spray0, 14, new Vector2(0.3f, 0.7f), new Vector2(0.6f, 1.1f), new Vector2(0.4f, 1.1f), new Color(1, 0.97f, 0.92f, 0.4f), 0.4f);
         }
         // หินก้าวจากตลิ่งออกไปถึงโขดหินแบนกลางกระแสน้ำ (ผู้เล่นยืนตรงนั้น น้ำเชี่ยวแตกฟองรอบตัว)
@@ -128,6 +128,9 @@ public static partial class SceneBuilder
             Nature("rock_moss_set_01", x, nearEdge(x) - 0.6f, s, Rf(0, 360), 1.2f, true, 0.15f);
         // ฝั่งไทย: ต้นไม้ใหญ่ กอไผ่ ตาลโตนด พุ่มไม้ · ฝั่งลาว: ป่าบนภูเขา
         foreach (var (x, off) in new[] { (-16f, -6f), (-9f, -8.5f), (9f, -7f), (16f, -9f), (-2f, -10f) }) Nature("island_tree_01", x, nearEdge(x) + off, Rf(1.3f, 1.8f), Rf(0, 360), 0.9f, true, 0.15f);
+        foreach (var (x, off) in new[] { (-12.5f, -7.5f), (5f, -8.5f), (21f, -7f) }) Nature("island_tree_02", x, nearEdge(x) + off, Rf(1.9f, 2.3f), Rf(0, 360), 0.9f, true, 0.1f);   // ต้นไม้ทรงแผ่กิ่ง สลับกับต้นเดิม
+        foreach (var (x, off, s, yaw) in new[] { (-21f, -2.2f, 0.9f, 20f), (2.5f, -2.6f, 0.75f, 160f), (24f, -2.4f, 0.85f, 250f) }) Nature(x < 0 ? "rock_face_01" : "rock_face_02", x, nearEdge(x) + off, s, yaw, 1.6f, true, 0.4f);   // ผาหินริมตลิ่ง
+        foreach (var x in new[] { -18f, -4f, 7f, 14f }) Nature("rock_07", x, nearEdge(x) + Rf(-0.3f, 0.3f), Rf(4.5f, 6.5f), Rf(0, 360), 0, true, 0.05f);   // หินแบนเรียงริมน้ำ
         var palmTrunk = SurfMat("SugarPalmTrunk", Hex("#b8a890"), tex: "bark_brown_02", tiles: 0.9f, cull: CullMode.Off);
         var palmLeaf = SurfMat("SugarPalmLeaf", Color.white, sway: 0.05f, swayStart: 6f, vertexColor: true, smooth: 0.35f, cull: CullMode.Off);
         int pi = 0;
@@ -220,7 +223,16 @@ public static partial class SceneBuilder
                 bigPath[k] = new Vector3(nx0 + Mathf.Cos(ang + 2.4f) * 2.3f * (1 - t * 0.35f), KW + 0.2f + t * 2.6f + Mathf.Sin(t * Mathf.PI) * 0.6f, nz0 + Mathf.Sin(ang + 2.4f) * 1.9f * (1 - t * 0.35f));
             }
             bigPath[39] = bigPath[38] + new Vector3(0.05f, 0.1f, 0.35f);   // คอหันไปทางแม่น้ำ (+z)
-            NagaAt("NagaBig", bigPath, 0.1f, 0.42f, 5);
+            // พญานาคหินห้าเศียรที่ปั้นใน Blender (naga_statue.glb) แทนตัวที่สร้างจากโค้ด · ไม่มีไฟล์ = ใช้แบบเดิม
+            var nsrc = AssetDatabase.LoadAssetAtPath<GameObject>($"{NatureDir}/naga_statue.glb");
+            if (nsrc != null)
+            {
+                var ng = Object.Instantiate(nsrc, shrineRoot); ng.name = "NagaStatue";
+                ng.transform.SetPositionAndRotation(new Vector3(nx0, KW - 0.15f, nz0), Quaternion.Euler(0, 200f, 0)); ng.transform.localScale = Vector3.one * 1.15f;
+                foreach (var rr in ng.GetComponentsInChildren<Renderer>()) { rr.sharedMaterial = nagaMat; rr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On; }
+                bigPath[37] = new Vector3(nx0, KW + 4.1f, nz0);   // ผ้าสามสีพันคอ (คอตั้งสูงราว 4 ม.)
+            }
+            else NagaAt("NagaBig", bigPath, 0.1f, 0.42f, 5);
             for (int k = 0; k < 4; k++)   // ผ้าสามสีพันคอพญานาค
             {
                 var rib = new GameObject("NagaCloth"); rib.transform.SetParent(shrineRoot, true);

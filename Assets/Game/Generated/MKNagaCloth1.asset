@@ -17,8 +17,8 @@ Mesh:
     firstVertex: 0
     vertexCount: 22
     localAABB:
-      m_Center: {x: 0.0114325825, y: 0.43942463, z: 0.018385082}
-      m_Extent: {x: 0.053411596, y: 0.43942463, z: 0.019325674}
+      m_Center: {x: 0.0114325825, y: 0.335129, z: 0.018385082}
+      m_Extent: {x: 0.053411596, y: 0.335129, z: 0.019325674}
   m_Shapes:
     vertices: []
     shapes: []
@@ -101,9 +101,9 @@ Mesh:
   m_CompressedMesh:
     m_Vertices:
       m_NumItems: 66
-      m_Range: 0.9208283
+      m_Range: 0.712237
       m_Start: -0.04197901
-      m_Data: f101ac0bac0b6715ac0bac0bd4001a24690b4a141a24690b0000893cfa0b7613893cfa0b2b00f854560da113f854560dac01676d4c0f2215676d4c0f4f04d5858f11c517d5858f115407449ebb13ca1a449ebb13a809b3b665151e1db3b665153d0a22cf2716b31d22cf2716660890e7b515dc1b90e7b5152b04ffffdf13a117ffffdf13y
+      m_Data: 8202170f170fab1b170f170f12012e27c00e3b1a2e27c00e0000453f7c0f2919453f7c0f38005c573e1161195c573e112a02746fc713531b746fc71392058b87b416bb1e8b87b4167909a29f8219a222a29f82197c0cb9b7a81ba525b9b7a81b3c0dd1cfa41c6526d1cfa41cdc0ae8e7101c0524e8e7101c6305ffffb0198c1effffb019y
       m_BitSize: 16
     m_UV:
       m_NumItems: 0
@@ -113,9 +113,9 @@ Mesh:
       m_BitSize: 0
     m_Normals:
       m_NumItems: 44
-      m_Range: 0.16587415
-      m_Start: -0.0749362
-      m_Data: 736373637374738673a873b873d573e273f473fb73ff73fd73f173e673c973b6738a7370733a731d73007300y
+      m_Range: 0.21694502
+      m_Start: -0.09805927
+      m_Data: 736373637374738673a873b873d573e273f573fb73ff73fd73f173e673c973b6738a7370733a731d73007300y
       m_BitSize: 8
     m_Tangents:
       m_NumItems: 0
@@ -151,8 +151,8 @@ Mesh:
       m_BitSize: 5
     m_UVInfo: 0
   m_LocalAABB:
-    m_Center: {x: 0.0114325825, y: 0.43942463, z: 0.018385082}
-    m_Extent: {x: 0.053411596, y: 0.43942463, z: 0.019325674}
+    m_Center: {x: 0.0114325825, y: 0.335129, z: 0.018385082}
+    m_Extent: {x: 0.053411596, y: 0.335129, z: 0.019325674}
   m_CookingOptions: 30
   m_PreBakeConvexCollisionMesh: 0
   m_PreBakeTriangleCollisionMesh: 0

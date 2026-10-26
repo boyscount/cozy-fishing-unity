@@ -318,11 +318,12 @@ public static partial class SceneBuilder
     {
         { "jacaranda_tree", (0.22f, 6f, 0.025f) }, { "island_tree_01", (0.2f, 7f, 0.02f) }, { "shrub_02", (0.05f, 1.2f, 0.015f) }, { "shrub_03", (0.03f, 0.5f, 0.01f) }, { "shrub_04", (0.03f, 0.4f, 0.01f) },
         { "fern_02", (0.04f, 0.6f, 0.012f) }, { "weed_plant_02", (0.04f, 0.5f, 0.01f) }, { "flower_empodium", (0.03f, 0.3f, 0.008f) },
+        { "island_tree_02", (0.18f, 5f, 0.02f) }, { "pachira_aquatica_01", (0.04f, 1.5f, 0.012f) }, { "searsia_lucida", (0.06f, 2f, 0.015f) },
     };
     static Material LeafMat(string file, Material src)
     {
         if (src == null || !LeafWind.TryGetValue(file, out var wind)) return null;
-        if ((file == "jacaranda_tree" || file == "island_tree_01") && !src.name.ToLower().Contains("leaves")) return null;
+        if ((file == "jacaranda_tree" || file.StartsWith("island_tree")) && !src.name.ToLower().Contains("leaves")) return null;
         Texture tex = null;
         foreach (var n in src.GetTexturePropertyNames())
             if (n.ToLower().Contains("basecolor") || n == "_BaseMap" || n == "_MainTex") { tex = src.GetTexture(n); if (tex != null) break; }
