@@ -258,6 +258,11 @@ public static partial class SceneBuilder
             if (lsrc != null) { var lg = Object.Instantiate(lsrc); lg.transform.position = lampP; lg.transform.localScale = Vector3.one * 1.6f; }
             var ll = new GameObject("LanternLight").AddComponent<Light>(); ll.type = LightType.Point; ll.color = Hex("#ffa850"); ll.range = 6f; ll.intensity = 2.4f; ll.shadows = LightShadows.None; ll.transform.position = lampP + Vector3.up * 0.4f;
             world.colliders.Add(new Vector4(hx, hz, 2.2f, 99));
+            Nature("dragon_jar", hx + 2.0f, hz - 0.7f, 1f, 40, 0.4f, true, 0.02f);   // โอ่งมังกร + ไซดักปลาข้างกระท่อม (Blender)
+            Nature("fish_trap", hx + 2.3f, hz + 0.6f, 1f, 70, 0, true, 0f);
+            Nature("fish_trap", hx + 2.8f, hz + 0.2f, 0.9f, 15, 0, true, 0f);
+            Nature("banana_tree_01", hx - 2.5f, hz - 1.5f, 1f, 60, 0.35f, true, 0.05f);   // กอกล้วยหลังกระท่อม (Blender)
+            Nature("banana_tree_02", hx + 0.6f, hz - 2.8f, 1.05f, 200, 0.35f, true, 0.05f);
         }
         {
         }

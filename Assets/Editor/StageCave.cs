@@ -334,6 +334,7 @@ public static partial class SceneBuilder
         var natureRoot = new GameObject("Nature").transform;
         GameObject Nature(string file, float x, float z, float scale, float yaw, float collide = 0, float sink = 0.1f)
         {
+            Vary(ref file, ref scale, x, z);
             var src = AssetDatabase.LoadAssetAtPath<GameObject>($"{NatureDir}/{file}.glb");
             if (src == null) return null;
             var go = Object.Instantiate(src, natureRoot); go.name = file;

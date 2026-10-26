@@ -139,6 +139,11 @@ public static class CharacterSetup
             hat.rotation = fisher.transform.rotation;
             SetWorldScale(hat, 0.78f);
             hat.position = head.position + Vector3.up * 0.2f;
+            // หมวกสานปั้นใน Blender (ปีกงุ้ม ขอบม้วน แถบผ้า) แทนทรงเดิม · คงวัสดุ Hat/HatBand ไว้ให้ตู้แต่งตัวย้อมสีได้
+            var hs = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Game/Models/Character/hat_straw.glb");
+            var hm = hs != null ? hs.GetComponentInChildren<MeshFilter>()?.sharedMesh : null;
+            var hf = hat.GetComponent<MeshFilter>();
+            if (hm != null && hf != null && hm.subMeshCount == 2) hf.sharedMesh = hm;
         }
         return anim;
     }

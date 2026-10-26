@@ -214,6 +214,7 @@ public static partial class SceneBuilder
         var natureRoot = new GameObject("Nature").transform;
         GameObject Nature(string file, float x, float z, float scale, float yaw, float collide = 0, bool shadows = true, float sink = 0.04f, float? y = null)
         {
+            Vary(ref file, ref scale, x, z);
             var src = AssetDatabase.LoadAssetAtPath<GameObject>($"{NatureDir}/{file}.glb");
             if (src == null) { Debug.LogWarning("[SceneBuilder] missing " + file); return null; }
             var go = Object.Instantiate(src, natureRoot);
@@ -334,6 +335,7 @@ public static partial class SceneBuilder
             world.colliders.Add(new Vector4(15f, 24f, 2f, 99));
             // ตะเกียงรั้วบนชานปลายสะพาน + เทียนบนหัวเสาสองต้น
             Nature("brass_diya_lantern", end.x + 0.7f, end.y + 0.9f, 1.5f, 0, 0, false, 0, deckY + 0.03f);
+            Nature("fish_trap", end.x - 0.6f, end.y + 0.8f, 1f, 35, 0, true, 0, deckY + 0.03f);   // ไซดักปลาวางบนชานสะพาน (Blender)
             var ll = new GameObject("BridgeLantern").AddComponent<Light>(); ll.type = LightType.Point; ll.range = 6f; ll.intensity = 2.4f; ll.color = Hex("#ffa850"); ll.shadows = LightShadows.None; ll.transform.position = new Vector3(end.x + 0.7f, deckY + 0.5f, end.y + 0.9f);
             var candle = UnlitMat("CandleFlame", new Color(2.4f, 1.4f, 0.5f));
             foreach (var cx in new[] { end.x - 1.05f, end.x + 1.05f })

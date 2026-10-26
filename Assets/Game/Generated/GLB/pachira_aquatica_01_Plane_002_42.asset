@@ -1,0 +1,181 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!43 &4300000
+Mesh:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: pachira_aquatica_01_Plane_002_42
+  serializedVersion: 12
+  m_SubMeshes:
+  - serializedVersion: 2
+    firstByte: 0
+    indexCount: 144
+    topology: 0
+    baseVertex: 0
+    firstVertex: 0
+    vertexCount: 42
+    localAABB:
+      m_Center: {x: -0.05369007, y: 0.28345394, z: 0.08634875}
+      m_Extent: {x: 0.077762775, y: 0.290805, z: 0.11460556}
+  m_Shapes:
+    vertices: []
+    shapes: []
+    channels: []
+    fullWeights: []
+  m_BindPose: []
+  m_BoneNameHashes: 
+  m_RootBoneNameHash: 0
+  m_BonesAABB: []
+  m_VariableBoneCountWeights:
+    m_Data: 
+  m_MeshCompression: 2
+  m_IsReadable: 1
+  m_KeepVertices: 0
+  m_KeepIndices: 0
+  m_IndexFormat: 0
+  m_IndexBuffer: 
+  m_VertexData:
+    serializedVersion: 3
+    m_VertexCount: 0
+    m_Channels:
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    m_DataSize: 0
+    _typelessdata: 
+  m_CompressedMesh:
+    m_Vertices:
+      m_NumItems: 126
+      m_Range: 0.70571184
+      m_Start: -0.13145284
+      m_Data: 6928d7ff8660e027ffff745f00006dd495788617178e363ca81ad28c183e0e1cae8c253e2215b68b9d413415b78d9d42181c5d92d9441218b89662452517a4961345591426959742891c7d9248456a1c36939545951d44971c40761bb2750d36fb1be574423577254169f4346823d4774e329132762d6f25ea25255cde26e224052db32fd0247b42452dc32f712ecf376b38c22eda310c233c52212d70228e58da2d710967aeb062620b89a7ac5cdb0c95acb75fb72803b8aa49c527afb3fa4853286ab82a45ab2a5be6ec528d0223ce8770440505c7eb6bb704b8cd496eaf2adbeaae54eb2903eba4512a0862b61f66930168d00d7307261a2d212fy
+      m_BitSize: 16
+    m_UV:
+      m_NumItems: 84
+      m_Range: 0.49094355
+      m_Start: 0.49087203
+      m_Data: 17ac23c23a581d0656b110a84915b22ef51a57ae4ec97a039458990a0397004069449319443912c3724d1c53cf5869fcd5ff69bdadcefb88d53e91fe34fdaf90df7ac14d148868f938d58b0958a7c3781e7cd702514ead2616725bd136414d1de844d680617d5659fey
+      m_BitSize: 10
+    m_Normals:
+      m_NumItems: 84
+      m_Range: 1.9816931
+      m_Start: -0.9882747
+      m_Data: e3c2ecace8ca23a1c49de3b58042035cc35234e290e557d5f34f8341bd933d42036aa97adabaa48d8097328200747d8bf9a12b7a016ca86946c6ff74f664079c88710778b74705772b4dfc9d6f75095922b60c70y
+      m_BitSize: 8
+    m_Tangents:
+      m_NumItems: 84
+      m_Range: 1.8984929
+      m_Start: -0.9475849
+      m_Data: 4286467f34e6273328e13198f6b7903ce0d94d370f5f0d8eb6d1e1302ae3e3967140d3e6298e02660152e5ae7932ffa99889dfa67951e6d312327dc5b2cf84234905aa32e8d3770378f562c5570052a82a204770y
+      m_BitSize: 8
+    m_Weights:
+      m_NumItems: 0
+      m_Data: 
+      m_BitSize: 0
+    m_NormalSigns:
+      m_NumItems: 42
+      m_Data: 40b3a2cb9600y
+      m_BitSize: 1
+    m_TangentSigns:
+      m_NumItems: 84
+      m_Data: 4050444001141441459105y
+      m_BitSize: 1
+    m_FloatColors:
+      m_NumItems: 0
+      m_Range: 0
+      m_Start: 0
+      m_Data: 
+      m_BitSize: 0
+    m_BoneIndices:
+      m_NumItems: 0
+      m_Data: 
+      m_BitSize: 0
+    m_Triangles:
+      m_NumItems: 144
+      m_Data: 915438c4e22cc993459406519646388c1121c6130d12854445210d546a51539a5557945d11264517264d94844d46b70d07d729438728ddc095a0e98125f8994069026610982139a2e617828c037a0cd971a4b8915bc78d24778e82480a243a40c74041a0937c6092345f6720y
+      m_BitSize: 6
+    m_UVInfo: 5
+  m_LocalAABB:
+    m_Center: {x: -0.05369007, y: 0.28345394, z: 0.08634875}
+    m_Extent: {x: 0.077762775, y: 0.290805, z: 0.11460556}
+  m_CookingOptions: 30
+  m_PreBakeConvexCollisionMesh: 0
+  m_PreBakeTriangleCollisionMesh: 0
+  m_BakedConvexCollisionMesh: 
+  m_BakedTriangleCollisionMesh: 
+  'm_MeshMetrics[0]': 1
+  'm_MeshMetrics[1]': 1
+  m_MeshOptimizationFlags: 1
+  m_StreamData:
+    serializedVersion: 2
+    offset: 0
+    size: 0
+    path: 
+  m_MeshLodInfo:
+    serializedVersion: 2
+    m_LodSelectionCurve:
+      serializedVersion: 1
+      m_LodSlope: 0
+      m_LodBias: 0
+    m_NumLevels: 1
+    m_SubMeshes:
+    - serializedVersion: 2
+      m_Levels:
+      - serializedVersion: 1
+        m_IndexStart: 0
+        m_IndexCount: 0

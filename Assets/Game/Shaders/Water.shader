@@ -132,9 +132,15 @@ Shader "CozyFishing/Water"
                 col += light.color * sp * _Glint * light.shadowAttenuation;
 
                 // ฟองบาง ๆ ริมฝั่ง + วงคลื่น
-                float fz = max(0.004, _FoamWidth + 0.04 * sin(p.x * 3 + p.y * 2 + t * 1.5) + n2(p * 3 + t * 0.3) * 0.05);   // ฟองแคบ ๆ ติดลบได้ → เกิดปื้นฟองขาวกลางน้ำลึก
-                float foam = smoothstep(fz, fz * 0.3, depth0) * (0.5 + 0.5 * n2(p * 9 + t * 0.5)) * step(0.001, _FoamWidth);   // _FoamWidth = 0 ปิดฟอง (น้ำในนาตื้นมาก)
-                foam = max(foam * 0.35, saturate(rip) * 0.55);
+                // ฟองริมฝั่ง/รอบหิน 2 ชั้น: เส้นฟองคมตรงจุดน้ำแตะของ + ลายฟองลูกไม้เป็นระลอกเคลื่อนออกจากฝั่ง ไหลตามกระแส
+                float fz = max(0.03, _FoamWidth + 0.04 * sin(p.x * 3 + p.y * 2 + t * 1.5) + n2(p * 3 + t * 0.3) * 0.05);
+                float dn = depth0 / fz;   // 0 = ติดฝั่ง, 1 = ขอบแถบฟอง
+                float pulse = 0.5 + 0.5 * sin(dn * 9.4 - t * 2.2 + n2(p * 2) * 3);
+                float lace = smoothstep(0.38, 0.78, n2(p * 7 + _Flow.xy * t * 0.8) * 0.6 + n2(p * 15 - t * 0.4) * 0.4 + pulse * 0.25 - dn * 0.45);
+                float shore = lace * (1 - smoothstep(0.55, 1.15, dn));
+                float contact = 1 - smoothstep(0.0, 0.035, depth0);
+                float foam = max(shore * 0.7, contact * 0.8) * step(0.001, _FoamWidth);   // _FoamWidth = 0 ปิดฟอง (น้ำในนาตื้นมาก)
+                foam = max(foam, saturate(rip) * 0.55);
                 // แก่งน้ำเชี่ยว: ริ้วฟองขาวยืดตามทิศน้ำไหล ขยับตามกระแส · ฟองหนาขึ้นตรงน้ำตื้น
                 if (_RapidZone.z > 0)
                 {

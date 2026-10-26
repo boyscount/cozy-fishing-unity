@@ -132,6 +132,7 @@ public static partial class SceneBuilder
         var natureRoot = new GameObject("Nature").transform;
         GameObject Nature(string file, float x, float z, float scale, float yaw, float collide = 0, bool shadows = true, float sink = 0.04f, float height = 99)
         {
+            // ด่านแรกไม่สลับหิน/ต้นไม้แบบใหม่: เท็กซ์เจอร์จะไปอยู่ในชุดโหลดแรก ทำให้เกิน 50 MB
             var src = AssetDatabase.LoadAssetAtPath<GameObject>($"{NatureDir}/{file}.glb");
             if (src == null) { Debug.LogWarning("[SceneBuilder] nature model missing: " + file); return null; }
             var go = Object.Instantiate(src, natureRoot);
@@ -152,6 +153,15 @@ public static partial class SceneBuilder
         float Rf(float a, float b) => a + (float)rnd.NextDouble() * (b - a);
 
         var hut = Place("Hut", -10.5f, -7.5f, 1.15f, 30, null, 1.6f);
+        // ของประกอบฉากไทย (Blender): ศาลพระภูมิหน้าบ้าน · โอ่งมังกรรองน้ำฝนข้างบ้าน · ไซดักปลาพิงไว้
+        Nature("spirit_house", -6.6f, -5.2f, 1f, 210, 0.4f, sink: 0.02f);
+        Nature("dragon_jar", -12.6f, -5.6f, 1.1f, 20, 0.45f, sink: 0.02f);
+        Nature("dragon_jar", -11.9f, -4.9f, 0.9f, 75, 0.4f, sink: 0.02f);
+        Nature("fish_trap", -8.6f, -5.0f, 1f, 120, 0, sink: 0f);
+        // กอกล้วยข้างบ้าน + ศาลากลางนาริมบ่อ (Blender · ไม่มีเท็กซ์เจอร์ ไฟล์เล็กมาก)
+        foreach (var (x, z, s, yaw) in new[] { (-13.2f, -6.0f, 1f, 20f), (-8.0f, -10.2f, 0.9f, 140f), (-15.6f, -7.2f, 1.1f, 260f) })
+            Nature(s > 1 ? "banana_tree_02" : "banana_tree_01", x, z, s, yaw, 0.35f, sink: 0.05f);
+        Nature("thai_sala", 13.5f, 10f, 1f, -100, 2.4f, sink: 0.05f);
         // ต้นไม้ใหญ่ (Jacaranda) · ตาลโตนดยังใช้โมเดลเดิม (Poly Haven ไม่มีต้นตาล)
         foreach (var (x, z, s) in new[] { (-7.5f, -9.5f, 0.3f), (11f, -6.5f, 0.27f), (14.5f, 6f, 0.25f), (-15f, 4f, 0.28f) })
             Nature("jacaranda_tree", x, z, s, Rf(0, 360), 0.7f, sink: 0.1f);
@@ -211,6 +221,8 @@ public static partial class SceneBuilder
         float z0 = sz - 0.9f;
         Place("Dock", dx, z0, 1, 0, 0.27f);
         world.dock = new Rect(dx - 0.72f, z0 - 0.1f, 1.44f, 4.4f);
+        var sampan = Nature("wooden_sampan", dx + 1.3f, z0 + 2.4f, 1f, 92, 0, true, 0);   // เรือพายผูกข้างท่า (Blender)
+        if (sampan != null) sampan.transform.position = new Vector3(dx + 1.3f, PaddyWorld.Water - 0.16f, z0 + 2.4f);
 
         // ใบบัว + ดอกบัวในบ่อ
         var pad = SurfMat("LotusPad", Color.white, vertexColor: true, smooth: 0.4f);
@@ -320,10 +332,26 @@ public static partial class SceneBuilder
         { "fern_02", (0.04f, 0.6f, 0.012f) }, { "weed_plant_02", (0.04f, 0.5f, 0.01f) }, { "flower_empodium", (0.03f, 0.3f, 0.008f) },
         { "island_tree_02", (0.18f, 5f, 0.02f) }, { "pachira_aquatica_01", (0.04f, 1.5f, 0.012f) }, { "searsia_lucida", (0.06f, 2f, 0.015f) },
     };
+    /// คลังกลางหิน/ต้นไม้: สลับเป็นแบบใหม่ตามตำแหน่ง (คงที่ทุกครั้งที่สร้างฉาก) ให้ทุกด่านไม่ซ้ำหน้าตา
+    /// ไม่แตะหินที่เป็นทางเดิน (namaqualand_boulder_02) และหินใหญ่ประจำฉาก (scale >= 3)
+    static void Vary(ref string file, ref float scale, float x, float z)
+    {
+        int h = (int)(((uint)Mathf.RoundToInt(x * 73.1f) * 31u + (uint)Mathf.RoundToInt(z * 57.7f) * 17u) % 3u);
+        switch (file)
+        {
+            case "island_tree_01": if (h == 0) { file = "island_tree_02"; scale *= 1.35f; } break;
+            case "boulder_01":
+                if (scale >= 3) break;
+                if (h == 1) { file = "namaqualand_boulder_03"; scale *= 0.6f; } else if (h == 2) { file = "namaqualand_boulder_04"; scale *= 0.6f; }
+                break;
+            case "rock_moss_set_01": if (h == 1) file = "rock_moss_set_02"; break;
+            case "shrub_02": if (h == 1) { file = "pachira_aquatica_01"; scale *= 1.2f; } else if (h == 2) file = "searsia_lucida"; break;
+        }
+    }
     static Material LeafMat(string file, Material src)
     {
         if (src == null || !LeafWind.TryGetValue(file, out var wind)) return null;
-        if ((file == "jacaranda_tree" || file.StartsWith("island_tree")) && !src.name.ToLower().Contains("leaves")) return null;
+        if ((file == "jacaranda_tree" || file.StartsWith("island_tree") || file == "pachira_aquatica_01" || file == "searsia_lucida") && !src.name.ToLower().Contains("leaves")) return null;
         Texture tex = null;
         foreach (var n in src.GetTexturePropertyNames())
             if (n.ToLower().Contains("basecolor") || n == "_BaseMap" || n == "_MainTex") { tex = src.GetTexture(n); if (tex != null) break; }

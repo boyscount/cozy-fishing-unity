@@ -344,6 +344,7 @@ public static partial class SceneBuilder
         var natureRoot = new GameObject("Nature").transform;
         GameObject Nature(string file, float x, float z, float scale, float yaw, float collide = 0, float sink = 0.05f)
         {
+            Vary(ref file, ref scale, x, z);
             var src = AssetDatabase.LoadAssetAtPath<GameObject>($"{NatureDir}/{file}.glb");
             if (src == null) return null;
             var go = Object.Instantiate(src, natureRoot); go.name = file;
@@ -355,6 +356,17 @@ public static partial class SceneBuilder
             if (collide > 0) world.colliders.Add(new Vector4(x, z, collide, 99));
             return go;
         }
+        // ศาลพระภูมิหน้าเรือนผู้ใหญ่ + โอ่งมังกรใต้ถุน + ไซดักปลา (Blender)
+        Nature("spirit_house", hx + 5.2f, hz + 0.4f, 1.1f, 180, 0.4f, 0.02f);
+        Nature("dragon_jar", hx + 2.4f, hz - 1.4f, 1.1f, 30, 0.45f, 0.02f);
+        Nature("dragon_jar", hx + 3.1f, hz - 1.0f, 0.95f, 110, 0.4f, 0.02f);
+        Nature("fish_trap", hx - 3.2f, bankZ + 1.2f, 1f, 80, 0, 0f);
+        // กอกล้วยรอบเรือน + ศาลาท่าน้ำ + เรือพายผูกริมตลิ่ง (Blender)
+        foreach (var (x, z, s) in new[] { (hx - 4.5f, hz + 0.5f, 1f), (hx + 7.5f, hz + 2.2f, 1.1f), (hx - 6.5f, hz + 3f, 0.9f) })
+            Nature(s > 1 ? "banana_tree_02" : "banana_tree_01", x, z, s, x * 37 % 360, 0.35f, 0.05f);
+        Nature("thai_sala", hx + 9.5f, bankZ + 2.4f, 1f, 180, 2.4f, 0.05f);
+        var sampan = Nature("wooden_sampan", hx + 1.5f, bankZ - 0.7f, 1f, 4, 0, 0f);
+        if (sampan != null) sampan.transform.position = new Vector3(hx + 1.5f, HMW - 0.16f, bankZ - 0.7f);
         var palmTrunk = SurfMat("SugarPalmTrunk", Hex("#b8a890"), tex: "bark_brown_02", tiles: 0.9f, cull: CullMode.Off);
         var palmLeaf = SurfMat("SugarPalmLeaf", Color.white, sway: 0.05f, swayStart: 6f, vertexColor: true, smooth: 0.35f, cull: CullMode.Off);
         int pi = 0;

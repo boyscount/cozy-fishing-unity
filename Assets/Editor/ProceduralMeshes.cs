@@ -153,8 +153,19 @@ public static partial class ProceduralMeshes
     }
 
     // ดอกบัว: กลีบโค้งเป็นแอ่ง 2 ชั้น (ชั้นในตั้งกว่า) ชมพูปลายกลีบ ขาวโคนกลีบ + ฝักกลางสีเหลือง
+    /// โมเดลที่ปั้นใน Blender (สีที่จุดยอด) ถ้ามี — คืนสำเนา mesh ให้บันทึกเป็น asset ของด่านได้
+    static Mesh FromBlender(string file)
+    {
+        var go = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>($"Assets/Game/Models/Nature/{file}.glb");
+        var mf = go != null ? go.GetComponentInChildren<MeshFilter>() : null;
+        if (mf == null || mf.sharedMesh == null || mf.sharedMesh.colors.Length == 0) return null;
+        var m = Object.Instantiate(mf.sharedMesh); m.name = file; return m;
+    }
+
     public static Mesh LotusFlower(int seed, bool bud)
     {
+        var fromBlender = FromBlender(bud ? "lotus_bud" : "lotus_flower");   // ดอกบัวปั้นใน Blender: กลีบ 3 ชั้นทรงถ้วย ฝักบัว + เกสร
+        if (fromBlender != null) return fromBlender;
         var rnd = new System.Random(seed);
         var bld = new Builder(1);
         void Petal(float az, float tilt, float len, float wid)
@@ -342,7 +353,7 @@ public static partial class ProceduralMeshes
             var root = dir * R(0, 0.25f);
             var c0 = Color.Lerp(new Color(0.3f, 0.36f, 0.16f), new Color(0.45f, 0.5f, 0.22f), R(0, 1));
             var c1 = rnd.NextDouble() < 0.3 ? new Color(0.62f, 0.55f, 0.32f) : c0 * 1.35f;   // ปลายใบแห้งบ้าง
-            const int Seg = 5;
+            const int Seg = 7;   // ใบโค้งเนียนขึ้น
             int pl = -1, pr = -1;
             for (int i = 0; i <= Seg; i++)
             {
@@ -364,11 +375,17 @@ public static partial class ProceduralMeshes
                     Vector3 o0 = new Vector3(Mathf.Cos(a0), 0, Mathf.Sin(a0)) * 0.01f, o1 = new Vector3(Mathf.Cos(a1), 0, Mathf.Sin(a1)) * 0.01f;
                     bld.Quad(0, bld.Add(root + o0, stalk * 0.7f), bld.Add(top + o0 + Vector3.up * 0.3f, stalk), bld.Add(root + o1, stalk * 0.7f), bld.Add(top + o1 + Vector3.up * 0.3f, stalk));
                 }
-                for (int k = 0; k < 6; k++)
+                // ฝักกลมมนหัวท้าย (8 ด้าน 3 ช่วง) + ยอดแหลมเล็ก ๆ เหนือฝัก
+                float[] ry = { 0f, 0.03f, 0.19f, 0.22f }; float[] rr = { 0.018f, 0.032f, 0.032f, 0.016f };
+                for (int k = 0; k < 8; k++)
                 {
-                    float a0 = k / 6f * Mathf.PI * 2, a1 = (k + 1) / 6f * Mathf.PI * 2;
-                    Vector3 o0 = new Vector3(Mathf.Cos(a0), 0, Mathf.Sin(a0)) * 0.03f, o1 = new Vector3(Mathf.Cos(a1), 0, Mathf.Sin(a1)) * 0.03f;
-                    bld.Quad(0, bld.Add(top + o0, brown), bld.Add(top + o0 + Vector3.up * 0.22f, brown), bld.Add(top + o1, brown), bld.Add(top + o1 + Vector3.up * 0.22f, brown));
+                    float a0 = k / 8f * Mathf.PI * 2, a1 = (k + 1) / 8f * Mathf.PI * 2;
+                    var u0 = new Vector3(Mathf.Cos(a0), 0, Mathf.Sin(a0)); var u1 = new Vector3(Mathf.Cos(a1), 0, Mathf.Sin(a1));
+                    for (int q = 0; q < 3; q++)
+                    {
+                        var cq = brown * (q == 1 ? 1.1f : 0.85f);
+                        bld.Quad(0, bld.Add(top + u0 * rr[q] + Vector3.up * ry[q], cq), bld.Add(top + u0 * rr[q + 1] + Vector3.up * ry[q + 1], cq), bld.Add(top + u1 * rr[q] + Vector3.up * ry[q], cq), bld.Add(top + u1 * rr[q + 1] + Vector3.up * ry[q + 1], cq));
+                    }
                 }
             }
         }
