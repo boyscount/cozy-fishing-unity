@@ -23,7 +23,7 @@ namespace CozyFishing
         Action<bool[]> onEveningDone;
         bool[] eveGrill;
         bool dialogNext;
-        public bool ModalOpen => Shown(ask) || Shown(fadeEl) || Shown(dialogEl) || Shown(morning) || Shown(evening) || Shown(bag) || Shown(casePanel) || Shown(cluePop) || Shown(title) || Shown(settings) || Shown(bed) || Shown(sneak) || Shown(shop) || Shown(daily);
+        public bool ModalOpen => Shown(ask) || Shown(fadeEl) || Shown(dialogEl) || Shown(morning) || Shown(evening) || Shown(bag) || Shown(casePanel) || Shown(cluePop) || Shown(title) || Shown(settings) || Shown(bed) || Shown(sneak) || Shown(shop) || Shown(daily) || Shown(wardrobe);
         VisualElement caseBtn, casePanel, caseBody, cluePop, clueBody;
         Label caseBtnTxt;
 
@@ -460,6 +460,7 @@ namespace CozyFishing
         {
             onMorningGo = go; onMorningPay = pay;
             RefreshMorning();
+            if (!FishingController.Bot) StageLoader.Prefetch(Stages.Get(Story.S.stage).scene);   // โหลดด่านที่ไปล่าสุดไว้ก่อน ระหว่างอ่านหน้าเช้า
             Show(morning);
             if (FishingController.Bot && GameUrl.Value.Contains("openshop")) { Story.S.money = Mathf.Max(Story.S.money, 6000); RefreshMorning(); ShowShop(); return; }   // ทดสอบ: เปิดร้านโชห่วยทันที
             if (FishingController.Bot && GameUrl.Value.Contains("shopdemo") && !shopDemoDone) { shopDemoDone = true; StartCoroutine(ShopDemo(() => StartCoroutine(BotClick(morning, 1.2f, () => { Hide(morning); onMorningGo?.Invoke(BotStage()); })))); return; }   // ถ่ายคลิป: โชว์ร้านค้า
@@ -547,6 +548,12 @@ namespace CozyFishing
             var bt1 = L(bcol, "กระดานปลาใหญ่", Narrow ? 26 : 30, new Color(0.24f, 0.11f, 0.03f)); bt1.style.unityTextAlign = TextAnchor.MiddleLeft; bt1.style.unityFontDefinition = fontTitle;
             var bt2 = L(bcol, Cloud.Ready ? "อันดับปลาตัวหนักสุดประจำสัปดาห์" : "อันดับประจำสัปดาห์ (ออฟไลน์อยู่)", Narrow ? 16 : 19, new Color(0.36f, 0.2f, 0.08f), false); bt2.style.unityTextAlign = TextAnchor.MiddleLeft; bt2.style.whiteSpace = WhiteSpace.Normal;
             morningBody.Add(boardBtn);
+            var extra = new VisualElement { pickingMode = PickingMode.Ignore }; extra.style.flexDirection = FlexDirection.Row; extra.style.justifyContent = Justify.Center; extra.style.flexWrap = Wrap.Wrap; extra.style.marginTop = 6; morningBody.Add(extra);
+            foreach (var (label, icon, act) in new (string, string, System.Action)[] { ("อุปกรณ์ของฉัน", "reel", ShowGear), ("ตู้แต่งตัว", "star_on", OpenWardrobe), ("ท้าดวลเพื่อน", "trophy", StartDuelFromMorning) })
+            {
+                var eb = new Button(act) { text = label }; WoodButton(eb, true); eb.style.fontSize = Narrow ? 22 : 24; eb.style.marginLeft = eb.style.marginRight = 6; eb.style.marginTop = 4; eb.style.flexShrink = 0;
+                eb.style.paddingLeft = 62; var ic = Ico(eb, icon, 34); Abs(ic, 16, null, 10); extra.Add(eb);
+            }
             // เป้าหมายครอบครัว: กรอบไม้ไผ่บนกระดาษ + ภาพสเก็ตช์ของเป้าหมาย
             var g = Story.CurrentGoal;
             var gb = new VisualElement { pickingMode = PickingMode.Ignore }; Skin(gb, "bamboo_paper", 26); gb.style.paddingTop = 22; gb.style.paddingBottom = 24; gb.style.paddingLeft = 30; gb.style.paddingRight = 26;

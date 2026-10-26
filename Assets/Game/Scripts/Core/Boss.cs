@@ -45,9 +45,9 @@ namespace CozyFishing
         public static void MarkCaught() { S.caughtWeek = Weekly.WeekKey; Save(); }
         public static void OnRelease()
         {
-            S.released++; Save();
+            S.released++; Save(); Cosmetics.Earn(15, "ปล่อยปลาบึกยักษ์");
             Story.S.money += Blessing; Story.S.earned += Blessing; Story.S.happy = Mathf.Min(100, Story.S.happy + 10); Story.Save();
         }
-        public static void OnKeep() { S.kept++; Save(); }
+        public static void OnKeep() { S.kept++; Save(); Cosmetics.Earn(5, "จับปลาบึกยักษ์"); }
     }
 }

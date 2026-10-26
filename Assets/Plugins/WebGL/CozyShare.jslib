@@ -1,5 +1,15 @@
 // แชร์ภาพการ์ดปลา: มือถือเปิดหน้าต่างแชร์ของเครื่อง (LINE/IG/TikTok/Facebook) · เครื่องที่แชร์ไฟล์ไม่ได้ (คอมส่วนใหญ่) ดาวน์โหลดเป็นไฟล์ภาพแทน
 mergeInto(LibraryManager.library, {
+  CozyShareLink: function (titlePtr, textPtr, urlPtr) {
+    var title = UTF8ToString(titlePtr), text = UTF8ToString(textPtr), url = UTF8ToString(urlPtr);
+    var copy = function () {
+      try { navigator.clipboard.writeText(text + '\n' + url); } catch (e) {}
+      window.prompt('ก๊อปลิงก์นี้ส่งให้เพื่อน', url);
+    };
+    if (navigator.share) navigator.share({ title: title, text: text, url: url }).catch(function (e) { if (e && e.name !== 'AbortError') copy(); });
+    else copy();
+    console.log('[Share] link ' + url);
+  },
   CozyShareImage: function (ptr, len, titlePtr, textPtr, urlPtr) {
     try {
       var bytes = HEAPU8.slice(ptr, ptr + len);

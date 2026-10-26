@@ -29,6 +29,49 @@ namespace CozyFishing
         public static void BootFailed(string err) => CozyBootProgress(-1, "โหลดเกมไม่สำเร็จ ลองรีเฟรชหน้าอีกครั้ง (" + err + ")");
         static Dictionary<string, string> index;
         public static bool Loading { get; private set; }
+        static bool prefetching; static string prefetched;
+
+        /// โหลดด่านล่วงหน้าเงียบ ๆ ระหว่างอยู่หน้าเช้า (เก็บลงแคชเบราว์เซอร์) → กดไปด่านนั้นแล้วเข้าได้แทบทันที
+        ///   ของใช้ร่วมโหลดค้างไว้ในหน่วยความจำเลย (เหมือนตอนเดินทางจริง) · ไฟล์ด่านโหลดแล้วปล่อยทิ้ง เหลือแค่ในแคช
+        public static void Prefetch(string scene)
+        {
+            if (string.IsNullOrEmpty(scene) || Loading || prefetching || prefetched == scene || Application.CanStreamedLevelBeLoaded(scene)) return;
+            Inst.StartCoroutine(Inst.PrefetchRun(scene));
+        }
+        IEnumerator PrefetchRun(string scene)
+        {
+            prefetching = true;
+            string url = BaseUrl(), key = scene.ToLowerInvariant();
+            if (index == null)
+                using (var req = UnityWebRequest.Get(url + "index.json?t=" + DateTime.UtcNow.Ticks))
+                {
+                    yield return req.SendWebRequest();
+                    if (req.result == UnityWebRequest.Result.Success) index = ParseIndex(req.downloadHandler.text);
+                }
+            if (index != null && index.TryGetValue(key, out var hash))
+            {
+                var keys = new List<string>();
+                if (index.TryGetValue("deps." + key, out var deps)) foreach (var k in deps.Split('|')) if (k.Length > 0 && !commonDone.Contains(k)) keys.Add(k);
+                foreach (var k in keys)
+                {
+                    if (Loading) break;   // ผู้เล่นกดเดินทางแล้ว ปล่อยให้การโหลดจริงทำต่อ
+                    using (var req = UnityWebRequestAssetBundle.GetAssetBundle(url + k + "?v=" + index[k], Hash128.Parse(index[k]), 0))
+                    {
+                        yield return req.SendWebRequest();
+                        if (req.result == UnityWebRequest.Result.Success && !commonDone.Contains(k)) { DownloadHandlerAssetBundle.GetContent(req); commonDone.Add(k); }
+                    }
+                }
+                if (!Loading && (loaded == null || loaded.name != key))
+                    using (var req = UnityWebRequestAssetBundle.GetAssetBundle(url + key + "?v=" + hash, Hash128.Parse(hash), 0))
+                    {
+                        yield return req.SendWebRequest();
+                        if (req.result == UnityWebRequest.Result.Success) { var b = DownloadHandlerAssetBundle.GetContent(req); if (b != null && b != loaded) b.Unload(true); }
+                        prefetched = scene;
+                        Debug.Log("[StageLoader] prefetched " + scene);
+                    }
+            }
+            prefetching = false;
+        }
 
         static StageLoader Inst
         {
@@ -58,6 +101,7 @@ namespace CozyFishing
         IEnumerator Run(string scene, Action<float> progress, Action<string> fail)
         {
             Loading = true;
+            while (prefetching) yield return null;
             var old = loaded;
             AssetBundle bundle = null;
             if (!Application.CanStreamedLevelBeLoaded(scene))

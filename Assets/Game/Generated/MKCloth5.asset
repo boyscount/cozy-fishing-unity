@@ -17,8 +17,8 @@ Mesh:
     firstVertex: 0
     vertexCount: 22
     localAABB:
-      m_Center: {x: 0.00292705, y: 0.31423175, z: -0.0026104804}
-      m_Extent: {x: 0.06040608, y: 0.31423175, z: 0.020126987}
+      m_Center: {x: 0.00292705, y: 0.38700682, z: -0.0026104804}
+      m_Extent: {x: 0.06040608, y: 0.38700682, z: 0.020126987}
   m_Shapes:
     vertices: []
     shapes: []
@@ -101,9 +101,9 @@ Mesh:
   m_CompressedMesh:
     m_Vertices:
       m_NumItems: 66
-      m_Range: 0.68594253
+      m_Range: 0.83149266
       m_Start: -0.05747903
-      m_Data: 6408741574158322741574153209e82c1d145223e82c1d149a085c442012ba225c4420128706d15bef0fa720d15bef0f9b0345730d0ebb1d45730d0e0001b98af70c201bb98af70c00002ea2190d201a2ea2190d8e01a2b9b60eae1ba2b9b60ede0516d1df11fe1f16d1df11320c8be86c1651268be86c16f712fffffd1b162dfffffd1by
+      m_Data: ec06b211b211791cb211b211960787299810231d8729981019075b41f40ea61c5b41f40e63053059250df01a3059250dfa020471970b87180471970bd300d988b20a6016d988b20a0000ada0ce0a8d15ada0ce0a480182b8230cd61682b8230cd70456d0bf0e641a56d0bf0e0f0a2be880129c1f2be88012a50fffff17173225ffff1717y
       m_BitSize: 16
     m_UV:
       m_NumItems: 0
@@ -113,9 +113,9 @@ Mesh:
       m_BitSize: 0
     m_Normals:
       m_NumItems: 44
-      m_Range: 0.32100725
-      m_Start: -0.09014878
-      m_Data: 481a481a4813480c48024800480148054811481a4831483e485d486e488f48a148c148d048ea48f448ff48ffy
+      m_Range: 0.26247016
+      m_Start: -0.07329821
+      m_Data: 471a471a4713470c47024700470147054711471a4730473e475c476d478f47a047c047cf47e947f447ff47ffy
       m_BitSize: 8
     m_Tangents:
       m_NumItems: 0
@@ -151,8 +151,8 @@ Mesh:
       m_BitSize: 5
     m_UVInfo: 0
   m_LocalAABB:
-    m_Center: {x: 0.00292705, y: 0.31423175, z: -0.0026104804}
-    m_Extent: {x: 0.06040608, y: 0.31423175, z: 0.020126987}
+    m_Center: {x: 0.00292705, y: 0.38700682, z: -0.0026104804}
+    m_Extent: {x: 0.06040608, y: 0.38700682, z: 0.020126987}
   m_CookingOptions: 30
   m_PreBakeConvexCollisionMesh: 0
   m_PreBakeTriangleCollisionMesh: 0

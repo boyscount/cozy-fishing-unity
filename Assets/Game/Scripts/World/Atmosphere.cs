@@ -163,7 +163,8 @@ namespace CozyFishing
             float lift = (cave ? 0.55f : gloom ? 0.5f : swamp ? 0.35f : manor ? 0.35f : raft ? 0.2f : 0f) + night * 0.35f;
             // ด่านมืดตอนกลางวัน: ยกพื้นความสว่างขึ้น ให้เห็นพื้นและน้ำชัด (ความมืดจริงจังเก็บไว้กลางคืน) · ใต้น้ำ: สว่างขึ้นทุกด่านให้เห็นเหยื่อ
             bool darkStage = cave || gloom || swamp || manor || raft;
-            float dayFloor = darkStage ? day * 0.3f : 0f, underLift = under ? 0.35f : 0f;
+            float dayFloor = darkStage ? day * (cave || gloom ? 0.55f : 0.32f) : 0f,   // คุ้งน้ำมืด/ถ้ำ: มืดที่สุด ยกขึ้นมากกว่า
+                   underLift = under ? 0.35f : 0f;
             color.postExposure.Override(0.35f + (under ? lift * 0.5f : lift) + dayFloor + underLift + Brightness * 0.3f);   // ฐาน 0.35 = ค่าเดิมของฉาก
             // แสงจันทร์รอบทิศขั้นต่ำ: ambientIntensity ไม่มีผลหลังอบแล้ว จึงเติมสีฟ้าอ่อนลงใน ambient probe ตรง ๆ ให้เงามืดไม่ดำสนิท
             if (!probeSaved) { baseProbe = RenderSettings.ambientProbe; probeSaved = true; }

@@ -28,9 +28,12 @@ namespace CozyFishing
         IWorld world;
 
         public static bool TitleDone;   // แสดงหน้าแรกครั้งเดียวต่อการเปิดเกม (กลับหน้าแรกได้จากหน้าเช้า)
+        static bool duelParsed;
         public void Begin(IWorld w)
         {
             world = w;
+            if (!duelParsed) { duelParsed = true; Duel.FromUrl(); if (Duel.Active) { Story.EnterFreePlay(); Story.S.stage = Duel.Stage; Story.Phase = StoryPhase.Fishing; TitleDone = true; } }
+            if (Duel.Active && Duel.Index == 0 && Duel.VsKg >= 0 && w.StageId == Duel.Stage) hud.Toast($"ดวลกับ {(string.IsNullOrEmpty(Duel.VsName) ? "เพื่อน" : Duel.VsName)}: ตกปลา 5 ตัว ให้น้ำหนักรวมเกิน {Duel.VsKg:0.00} กก.");
             if (!TitleDone && !FishingController.Bot) { StartCoroutine(Title()); return; }
             // ทดสอบ: ?bot&day2 ข้ามไปเช้าวันที่ 2 (เปิดคดี) ทันทีเมื่อเริ่มเซฟใหม่
             if (FishingController.Bot && GameUrl.Value.Contains("day2") && Story.S.day == 1 && Story.Phase == StoryPhase.New) { Story.S.day = 2; Story.Phase = StoryPhase.Morning; }

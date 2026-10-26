@@ -60,7 +60,7 @@ namespace CozyFishing
             if (kg > st.best) { st.best = kg; st.bestFish = sp.id; }
             int money = 0;
             for (int i = 0; i < 3; i++)
-                if (!st.got[i] && st.best >= Tier(i)) { st.got[i] = true; money += TierReward[i]; msgs.Add($"เทศกาลปลาใหญ่ ขั้น{TierName[i]}! +{Story.Baht(TierReward[i])}"); }
+                if (!st.got[i] && st.best >= Tier(i)) { st.got[i] = true; money += TierReward[i]; msgs.Add($"เทศกาลปลาใหญ่ ขั้น{TierName[i]}! +{Story.Baht(TierReward[i])} · เกล็ดทอง +{3 + i * 3}"); Cosmetics.Earn(3 + i * 3, "เทศกาล"); }
             if (money > 0) { Story.S.money += money; Story.S.earned += money; Story.Save(); Debug.Log("[Weekly] " + string.Join(" · ", msgs)); }
             Save();
             return msgs;

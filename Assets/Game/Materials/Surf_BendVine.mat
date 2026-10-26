@@ -35,10 +35,10 @@ Material:
     m_Ints: []
     m_Floats:
     - _Cull: 0
-    - _MossAmount: 0.2
-    - _Smoothness: 0.15
-    - _Sway: 0.04
-    - _SwayStart: 0
+    - _MossAmount: 0
+    - _Smoothness: 0.25
+    - _Sway: 0.08
+    - _SwayStart: 0.5
     - _TriScale: 0.5
     - _UseTriplanar: 0
     - _UseVertexColor: 1

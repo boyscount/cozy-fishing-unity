@@ -200,12 +200,12 @@ namespace CozyFishing
                     break;
                 case FishState.Bite:
                     bob.y = world.WaterY - 0.2f + Mathf.Sin(t * 40) * 0.03f;
-                    if (t > biteEnd) { hud.Toast("ช้าไปนิด ปลากินเหยื่อหนีไป"); Roll(); NewBite(); Set(FishState.Waiting); }
+                    if (t > biteEnd) { hud.Toast("ช้าไปนิด ปลากินเหยื่อหนีไป"); DuelLose(); Roll(); NewBite(); Set(FishState.Waiting); }
                     break;
                 case FishState.Strike:
                     strike.Step(dt);
                     bob.y = world.WaterY - 0.22f + Mathf.Sin(t * 35) * 0.04f;
-                    if (strike.Time > 8f) { hud.Toast("ปลาเบื่อรอ ว่ายหนีไปแล้ว…"); Roll(); StartRetrieve(); }
+                    if (strike.Time > 8f) { hud.Toast("ปลาเบื่อรอ ว่ายหนีไปแล้ว…"); DuelLose(); Roll(); StartRetrieve(); }
                     break;
                 case FishState.Fight:
                     FightStep(dt, held);
@@ -245,12 +245,13 @@ namespace CozyFishing
                 case FishState.Free: charge = 0; Set(FishState.Charging); break;
                 case FishState.Waiting: if (Jigging) { Jig(); break; } StartRetrieve(); hud.Toast("เก็บสาย"); break;
                 case FishState.Bite:
+                    if (!fish.IsJunk && fish.species.stars >= 3 && !Bot) Cloud.SubmitQuick(Mathf.RoundToInt(t * 1000));   // กระดานมือไว (มิลลิวินาที น้อย = ไว)
                     if (!fish.IsJunk && fish.species.stars >= 3) { strike = new StrikeModel(fish.species.stars, rng); Set(FishState.Strike); hud.Toast(fish.species.stars >= 4 ? "ตัวนี้ไม่ธรรมดา! ตีเบ็ดให้ตรงจังหวะ 3 ครั้ง" : "ปลาใหญ่! ตีเบ็ดให้ตรงจังหวะ 2 ครั้ง"); }
                     else StartFight();
                     break;
                 case FishState.Strike:
                     if (strike.Press()) { WaterFx.AddRipple(bob.x, bob.z, 1.2f); if (strike.Done) { hud.Toast("ติดเบ็ดแล้ว! ระวังโซนเขียวเลื่อนไปมา"); StartFight(); } }
-                    else if (strike.Failed) { hud.Toast("ปลาสะบัดหลุด! ต้องตีให้ตรงจังหวะ"); Roll(); StartRetrieve(); }
+                    else if (strike.Failed) { hud.Toast("ปลาสะบัดหลุด! ต้องตีให้ตรงจังหวะ"); DuelLose(); Roll(); StartRetrieve(); }
                     else hud.Toast("พลาด! อีกครั้งเดียวนะ");
                     break;
             }
@@ -290,6 +291,7 @@ namespace CozyFishing
         void Roll()
         {
             // สืบคดี: ระหว่างตามหาเบาะแส ปลาที่พาเบาะแส/ขวดจดหมาย มีโอกาสโผล่มากขึ้นเมื่ออยู่ในเงื่อนไข
+            if (Duel.Active && !Duel.Done) { fish = Duel.Next; return; }   // ดวล: ปลาชุดเดียวกับเพื่อน
             var o = Mystery.Override(world.StageId, Story.S.time, NearSpecial, NearDock, rng);
             if (o.HasValue) { fish = o.Value; return; }
             RollNormal();
@@ -386,9 +388,9 @@ namespace CozyFishing
             switch (r)
             {
                 case FightResult.Caught: OnCaught(); break;
-                case FightResult.Snapped: hud.Toast("สายขาด! ปลาหนีไปแล้ว "); Sfx.Snap(); Roll(); Set(FishState.Snapped); from = bob; flight = 0; break;
-                case FightResult.Slack: hud.Toast("สายหย่อนเกินไป ปลาหลุด…"); Roll(); StartRetrieve(); break;
-                case FightResult.Escaped: hud.Toast("ปลาว่ายหนีไปได้…"); Roll(); StartRetrieve(); break;
+                case FightResult.Snapped: hud.Toast("สายขาด! ปลาหนีไปแล้ว "); Sfx.Snap(); DuelLose(); Roll(); Set(FishState.Snapped); from = bob; flight = 0; break;
+                case FightResult.Slack: hud.Toast("สายหย่อนเกินไป ปลาหลุด…"); DuelLose(); Roll(); StartRetrieve(); break;
+                case FightResult.Escaped: hud.Toast("ปลาว่ายหนีไปได้…"); DuelLose(); Roll(); StartRetrieve(); break;
             }
         }
 
@@ -399,6 +401,7 @@ namespace CozyFishing
             caughtGo.transform.position = bob;
             from = bob;
             if (BossHooked) { Boss.MarkCaught(); bossPhase = 0; }
+            if (Duel.Active && !Duel.Done) { var dm = Duel.Resolve(true, fish.kg, fish.species.name); if (dm.Length > 0) hud.Toast(dm); }
             caughtIsNew = FishDex.Record(fish.species.id, fish.kg);
             Cloud.SubmitFish(world.StageId, fish.species.id, fish.kg);   // กระดานปลาใหญ่ประจำสัปดาห์ของด่านนี้ (ออนไลน์เท่านั้น)
             if (Shop.ActiveBait != "worm" && Shop.UseBait()) hud.Toast("เหยื่อหมดแล้ว กลับไปใช้ไส้เดือน");
@@ -453,9 +456,18 @@ namespace CozyFishing
             EndCatch(keep);
         }
 
+        // ดวล: ตัวที่หลุด/ขาดนับเป็นหนึ่งตัว (น้ำหนัก 0) · ครบห้าตัวแล้วแสดงผล
+        void DuelLose()
+        {
+            if (!Duel.Active || Duel.Done || fish.IsJunk) return;
+            var m = Duel.Resolve(false, 0, fish.species.name);
+            if (m.Length > 0) hud.Toast(m); else hud.ShowDuelResult();
+        }
+
         void EndCatch(bool kept)
         {
             cardShown = false;
+            if (Duel.Done && Duel.Active) hud.ShowDuelResult();
             if (preview != null) preview.StopLive();
             bool taken = caughtGo && ExternalShowcase && !fish.IsJunk && CatchOutro != null && CatchOutro(caughtGo, kept);
             if (caughtGo && !taken) Destroy(caughtGo);

@@ -29,6 +29,7 @@ namespace CozyFishing
             StagePerf.Apply(w);                                               // วัตถุไกล ๆ ไม่ทอดเงา (ป่าชายเลนหนักสุด)
             if (w.StageId == "paddy") BananaGrove.Build(w);
             if (w.StageId == "squid") SquidSea.Build(w);
+            CosmeticLook.Build(player, fishing);                              // ของแต่งตัว/แต่งเบ็ดที่เลือกไว้
             if (w.StageId == Boss.Stage) MekongFx.Build(w, fishing);                 // ลูกไฟพญานาค (ถี่ขึ้นเมื่อบอสติดเบ็ด)                          // เรือไดหมึก: เรือโคลง + ไฟเขียวกะพริบตามจังหวะ                      // กอกล้วยตานีริมบ่อ (บ้านของนางตานี)
             gameObject.AddComponent<GhostSystem>().Init(w, fishing, director); // ตกปลากลางคืน: ผีประจำด่าน + เกจสติ + ไฟฉาย
             if (director != null) director.Begin(w);

@@ -12,16 +12,19 @@ public static partial class SceneBuilder
 {
     const float KW = -0.3f;
     static float KZc(float x) => 20f + 2.5f * Mathf.Sin(x * 0.045f + 0.4f);
-    const float KHw = 17f;
+    const float KHw = 24f;   // แม่น้ำกว้าง ฝั่งลาวอยู่ไกลในหมอก
 
+    /// แหลมหินยื่นลงแม่น้ำทางซ้ายมือผู้เล่น (ที่ตั้งพญานาค ศาล กระท่อม — อยู่ในมุมกล้องตกปลา)
+    static float PointOut(float x) => SStep(-20f, -15f, x) * SStep(-6f, -10f, x) * 7f;
     static float MekongGround(float x, float z)
     {
-        float zc = KZc(x), d = z - zc, a = Mathf.Abs(d) / KHw;
+        float zc = KZc(x), d = z - zc; if (d < 0) d -= PointOut(x); float a = Mathf.Abs(d) / KHw;
         float n = Mathf.PerlinNoise(x * 0.06f + 3, z * 0.06f + 7) - 0.5f, n2 = Mathf.PerlinNoise(x * 0.3f + 11, z * 0.3f + 5) - 0.5f;
         float bankNear = 0.25f + n * 0.6f + n2 * 0.15f + Mathf.Max(0, -d - KHw - 3) * 0.12f;           // ตลิ่งทรายปนหินฝั่งใกล้ ค่อย ๆ ลาดขึ้น
         float up = Mathf.Max(0, d - KHw);
-        float bankFar = 0.4f + up * 0.25f + Mathf.Max(0, up - 14) * 1.3f + n * 8f * SStep(10, 30, up) + n2 * 1.2f;   // ริมตลิ่งลาดก่อน แล้วค่อยเป็นภูเขาไกล ๆ   // ภูเขาฝั่งลาวสูงชัน
-        bankFar = Mathf.Min(bankFar, 60f + n * 20);
+        float karst = Mathf.Pow(Mathf.Clamp01(1 - Mathf.Abs(Mathf.PerlinNoise(x * 0.035f + 40, z * 0.035f + 9) - 0.5f) * 3.2f), 3f);   // สันหินปูนเป็นแท่งชัน
+        float bankFar = 0.4f + up * 0.3f + SStep(18, 45, up) * (10f + karst * 75f + n * 12f) + n2 * 1.2f;   // ป่าริมตลิ่งเตี้ย ๆ แล้วค่อยเป็นแท่งหินปูนไกล ๆ   // ภูเขาฝั่งลาวสูงชัน
+        bankFar = Mathf.Min(bankFar, 85f + n * 20);
         float bank = d < 0 ? bankNear : bankFar;
         float depth = 1.6f + 3.4f * (1 - a * a);
         float rapid = SStep(-30f, -24f, x) * SStep(-1f, -5f, x);                                      // ช่วงแก่ง: ตื้นมีหินโผล่
@@ -66,23 +69,23 @@ public static partial class SceneBuilder
             v[i].y = h;
             float slope = Mathf.Abs(MekongGround(x + 0.6f, z) - h) + Mathf.Abs(MekongGround(x, z + 0.6f) - h);
             float sand = SStep(KW + 1.4f, KW + 0.05f, h) * (z < KZc(x) ? 1 : 0.4f);
-            float rock = Mathf.Max(SStep(0.6f, 1.4f, slope), SStep(KW + 0.1f, KW - 0.8f, h) * 0.5f);
+            float rock = Mathf.Max(SStep(0.5f, 1.1f, slope), SStep(KW + 0.1f, KW - 0.8f, h) * 0.5f);
             cols[i] = new Color(sand, rock, SStep(KW + 0.05f, KW - 1.2f, h), 0);
         }
         m.vertices = v; m.colors = cols; m.RecalculateNormals(); m.RecalculateBounds();
         terrain.AddComponent<MeshFilter>().sharedMesh = SaveMesh(m, "MekongTerrain");
         var tr = terrain.AddComponent<MeshRenderer>();
-        tr.sharedMaterial = TerrainMat("Mekong", ("leafy_grass", "brown_mud_02", "rock_face_04"), new Vector4(0.25f, 0.45f, 0.12f, 0.025f), "#8a9a6a", "#5a6c5c");
+        tr.sharedMaterial = TerrainMat("Mekong", ("leafy_grass", "brown_mud_02", "rock_face_04"), new Vector4(0.25f, 0.45f, 0.1f, 0.025f), "#7a8e5a", "#8a8c84");   // หน้าผาหินปูนเทาอมเขียว
         tr.shadowCastingMode = ShadowCastingMode.Off;
 
         // ---------- แม่น้ำโขงสีน้ำตาลแดง ไหลซ้าย→ขวา ----------
         var water = new GameObject("MekongWater");
         water.AddComponent<MeshFilter>().sharedMesh = SaveMesh(Grid(200, 60, 170, new Vector3(0, KW, 20)), "MekongWater");
         var wm = LoadOrCreate($"{MatDir}/Water_Mekong.mat", waterShader);
-        wm.SetColor("_Shallow", Hex("#b0925a")); wm.SetColor("_Deep", Hex("#4e3c1e"));   // น้ำโขงสีน้ำตาลอมเหลือง (ตะกอนดิน)
+        wm.SetColor("_Shallow", Hex("#b8784e")); wm.SetColor("_Deep", Hex("#5a2c18"));   // แม่น้ำโขงหน้าน้ำ สีน้ำตาลแดง   // น้ำโขงสีน้ำตาลอมเหลือง (ตะกอนดิน)
         wm.SetFloat("_DepthScale", 1.2f); wm.SetFloat("_Clarity", 0.12f); wm.SetFloat("_Glint", 1.2f); wm.SetFloat("_Refraction", 0.03f);
-        wm.SetFloat("_Reflect", 0.65f); wm.SetFloat("_Waves", 0.04f); wm.SetFloat("_FoamWidth", 0.18f); wm.SetVector("_Flow", new Vector4(0.6f, 0.03f, 0, 0));
-        wm.SetVector("_RapidZone", new Vector4(-30f, -1.5f, 1f, 0));   // ฟองขาวเป็นริ้วตลอดช่วงแก่ง
+        wm.SetFloat("_Reflect", 0.55f); wm.SetFloat("_Waves", 0.075f); wm.SetFloat("_FoamWidth", 0.28f); wm.SetVector("_Flow", new Vector4(0.95f, 0.05f, 0, 0));
+        wm.SetVector("_RapidZone", new Vector4(-34f, 14f, 1f, 0));   // ฟองขาวกว้างทั้งหน้าผู้เล่น   // ฟองขาวเป็นริ้วตลอดช่วงแก่ง
         var wr = water.AddComponent<MeshRenderer>(); wr.sharedMaterial = wm; wr.shadowCastingMode = ShadowCastingMode.Off;
 
         // ---------- ธรรมชาติ + หินแก่ง ----------
@@ -108,15 +111,19 @@ public static partial class SceneBuilder
             Nature(i % 3 == 0 ? "namaqualand_boulder_02" : "boulder_01", x, z, sc, Rf(0, 360), 0, true, 0.3f, KW - 0.3f);
             if (sc > 1.1f && i % 2 == 0) Particles("RockSplash", new Vector3(x - 0.8f, KW + 0.1f, z), new Vector3(1.2f, 1.6f, 0.1f), spray0, 14, new Vector2(0.3f, 0.7f), new Vector2(0.6f, 1.1f), new Vector2(0.4f, 1.1f), new Color(1, 0.97f, 0.92f, 0.4f), 0.4f);
         }
-        // ลานหินแบนที่ผู้เล่นยืน (ยื่นลงน้ำสามก้อน)
-        for (int k = 0; k < 3; k++)
+        // หินก้าวจากตลิ่งออกไปถึงโขดหินแบนกลางกระแสน้ำ (ผู้เล่นยืนตรงนั้น น้ำเชี่ยวแตกฟองรอบตัว)
+        Vector3 standPt = Vector3.zero;
+        for (int k = 0; k < 4; k++)
         {
-            float x = sx - 1.2f + k * 1.3f, z = nearEdge(x) + 0.9f + (k == 1 ? 1.5f : 0.6f);
+            float x = sx - 0.6f + k * 0.35f, z = nearEdge(x) + 0.7f + k * 1.25f; bool last = k == 3;
             var st = Nature("namaqualand_boulder_02", x, z, 1, Rf(0, 360), 0, true, 0, KW - 0.1f);
-            if (st != null) st.transform.localScale = new Vector3(1.05f, 0.45f, 1.05f);
-            world.docks.Add(new Rect(x - 0.95f, z - 0.95f, 1.9f, 1.9f)); world.dockY.Add(KW + 0.35f);
+            if (st != null) st.transform.localScale = last ? new Vector3(1.25f, 0.5f, 1.25f) : new Vector3(0.75f, 0.42f, 0.75f);
+            float hr = last ? 1.1f : 0.6f;
+            world.docks.Add(new Rect(x - hr, z - hr, hr * 2, hr * 2)); world.dockY.Add(KW + 0.35f);
+            if (last) standPt = new Vector3(x, KW + 0.35f, z);
+            Particles("StandFoam", new Vector3(x - 0.7f, KW + 0.06f, z), new Vector3(last ? 2.8f : 1.6f, last ? 2.6f : 1.4f, 0.1f), spray0, last ? 45 : 18, new Vector2(0.4f, 1.0f), new Vector2(0.6f, 1.2f), new Vector2(0.2f, 0.7f), new Color(1, 0.98f, 0.95f, 0.75f), 0.3f);   // น้ำแตกฟองขาวรอบหินที่ยืน
         }
-        world.spawn = new Vector3(sx + 0.1f, KW + 0.35f, nearEdge(sx + 0.1f) + 2.4f);
+        world.spawn = standPt;
         foreach (var (x, side, s) in new[] { (-14f, -1f, 0.6f), (12f, -1f, 0.55f), (-6f, -1f, 0.45f), (18f, -1f, 0.5f) })
             Nature("rock_moss_set_01", x, nearEdge(x) - 0.6f, s, Rf(0, 360), 1.2f, true, 0.15f);
         // ฝั่งไทย: ต้นไม้ใหญ่ กอไผ่ ตาลโตนด พุ่มไม้ · ฝั่งลาว: ป่าบนภูเขา
@@ -136,7 +143,7 @@ public static partial class SceneBuilder
         var farTrees = new Mesh[4]; for (int i = 0; i < 4; i++) farTrees[i] = SaveMesh(ProceduralMeshes.Broadleaf(560 + i, 8f + i * 1.8f), "MKFarTree" + i);
         for (int i = 0, n = 0; i < 3000 && n < 230; i++)
         {
-            float x = Rf(-80, 80), z = Rf(KZc(0) + KHw + 2, 110), g = MekongGround(x, z);
+            float x = Rf(-90, 90), z = Rf(KZc(0) + KHw + 12, 120), g = MekongGround(x, z);   // ป่าฝั่งลาวถอยห่างจากริมน้ำ (ไม่เป็นกำแพงต้นไม้ใกล้ ๆ)
             if (g < KW + 1 || Mathf.PerlinNoise(x * 0.08f, z * 0.08f) < 0.4f) continue;
             var go = new GameObject("FarTree"); go.transform.SetParent(natureRoot, true);
             go.transform.SetPositionAndRotation(new Vector3(x, g - 0.2f, z), Quaternion.Euler(0, Rf(0, 360), 0)); go.transform.localScale = Vector3.one * Rf(0.9f, 1.4f);
@@ -194,9 +201,10 @@ public static partial class SceneBuilder
         }
         world.colliders.Add(new Vector4(shx, shz, 0.6f, 99));
         // พญานาคเลื้อยบนโขดหินใหญ่ริมแก่ง: ลำตัวเป็นลูกกลมเรียงโค้ง หัวชูหงอนสามแฉก
-        float nx0 = sx - 8.5f, nz0 = nearEdge(nx0) + 0.4f;
+        float nx0 = -11f, nz0 = nearEdge(nx0) + PointOut(nx0) - 0.4f;   // ปลายแหลมหิน
         Nature("boulder_01", nx0, nz0, 2.6f, 40, 2.2f, true, 0.6f, KW + 0.1f);
-        var nagaMat = SurfMat("MKNaga2", Color.white, 0.06f, vertexColor: true, smooth: 0.42f, cull: CullMode.Off);   // ทองเก่า มีคราบตะไคร่จาง ๆ   // ทองเก่าหม่น มีผิวปูนและคราบตะไคร่จาง ๆ   // ปูนปั้นลงรักปิดทอง
+        var nagaMat = SurfMat("MKNagaStone", Color.white, 0.5f, vertexColor: true, smooth: 0.18f, tex: "rock_face_04", tiles: 1.6f, cull: CullMode.Off);   // หินแกะสลักเก่า ตะไคร่เขียว   // ทองเก่าหม่น มีผิวปูนและคราบตะไคร่จาง ๆ   // ปูนปั้นลงรักปิดทอง
+        ProceduralMeshes.NagaPalette(true);   // หินเก่าตะไคร่จับ (ไม่ใช่ทองใหม่)
         GameObject NagaAt(string name, Vector3[] pts, float tailR, float neckR, int heads)
         {
             var g = new GameObject(name); g.transform.SetParent(shrineRoot, true);
@@ -213,6 +221,33 @@ public static partial class SceneBuilder
             }
             bigPath[39] = bigPath[38] + new Vector3(0.05f, 0.1f, 0.35f);   // คอหันไปทางแม่น้ำ (+z)
             NagaAt("NagaBig", bigPath, 0.1f, 0.42f, 5);
+            for (int k = 0; k < 4; k++)   // ผ้าสามสีพันคอพญานาค
+            {
+                var rib = new GameObject("NagaCloth"); rib.transform.SetParent(shrineRoot, true);
+                rib.transform.SetPositionAndRotation(bigPath[37] + new Vector3(Rf(-0.2f, 0.2f), 0.1f, Rf(-0.2f, 0.2f)), Quaternion.Euler(180, Rf(0, 360), 0)); rib.transform.localScale = Vector3.one * Rf(2.6f, 3.4f);
+                rib.AddComponent<MeshFilter>().sharedMesh = SaveMesh(ProceduralMeshes.Ribbon(600 + k, new[] { Hex("#c02a2a"), Hex("#e8c030"), Hex("#2a8a3a"), Hex("#c02a2a") }[k], Rf(0.6f, 0.9f)), "MKNagaCloth" + k);
+                rib.AddComponent<MeshRenderer>().sharedMaterial = ragMat;
+            }
+        }
+        // กระท่อมไม้หลังคาสังกะสีริมตลิ่งซ้าย (แบบชาวประมงริมโขง) + ตะเกียงหน้ากระท่อม + ศาลพระภูมิเล็ก
+        {
+            float hx = -15.5f, hz = nearEdge(hx) + PointOut(hx) - 3.4f, hy = MekongGround(hx, hz);   // บนแหลมหิน หลังพญานาค   // ใกล้จุดยืน เห็นในมุมกล้องตกปลา
+            var plank = SurfMat("HBPlank", Hex("#c0a888"), 0.04f, vertexColor: true, smooth: 0.12f, tex: "weathered_brown_planks", tiles: 0.7f);
+            var tin = SurfMat("HBTin", Color.white, 0f, vertexColor: true, smooth: 0.35f, cull: CullMode.Off);
+            foreach (var (px, pz) in new[] { (-1.5f, -1.2f), (1.5f, -1.2f), (-1.5f, 1.2f), (1.5f, 1.2f) }) P(PrimitiveType.Cylinder, "HutPost", new Vector3(hx + px, hy + 0.6f, hz + pz), new Vector3(0.14f, 0.6f, 0.14f), wood);
+            P(PrimitiveType.Cube, "HutFloor", new Vector3(hx, hy + 1.2f, hz), new Vector3(3.4f, 0.1f, 2.8f), plank);
+            P(PrimitiveType.Cube, "HutWallBack", new Vector3(hx, hy + 2.1f, hz - 1.3f), new Vector3(3.2f, 1.8f, 0.08f), plank);
+            P(PrimitiveType.Cube, "HutWallL", new Vector3(hx - 1.6f, hy + 2.1f, hz), new Vector3(0.08f, 1.8f, 2.6f), plank);
+            var roofT = new GameObject("HutRoof"); roofT.transform.SetParent(shrineRoot, false); roofT.transform.position = new Vector3(hx, hy + 2.95f, hz); roofT.transform.rotation = Quaternion.Euler(0, 90, 0);
+            roofT.AddComponent<MeshFilter>().sharedMesh = SaveMesh(ProceduralMeshes.TinRoof(611, 3.8f, 2.0f, 0.75f), "MKHutRoof"); roofT.AddComponent<MeshRenderer>().sharedMaterial = tin;
+            var lampP = new Vector3(hx + 1.5f, hy + 1.6f, hz + 1.3f);
+            P(PrimitiveType.Cube, "LampCrate", lampP - Vector3.up * 0.22f, new Vector3(0.45f, 0.35f, 0.4f), wood);
+            var lsrc = AssetDatabase.LoadAssetAtPath<GameObject>($"{NatureDir}/brass_diya_lantern.glb");
+            if (lsrc != null) { var lg = Object.Instantiate(lsrc); lg.transform.position = lampP; lg.transform.localScale = Vector3.one * 1.6f; }
+            var ll = new GameObject("LanternLight").AddComponent<Light>(); ll.type = LightType.Point; ll.color = Hex("#ffa850"); ll.range = 6f; ll.intensity = 2.4f; ll.shadows = LightShadows.None; ll.transform.position = lampP + Vector3.up * 0.4f;
+            world.colliders.Add(new Vector4(hx, hz, 2.2f, 99));
+        }
+        {
         }
         // บันไดนาคลงท่าน้ำ: ขั้นปูนจากริมตลิ่งลงถึงน้ำ ราวสองข้างเป็นลำตัวนาค หัวนาคห้าเศียรชูที่ตีนบันได
         {
@@ -240,15 +275,32 @@ public static partial class SceneBuilder
         }
         CombineGroup(shrineRoot, "MKShrine");
 
+        // ---------- ต้นไทรใหญ่ รากห้อย เถาวัลย์ บนตลิ่งซ้ายหลังกระท่อม (กรอบภาพแบบป่าริมโขง) ----------
+        var barkMat = SurfMat("BendBark", Hex("#a09480"), 0.35f, smooth: 0.12f, vertexColor: true, tex: "bark_brown_02", tiles: 1.2f, cull: CullMode.Off);
+        var aerialMat = SurfMat("BendAerial", Hex("#8a8070"), 0.1f, sway: 0.05f, swayStart: 2f, vertexColor: true, smooth: 0.1f, cull: CullMode.Off);
+        var vineMat = SurfMat("BendVine", Color.white, 0f, sway: 0.08f, swayStart: 0.5f, vertexColor: true, smooth: 0.25f, cull: CullMode.Off);
+        int bni = 0;
+        foreach (var (x, off, h) in new[] { (-17f, -4.5f, 13f), (-23f, -2.5f, 15f), (-9f, -8.5f, 12f), (16f, -6f, 13f) })
+        {
+            float z = nearEdge(x) + off;
+            var g = new GameObject("Banyan"); g.transform.SetParent(natureRoot, true); g.transform.SetPositionAndRotation(new Vector3(x, MekongGround(x, z) - 0.2f, z), Quaternion.Euler(0, Rf(0, 360), 0));
+            g.AddComponent<MeshFilter>().sharedMesh = SaveMesh(ProceduralMeshes.Banyan(620 + bni, h), "MKBanyan" + bni); g.AddComponent<MeshRenderer>().sharedMaterials = new[] { barkMat, aerialMat };
+            world.colliders.Add(new Vector4(x, z, 1.6f, 99));
+            var vn = new GameObject("Vines"); vn.transform.SetParent(natureRoot, true); vn.transform.SetPositionAndRotation(new Vector3(x + 1.5f, MekongGround(x, z) + h * 0.15f, z + 1.2f), Quaternion.Euler(0, Rf(0, 360), 0));
+            vn.AddComponent<MeshFilter>().sharedMesh = SaveMesh(ProceduralMeshes.Vines(630 + bni, 3.5f, h * 0.55f), "MKVines" + bni++); vn.AddComponent<MeshRenderer>().sharedMaterial = vineMat;
+        }
+
         // ---------- หมอกเช้ามืดเรี่ยแม่น้ำ + ละอองแก่ง ----------
         var spray = ParticleMat("Spray", new Color(1, 1, 1, 0.5f));
         Particles("RapidsSpray", new Vector3(-17f, KW + 0.05f, KZc(-17f)), new Vector3(18f, KHw * 1.6f, 0.1f), spray, 40, new Vector2(0.5f, 1.2f), new Vector2(1.2f, 2f), new Vector2(0.3f, 0.9f), new Color(1, 0.95f, 0.9f, 0.32f));
-        Particles("RiverMist", new Vector3(0, KW + 0.6f, KZc(0)), new Vector3(90f, KHw * 1.8f, 0.1f), spray, 10, new Vector2(5f, 9f), new Vector2(8f, 12f), new Vector2(0.05f, 0.2f), new Color(1f, 0.92f, 0.85f, 0.07f));
+        Particles("RiverMist", new Vector3(0, KW + 0.6f, KZc(0)), new Vector3(90f, KHw * 1.8f, 0.1f), spray, 10, new Vector2(5f, 9f), new Vector2(8f, 12f), new Vector2(0.05f, 0.2f), new Color(1f, 0.85f, 0.72f, 0.08f));
+        foreach (var (fx, fz, fs) in new[] { (-30f, 34f, 22f), (10f, 40f, 26f), (40f, 30f, 20f), (-5f, 52f, 30f) })   // หมอกเป็นก้อนพาดตีนภูเขาหินปูน
+            Particles("KarstMist", new Vector3(fx, KW + 3f, fz), new Vector3(fs, fs * 0.25f, 3f), spray, 5, new Vector2(10f, 16f), new Vector2(12f, 18f), new Vector2(0.05f, 0.15f), new Color(1f, 0.82f, 0.68f, 0.2f));
         var mm = Particles("MountainMist", new Vector3(0, 14f, KZc(0) + KHw + 18f), new Vector3(120f, 10f, 6f), spray, 8, new Vector2(10f, 16f), new Vector2(10f, 16f), new Vector2(0.1f, 0.3f), new Color(1f, 0.9f, 0.85f, 0.18f));
 
         // ---------- ตัวละคร กล้อง แสง ระบบเกม ----------
-        var look = new Look { sun = "#ffc89a", sunIntensity = 1.6f, sunRot = new Vector2(14, 110), fog = "#c8a890", fogStart = 30, fogEnd = 170, exposure = 0.95f, ambient = 1.0f };   // เช้ามืดแสงส้มต่ำ หมอกอมชมพู
-        world.spawn.y = KW + 0.35f;
+        var look = new Look { sun = "#ffb070", sunIntensity = 1.7f, sunRot = new Vector2(10, 160), fog = "#d8a07a", fogStart = 18, fogEnd = 150, exposure = 0.95f, ambient = 1.0f, skyId = "Overcast", skyTint = "#7a8aa8" };   // อาทิตย์ขึ้นหลังภูเขา หมอกส้มอมชมพู   // เช้ามืดแสงส้มต่ำ หมอกอมชมพู
+        world.spawn.y = KW + 0.35f;   // บนโขดหินกลางน้ำ
         BuildGameplay(world, model, world.spawn, look, world);
         SaveStage(scene, path);
     }
@@ -257,7 +309,8 @@ public static partial class SceneBuilder
     {
         EditorSceneManager.OpenScene("Assets/Game/Scenes/Mekong.unity");
         var go = new GameObject("CoverCam"); var cam = go.AddComponent<Camera>();
-        go.transform.position = new Vector3(-9.2f, 3.0f, -0.2f); go.transform.LookAt(new Vector3(-1.5f, 1.9f, 18f));   // จากริมตลิ่งหลังพญานาค มองข้ามแก่งไปภูเขาฝั่งลาว   // จากกลางแม่น้ำมองเข้าฝั่ง: พญานาค บันไดนาค ศาล ป่าริมโขง   // เห็นพญานาค บันไดนาค ศาล และแก่งน้ำเชี่ยวในภาพเดียว
+        var sw = Object.FindFirstObjectByType<StageWorld>(); var sp0 = sw != null ? sw.spawn : Vector3.zero;
+        go.transform.position = sp0 + new Vector3(4.5f, 3.4f, -7f); go.transform.LookAt(sp0 + new Vector3(-13f, 1.6f, 16f));   // มุมแบบภาพตัวอย่าง: หลังผู้เล่นเยื้องซ้าย เห็นพญานาค กระท่อม แก่ง ภูเขาหินปูนในหมอก
         cam.fieldOfView = 55; cam.nearClipPlane = 0.2f; cam.farClipPlane = 300; cam.clearFlags = CameraClearFlags.Skybox;
         go.AddComponent<UnityEngine.Rendering.Universal.UniversalAdditionalCameraData>().renderPostProcessing = true;
         foreach (var c in Object.FindObjectsByType<Camera>(FindObjectsSortMode.None)) if (c != cam) c.enabled = false;

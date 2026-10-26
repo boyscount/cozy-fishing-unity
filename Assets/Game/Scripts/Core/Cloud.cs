@@ -17,7 +17,7 @@ namespace CozyFishing
     //  ออฟไลน์/เน็ตหลุด/โหมดทดสอบ (bot): เล่นได้ปกติ แค่ไม่มีส่วนออนไลน์
     public static class Cloud
     {
-        static readonly string[] SyncKeys = { "cozy.story.v1", "cozy.free.v1", "cozy.dex.v1", "abot.mystery.v1", "cozy.daily.v1", "cozy.weekly.v1", "cozy.boss.v1" };
+        static readonly string[] SyncKeys = { "cozy.story.v1", "cozy.free.v1", "cozy.dex.v1", "abot.mystery.v1", "cozy.daily.v1", "cozy.weekly.v1", "cozy.boss.v1", "cozy.cosmetic.v1" };
         const string SavedAtKey = "cozy.cloud.savedAt", BlobKey = "save";
         public static bool Ready { get; private set; }
         public static string PlayerName { get; private set; } = "";
@@ -56,7 +56,7 @@ namespace CozyFishing
             if (Story.HasStorySave && Story.Phase != StoryPhase.New && Time.realtimeSinceStartup > 20) return;   // กำลังเล่นอยู่แล้ว ไม่ดึงทับกลางเกม
             for (int i = 0; i < blob.keys.Count && i < blob.values.Count; i++) PlayerPrefs.SetString(blob.keys[i], blob.values[i]);
             PlayerPrefs.SetString(SavedAtKey, blob.savedAt.ToString()); PlayerPrefs.Save();
-            Story.ReloadFromPrefs(); FishDex.Reload(); Mystery.Reload(); Daily.Reload(); Weekly.Reload(); Boss.Reload();
+            Story.ReloadFromPrefs(); FishDex.Reload(); Mystery.Reload(); Daily.Reload(); Weekly.Reload(); Boss.Reload(); Cosmetics.Reload();
             Debug.Log("[Cloud] restored save from cloud");
         }
 
@@ -93,21 +93,31 @@ namespace CozyFishing
             catch (Exception e) { Debug.LogWarning("[Cloud] score failed: " + e.Message); }
         }
 
+        public const string QuickBoard = "quickstrike";
+        /// กระดานมือไว: เวลาตีเบ็ด (มิลลิวินาที) ตั้งในหน้า Unity Cloud แบบเรียงน้อยไปมาก เก็บค่าที่ดีที่สุด
+        public static async void SubmitQuick(int ms)
+        {
+            if (!Ready || ms <= 60 || ms > 5000) return;   // ต่ำกว่า 60 มิลลิวินาทีคนกดไม่ทัน (กันค่าผิดปกติ)
+            try { var r = await LeaderboardsService.Instance.AddPlayerScoreAsync(QuickBoard, ms); Debug.Log($"[Cloud] quick {ms}ms → rank {r.Rank + 1}"); }
+            catch (Exception e) { Debug.LogWarning("[Cloud] quick failed: " + e.Message); }
+        }
+
         public class Row { public int rank; public string name; public double kg; public string fish; public bool me; }
 
         /// อันดับ 1–10 ของด่าน + อันดับของเราเอง (ถ้าอยู่นอก 10 อันดับแรก) · null = ออฟไลน์/ยังไม่มีกระดาน
-        public static async Task<List<Row>> Top(string stage)
+        public static Task<List<Row>> Top(string stage) => TopBoard(BoardId(stage));
+        public static async Task<List<Row>> TopBoard(string boardId)
         {
             if (!Ready) return null;
             try
             {
-                var res = await LeaderboardsService.Instance.GetScoresAsync(BoardId(stage), new GetScoresOptions { Limit = 10, IncludeMetadata = true });
+                var res = await LeaderboardsService.Instance.GetScoresAsync(boardId, new GetScoresOptions { Limit = 10, IncludeMetadata = true });
                 var me = AuthenticationService.Instance.PlayerId;
                 var rows = new List<Row>();
                 foreach (var e in res.Results) rows.Add(ToRow(e, me));
                 if (!rows.Exists(r => r.me))
                 {
-                    try { var mine = await LeaderboardsService.Instance.GetPlayerScoreAsync(BoardId(stage), new GetPlayerScoreOptions { IncludeMetadata = true }); rows.Add(ToRow(mine, me)); }
+                    try { var mine = await LeaderboardsService.Instance.GetPlayerScoreAsync(boardId, new GetPlayerScoreOptions { IncludeMetadata = true }); rows.Add(ToRow(mine, me)); }
                     catch (Exception) { /* ยังไม่เคยส่งคะแนนด่านนี้ */ }
                 }
                 return rows;

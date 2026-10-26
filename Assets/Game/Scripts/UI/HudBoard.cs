@@ -44,7 +44,12 @@ namespace CozyFishing
                 tb.style.fontSize = 16; tb.style.color = new Color(0.95f, 0.88f, 0.72f); Pad(tb, 4, 10); tb.style.marginRight = 5; tb.style.marginTop = 4;
                 Hoverable(tb, new Color(0.38f, 0.28f, 0.1f, 0.95f)); boardTabs.Add(tb);
             }
-            if (!Stages.Unlocked(boardStage)) boardStage = "paddy";
+            {   // แท็บมือไว: เวลาตีเบ็ดปลา ★3 ขึ้นไปที่เร็วที่สุดของแต่ละคน
+                var qb = new Button(() => { boardStage = "_quick"; FillBoard(); }) { text = "มือไว ⚡" }; qb.name = "_quick"; StyleButton(qb, Color.clear); GoldFrame(qb, 1);
+                qb.text = "มือไว"; qb.style.fontSize = 16; qb.style.color = new Color(0.95f, 0.88f, 0.72f); Pad(qb, 4, 10); qb.style.marginRight = 5; qb.style.marginTop = 4;
+                Hoverable(qb, new Color(0.38f, 0.28f, 0.1f, 0.95f)); boardTabs.Add(qb);
+            }
+            if (boardStage != "_quick" && !Stages.Unlocked(boardStage)) boardStage = "paddy";
             FillBoard();
         }
 
@@ -83,11 +88,13 @@ namespace CozyFishing
                 tb.style.unityFontStyleAndWeight = on ? FontStyle.Bold : FontStyle.Normal;
             }
             boardList.Clear();
-            boardInfo.text = Cloud.Ready ? $"คุณคือ \"{Cloud.PlayerName.Split('#')[0]}\" · ปลาตัวที่หนักที่สุดของแต่ละคนในสัปดาห์นี้" : "ออฟไลน์อยู่ · ต่อเน็ตแล้วเปิดใหม่อีกครั้ง";
+            if (boardStage == "_quick") boardInfo.text = Cloud.Ready ? "เวลาตีเบ็ดที่ไวที่สุด ตั้งแต่ทุ่นจมจนกด (ปลา 3 ดาวขึ้นไป) · รีเซ็ตทุกสัปดาห์" : "ออฟไลน์อยู่ · ต่อเน็ตแล้วเปิดใหม่อีกครั้ง";
+            else boardInfo.text = Cloud.Ready ? $"คุณคือ \"{Cloud.PlayerName.Split('#')[0]}\" · ปลาตัวที่หนักที่สุดของแต่ละคนในสัปดาห์นี้" : "ออฟไลน์อยู่ · ต่อเน็ตแล้วเปิดใหม่อีกครั้ง";
             if (!Cloud.Ready) return;
             var wait = L(boardList, "กำลังโหลด…", 20, new Color(0.9f, 0.85f, 0.7f));
             string asked = boardStage;
-            var rows = await Cloud.Top(asked);
+            bool quick = asked == "_quick";
+            var rows = quick ? await Cloud.TopBoard(Cloud.QuickBoard) : await Cloud.Top(asked);
             if (asked != boardStage || board.style.display == DisplayStyle.None) return;
             boardList.Clear();
             if (rows == null) { L(boardList, "ยังโหลดกระดานไม่ได้ ลองใหม่อีกครั้ง", 20, new Color(1f, 0.7f, 0.6f)); return; }
@@ -106,7 +113,7 @@ namespace CozyFishing
                     ph.style.backgroundImage = sp.Photo; ph.style.backgroundSize = new BackgroundSize(BackgroundSizeType.Contain); row.Add(ph);
                 }
                 var fish = L(row, sp?.name ?? "", 17, new Color(0.85f, 0.8f, 0.68f), false); fish.style.marginRight = 10; fish.style.flexShrink = 1;
-                L(row, $"{r.kg:0.00} กก.", 19, ShopGold).style.flexShrink = 0;
+                L(row, quick ? $"{r.kg / 1000.0:0.000} วิ" : $"{r.kg:0.00} กก.", 19, ShopGold).style.flexShrink = 0;
                 boardList.Add(row);
             }
         }

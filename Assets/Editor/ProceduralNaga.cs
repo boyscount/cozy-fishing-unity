@@ -6,8 +6,16 @@ using UnityEngine;
 
 public static partial class ProceduralMeshes
 {
-    static readonly Color NagaGold = new Color(0.82f, 0.6f, 0.2f), NagaGoldDark = new Color(0.55f, 0.38f, 0.14f),
+    static Color NagaGold = new Color(0.82f, 0.6f, 0.2f), NagaGoldDark = new Color(0.55f, 0.38f, 0.14f),
         NagaGreen = new Color(0.36f, 0.42f, 0.22f), NagaBelly = new Color(0.93f, 0.82f, 0.56f), NagaRed = new Color(0.75f, 0.12f, 0.08f);
+    /// โทนพญานาค: false = ปูนปั้นลงรักปิดทอง · true = หินเก่าตะไคร่จับ (ริมแก่งโขง)
+    public static void NagaPalette(bool stone)
+    {
+        NagaGold = stone ? new Color(0.62f, 0.66f, 0.48f) : new Color(0.82f, 0.6f, 0.2f);
+        NagaGoldDark = stone ? new Color(0.42f, 0.46f, 0.3f) : new Color(0.55f, 0.38f, 0.14f);
+        NagaGreen = stone ? new Color(0.4f, 0.54f, 0.26f) : new Color(0.36f, 0.42f, 0.22f);
+        NagaBelly = stone ? new Color(0.76f, 0.76f, 0.62f) : new Color(0.93f, 0.82f, 0.56f);
+    }
 
     /// path = จุดกลางลำตัวจากหาง → คอ (ปลายสุดคือฐานคอ หัวงอกต่อจากตรงนั้นตามทิศ dir สุดท้าย)
     public static Mesh Naga(Vector3[] path, float tailR, float neckR, int heads = 5)

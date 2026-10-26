@@ -13,6 +13,7 @@ Material:
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords:
   - _TRIPLANAR
+  - _VERTEX_COLOR
   m_InvalidKeywords: []
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
@@ -34,16 +35,16 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _Cull: 2
-    - _MossAmount: 0.35
-    - _Smoothness: 0.12
+    - _Cull: 0
+    - _MossAmount: 0.5
+    - _Smoothness: 0.18
     - _Sway: 0
     - _SwayStart: 1.5
-    - _TriScale: 1.2
+    - _TriScale: 1.6
     - _UseTriplanar: 1
-    - _UseVertexColor: 0
+    - _UseVertexColor: 1
     m_Colors:
-    - _BaseColor: {r: 0.54901963, g: 0.5411765, b: 0.4862745, a: 1}
+    - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 0}
     - _MossColor: {r: 0.29999998, g: 0.41999996, b: 0.15999997, a: 1}
   m_BuildTextureStacks: []

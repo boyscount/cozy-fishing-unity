@@ -9,6 +9,8 @@
 - โมเดลปั้นด้วย Blender 5.2 (สคริปต์อยู่ใน repo home-twin: `fishing/tools/build_assets.py`) → `Assets/Game/Models/assets.glb` นำเข้าด้วย glTFast
 - ตัวหนังสือไทยใช้ UI Toolkit + Advanced Text Generator (วางสระ/วรรณยุกต์ถูกต้อง)
 
+**วิธีเปิด รัน build และขึ้นเว็บแบบทีละขั้น → [HOW-TO-RUN.md](HOW-TO-RUN.md)**
+
 ## สั่งงานแบบไม่เปิดหน้าต่าง (batchmode)
 
 ```bash

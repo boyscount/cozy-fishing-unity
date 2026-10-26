@@ -65,6 +65,8 @@ namespace CozyFishing
             // ซ่อน UI ทุกอย่าง เหลือแค่กรอบแชร์ แล้วถ่ายภาพ · ใช้ visibility ไม่ใช่ display เพราะจอยกับปุ่มตีเบ็ดถูกตั้ง display ใหม่ทุกเฟรม
             var hidden = new System.Collections.Generic.List<(VisualElement e, StyleEnum<Visibility> v)>();
             foreach (var c in root.Children()) { if (c == shareFrame) continue; hidden.Add((c, c.style.visibility)); c.style.visibility = Visibility.Hidden; }
+            var fc = Cosmetics.Equipped(Cosmetics.Card).color;   // กรอบการ์ดตามของแต่งที่เลือก
+            var bd = shareFrame.ElementAt(0); bd.style.borderTopColor = bd.style.borderBottomColor = bd.style.borderLeftColor = bd.style.borderRightColor = fc;
             shareFrame.style.display = DisplayStyle.Flex; shareFrame.BringToFront();
             yield return null; yield return new WaitForEndOfFrame();
             var tex = ScreenCapture.CaptureScreenshotAsTexture();

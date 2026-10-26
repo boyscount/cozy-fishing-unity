@@ -119,7 +119,7 @@ namespace CozyFishing
             if (!st.featDone && sp.id == st.featured)
             {
                 st.featDone = true; int r = FeaturedReward(sp); money += r;
-                msgs.Add($"ปลาเด่นวันนี้! +{Story.Baht(r)}");
+                msgs.Add($"ปลาเด่นวันนี้! +{Story.Baht(r)} · เกล็ดทอง +2"); Cosmetics.Earn(2, "ปลาเด่น");
             }
             foreach (var q in st.quests)
             {
@@ -139,7 +139,7 @@ namespace CozyFishing
             if (!st.allDone && st.quests.Count > 0 && st.quests.All(q => q.done))
             {
                 st.allDone = true; money += AllBonus;
-                msgs.Add($"ครบทุกภารกิจวันนี้! โบนัส +{Story.Baht(AllBonus)}");
+                msgs.Add($"ครบทุกภารกิจวันนี้! โบนัส +{Story.Baht(AllBonus)} · เกล็ดทอง +5"); Cosmetics.Earn(5, "ภารกิจครบ");
             }
             Version++;
             if (money > 0) { Story.S.money += money; Story.S.earned += money; Story.Save(); }

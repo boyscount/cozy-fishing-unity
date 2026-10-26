@@ -27,15 +27,15 @@ Material:
     m_Floats:
     - _Clarity: 0.12
     - _DepthScale: 1.2
-    - _FoamWidth: 0.18
+    - _FoamWidth: 0.28
     - _Glint: 1.2
-    - _Reflect: 0.65
+    - _Reflect: 0.55
     - _Refraction: 0.03
-    - _Waves: 0.04
+    - _Waves: 0.075
     m_Colors:
-    - _Deep: {r: 0.30588236, g: 0.23529412, b: 0.11764706, a: 1}
-    - _Flow: {r: 0.6, g: 0.03, b: 0, a: 0}
-    - _RapidZone: {r: -30, g: -1.5, b: 1, a: 0}
-    - _Shallow: {r: 0.6901961, g: 0.57254905, b: 0.3529412, a: 1}
+    - _Deep: {r: 0.3529412, g: 0.17254902, b: 0.09411765, a: 1}
+    - _Flow: {r: 0.95, g: 0.05, b: 0, a: 0}
+    - _RapidZone: {r: -34, g: 14, b: 1, a: 0}
+    - _Shallow: {r: 0.72156864, g: 0.47058824, b: 0.30588236, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
