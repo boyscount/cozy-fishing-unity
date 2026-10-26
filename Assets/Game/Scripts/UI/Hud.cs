@@ -240,6 +240,7 @@ namespace CozyFishing
             BuildCard();
             BuildDex();
             BuildStory();
+            BuildDaily();
             BuildButton();
             if (TouchUi) { BuildJoystick(); BuildTouchExtras(); }
         }
@@ -709,6 +710,7 @@ namespace CozyFishing
             bool play = !CardOpen && !ModalOpen && Story.Phase == StoryPhase.Fishing;
             var hide = play ? DisplayStyle.Flex : DisplayStyle.None;
             if (dexBtn != null) dexBtn.style.display = CardOpen || ModalOpen ? DisplayStyle.None : DisplayStyle.Flex;
+            UpdateDailyBtn(play);
             if (joy != null) joy.style.display = hide;
             if (jumpBtn != null) jumpBtn.style.display = hide;
             actBtn.style.display = hide; actRing.style.display = hide; if (hide == DisplayStyle.None) strikeTag.style.display = DisplayStyle.None;

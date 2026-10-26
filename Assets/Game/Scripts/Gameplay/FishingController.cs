@@ -338,6 +338,7 @@ namespace CozyFishing
             if (Shop.ActiveBait != "worm" && Shop.UseBait()) hud.Toast("เหยื่อหมดแล้ว กลับไปใช้ไส้เดือน");
             caughtClue = Mystery.OnCatch(world.StageId, fish.species.id, Story.S.time, NearSpecial, NearDock, rng);
             caughtSecret = Mystery.CheckCatchSecret(fish.species.id, fish.kg, Story.S.time, Story.S.luck);
+            dailyMsgs = Daily.OnCatch(world.StageId, fish.species, fish.kg);   // ภารกิจรายวัน/ปลาเด่น: รางวัลเข้ากระเป๋าทันที แจ้งในการ์ด
             // ข้องเต็ม → ยังไม่ใส่ รอให้ผู้เล่นเลือกแลกหรือปล่อยในการ์ด
             var f = new BasketFish { id = fish.species.id, kg = fish.kg, cm = fish.cm };
             pending = f;   // ยังไม่ใส่ข้อง รอผู้เล่นกด "เก็บ" หรือ "ปล่อย" ในการ์ด
@@ -347,11 +348,14 @@ namespace CozyFishing
         BasketFish pending;
         Clue caughtClue;
         FishSecret caughtSecret;
+        System.Collections.Generic.List<string> dailyMsgs;
 
         void ShowCard()
         {
             var img = preview != null ? preview.Live(fish.species) : null;
             string clueNote = caughtClue != null ? $"พบเบาะแส! {caughtClue.name} — {caughtClue.found}" : null;
+            string dailyNote = dailyMsgs != null && dailyMsgs.Count > 0 ? string.Join("\n", dailyMsgs) : null;
+            if (dailyNote != null) { Sfx.Coin(); clueNote = clueNote != null ? clueNote + "\n" + dailyNote : dailyNote; }
             if (caughtClue != null) hud.Toast($"เบาะแส {Mystery.CluesFound}/{Mystery.Current.clues.Length} · บันทึกลงสมุดคดีแล้ว");
             if (caughtSecret != null) hud.Toast($"ค้นพบความลับของ{fish.species.name}! ดูในสมุดปลา");
             if (Story.BasketFull)
