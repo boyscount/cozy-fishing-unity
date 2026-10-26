@@ -27,7 +27,8 @@ namespace CozyFishing
             gameObject.AddComponent<Weather>().Init(w, rig.GetComponent<Camera>());      // วันฝน: สายฝน วงน้ำ เสียงฝน ฟ้าร้อง · ถ้ำ: หยดน้ำ ลม เสียงก้อง
             WaterLife.Build(w);                                               // ผักตบ/ใบไม้/กิ่งไม้ลอยน้ำ · มอสเรืองแสงริมตลิ่ง · หิ่งห้อยเหนือน้ำ (เห็นผิวน้ำในที่มืด)
             StagePerf.Apply(w);                                               // วัตถุไกล ๆ ไม่ทอดเงา (ป่าชายเลนหนักสุด)
-            if (w.StageId == "paddy") BananaGrove.Build(w);                      // กอกล้วยตานีริมบ่อ (บ้านของนางตานี)
+            if (w.StageId == "paddy") BananaGrove.Build(w);
+            if (w.StageId == "squid") SquidSea.Build(w);                          // เรือไดหมึก: เรือโคลง + ไฟเขียวกะพริบตามจังหวะ                      // กอกล้วยตานีริมบ่อ (บ้านของนางตานี)
             gameObject.AddComponent<GhostSystem>().Init(w, fishing, director); // ตกปลากลางคืน: ผีประจำด่าน + เกจสติ + ไฟฉาย
             if (director != null) director.Begin(w);
         }

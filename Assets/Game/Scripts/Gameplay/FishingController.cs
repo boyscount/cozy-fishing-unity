@@ -87,10 +87,34 @@ namespace CozyFishing
             Roll(); Set(FishState.Snapped); from = bob; flight = 0;
         }
         float botNext;
+
+        // ---------- ด่านเรือไดหมึก: หมึกไม่กินเบ็ดเอง ต้อง "ไดหมึก" แตะตามจังหวะไฟเขียวกะพริบ ให้หมึกเข้ามาในวงแสง · กดค้าง = เก็บสาย ----------
+        public const float JigPeriod = 1.6f, JigPeak = 0.2f;
+        public bool Jigging => world != null && world.StageId == "squid";
+        /// 0..1 ความสว่างไฟล่อหมึกตามจังหวะ (ยอด = จังหวะที่ควรแตะ) · SquidSea ใช้กะพริบไฟในฉาก
+        public static float JigPulse => 1 - Mathf.Clamp01(Mathf.Abs(Mathf.Repeat(Time.time, JigPeriod) - JigPeak) / 0.3f);
+        int jigStreak; float jigHeld;
+        void Jig()
+        {
+            bool good = Mathf.Abs(Mathf.Repeat(Time.time, JigPeriod) - JigPeak) < 0.24f;
+            WaterFx.AddRipple(bob.x, bob.z, good ? 0.9f : 0.5f); bob.y -= 0.1f;
+            if (good)
+            {
+                jigStreak++;
+                biteAt = Mathf.Max(t + 0.6f, biteAt - (3.2f + jigStreak * 0.9f));
+                hud.Toast(jigStreak >= 3 ? "หมึกรุมเข้ามาในแสงไฟแล้ว!" : jigStreak == 2 ? "ดีมาก! เห็นเงาหมึกวนใต้เรือ" : "จังหวะดี! หมึกเริ่มเข้ามาใกล้");
+                if (jigStreak >= 2) Sfx.Nibble();
+            }
+            else { jigStreak = 0; biteAt = Mathf.Max(t + 0.6f, biteAt - 0.4f); hud.Toast("ยังไม่ตรงจังหวะไฟ ลองแตะตอนไฟเขียวสว่างสุด"); }
+        }
+
         bool BotHeld()
         {
             switch (State)
             {
+                case FishState.Waiting:   // ทดสอบ: บอทไดหมึกตามจังหวะไฟ
+                    if (Jigging && JigPulse > 0.85f && Time.time > botNext) { botNext = Time.time + 0.8f; return true; }
+                    return false;
                 case FishState.Free: return t > 1.2f && t < 1.2f + 0.9f;            // ง้าง ~0.9 วิ แล้วปล่อย
                 case FishState.Charging: return charge < 0.45f;   // บอททดสอบเหวี่ยงราว 9 ม. เท่าเดิม
                 case FishState.Bite: return t > 0.25f;                              // รอเห็นทุ่นจมแป๊บหนึ่งค่อยกด
@@ -157,6 +181,7 @@ namespace CozyFishing
                     if (t > 0.7f) StartRetrieve();
                     break;
                 case FishState.Waiting:
+                    if (Jigging) { jigHeld = held ? jigHeld + dt : 0; if (jigHeld > 0.8f) { jigHeld = 0; StartRetrieve(); hud.Toast("เก็บสาย"); break; } }
                     float y = world.WaterY + 0.02f + Mathf.Sin(now * 2.2f) * 0.015f;
                     if (nibbles.Count > 0 && t > nibbles[0])
                     {
@@ -217,7 +242,7 @@ namespace CozyFishing
             switch (State)
             {
                 case FishState.Free: charge = 0; Set(FishState.Charging); break;
-                case FishState.Waiting: StartRetrieve(); hud.Toast("เก็บสาย"); break;
+                case FishState.Waiting: if (Jigging) { Jig(); break; } StartRetrieve(); hud.Toast("เก็บสาย"); break;
                 case FishState.Bite:
                     if (!fish.IsJunk && fish.species.stars >= 3) { strike = new StrikeModel(fish.species.stars, rng); Set(FishState.Strike); hud.Toast(fish.species.stars >= 4 ? "ตัวนี้ไม่ธรรมดา! ตีเบ็ดให้ตรงจังหวะ 3 ครั้ง" : "ปลาใหญ่! ตีเบ็ดให้ตรงจังหวะ 2 ครั้ง"); }
                     else StartFight();
@@ -276,6 +301,7 @@ namespace CozyFishing
         void NewBite()
         {
             biteAt = t + (Bot && GameUrl.Value.Contains("fastcatch") ? 1.5f : (Story.S.caught == 0 ? 1.2f + (float)rng.NextDouble() * 1.3f : (2.2f + (float)rng.NextDouble() * 5.5f) * Story.BiteMul * Shop.BiteMul));   // ตัวแรกของเกม: กินเร็ว ติดใจตั้งแต่เหวี่ยงแรก
+            if (Jigging && !(Bot && GameUrl.Value.Contains("fastcatch"))) { biteAt = t + 18f + (float)rng.NextDouble() * 10f; jigStreak = 0; }   // ไม่ไดหมึก = แทบไม่มีหมึกเข้ามา
             nibbles.Clear();
             int n = rng.Next(3);
             for (int i = 0; i < n; i++) nibbles.Add(biteAt - 0.6f - (float)rng.NextDouble() * 1.8f);
@@ -458,7 +484,10 @@ namespace CozyFishing
                 case FishState.Free: hud.Hint(touch ? "กดค้างปุ่มเหวี่ยงเพื่อเล็ง · ลากจอเพื่อหมุนกล้อง" : "คลิกค้าง / กด E ค้าง เพื่อเล็ง · ปล่อยเพื่อเหวี่ยง\nWASD เดิน · Space กระโดด · คลิกขวาลาก หมุนกล้อง · ล้อเมาส์ ซูม"); hud.ActionLabel("", false, "cast"); break;
                 case FishState.Charging: hud.Hint(""); hud.ActionLabel("", true, "cast"); break;
                 case FishState.Casting: case FishState.Landed: case FishState.Retrieve: hud.Hint(""); hud.ActionLabel("", false, "wait"); break;
-                case FishState.Waiting: hud.Hint("รอให้ทุ่นจม… (กดเพื่อเก็บสาย)"); hud.ActionLabel("", false, "reelin"); break;
+                case FishState.Waiting:
+                    if (Jigging) { hud.Hint("แตะตอนไฟเขียวสว่าง ล่อหมึกเข้าวงแสง · กดค้างเก็บสาย"); hud.ActionLabel("", JigPulse > 0.5f, "reelin"); }   // วงปุ่มสว่างตามจังหวะไฟ
+                    else { hud.Hint("รอให้ทุ่นจม… (กดเพื่อเก็บสาย)"); hud.ActionLabel("", false, "reelin"); }
+                    break;
                 case FishState.Bite: hud.Hint("ทุ่นจม! กดเลย!"); hud.ActionLabel("ดึง!", true, "hook"); break;
                 case FishState.Strike: hud.Hint("กดตอนเข็มอยู่ในโซนทอง!"); hud.ActionLabel("ตีเบ็ด!", true, "strike"); break;
                 case FishState.Fight: hud.Hint(touch ? "กดค้างกรอสาย · ปล่อยเมื่อใกล้แดง" : "กดค้างเพื่อกรอสาย · ปล่อยเมื่อเข็มใกล้สีแดง"); hud.ActionLabel("", false, "reel"); break;

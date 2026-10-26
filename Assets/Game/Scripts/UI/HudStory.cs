@@ -498,7 +498,7 @@ namespace CozyFishing
                 Pad(n, Narrow ? 16 : 18, Narrow ? 20 : 30); n.style.flexDirection = FlexDirection.Row; n.style.alignItems = Align.Center; n.style.rotate = new Rotate(noteN % 2 == 0 ? -1.2f : 1f); noteN++;
                 morningBody.Add(n);
                 if (icon != null) { var ic = Ico(n, icon, 40); ic.style.unityBackgroundImageTintColor = new Color(0.36f, 0.22f, 0.1f); ic.style.marginRight = 12; ic.style.flexShrink = 0; }
-                var tl = L(n, text, Narrow ? 27 : 30, new Color(col.r * 0.7f, col.g * 0.7f, col.b * 0.7f, 1f));   // คูณสีทั้งก้อนเคยลดความทึบไปด้วย ตัวจาง tl.style.unityFontDefinition = fontTitle; tl.style.flexShrink = 1;   // ตัวหนาเข้ม อ่านชัดบนกระดาษ
+                var tl = L(n, text, Narrow ? 27 : 30, new Color(col.r * 0.7f, col.g * 0.7f, col.b * 0.7f, 1f));   // คูณสีทั้งก้อนเคยลดความทึบไปด้วย ตัวจาง tl.style.unityFontDefinition = fontTitle; tl.style.flexShrink = 1; tl.style.flexGrow = 1; tl.style.minWidth = 0;   // ตัดบรรทัดในกระดาษ ไม่ล้นขอบขวา   // ตัวหนาเข้ม อ่านชัดบนกระดาษ
                  tl.style.whiteSpace = WhiteSpace.Normal; tl.style.unityTextAlign = TextAnchor.MiddleCenter;
                 return n;
             }
@@ -507,7 +507,7 @@ namespace CozyFishing
             var hot = s.hot != null ? FishDatabase.Get(s.hot) : null;
             if (hot != null && !Story.FreePlay) Notice($"วันนี้แม่ค้ารับซื้อ{(FishDex.Has(hot.id) ? hot.name : "ปลาลึกลับ")}ราคาพิเศษ {Story.Baht(Story.PriceOf(hot.id))}/กก.", new Color(0.55f, 0.2f, 0.05f));
             var fest = Notice(Weekly.CanJoin ? $"เทศกาลปลาใหญ่สัปดาห์นี้ที่{Weekly.Stage.name} · รางวัลสูงสุด {Story.Baht(Weekly.TierReward[2])}" : $"เทศกาลปลาใหญ่สัปดาห์นี้ที่{Weekly.Stage.name} · ร่วมได้ในโหมดตกปลาอิสระ", new Color(0.3f, 0.12f, 0.06f), "trophy", "note_stained");
-            fest.style.paddingRight = Narrow ? 70 : 110; fest.style.overflow = Overflow.Visible;   // รูปสเก็ตช์ด่านเทศกาลหนีบคลิปทับมุมขวา
+            fest.style.paddingRight = Narrow ? 92 : 120; fest.style.overflow = Overflow.Visible;   // รูปสเก็ตช์ด่านเทศกาลหนีบคลิปทับมุมขวา
             var festPic = new VisualElement { pickingMode = PickingMode.Ignore }; Abs(festPic, null, Narrow ? -14 : -40, -20); festPic.style.width = Narrow ? 84 : 120; festPic.style.height = Narrow ? 100 : 144;
             festPic.style.backgroundImage = Weekly.Stage.id == "cave" ? JTex("prop_cave") : Weekly.Stage.Art; festPic.style.backgroundSize = new BackgroundSize(BackgroundSizeType.Contain); festPic.style.rotate = new Rotate(5); fest.Add(festPic);
             // ป้ายไม้: เงินเก็บ · ความสุขครอบครัว

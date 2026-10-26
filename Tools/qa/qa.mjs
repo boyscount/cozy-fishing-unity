@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const OUT = path.join(HERE, 'out'), SHOTS = path.join(OUT, 'shots');
 const BASE = process.env.QA_BASE || 'http://localhost:5190/index.html';
-const ALL_STAGES = ['paddy', 'rapids', 'temple', 'marsh', 'houseboat', 'bend', 'cave', 'mangrove', 'headman', 'reservoir'];
+const ALL_STAGES = ['paddy', 'rapids', 'temple', 'marsh', 'houseboat', 'bend', 'cave', 'mangrove', 'headman', 'reservoir', 'squid'];
 const STAGES = (process.env.QA_STAGES || ALL_STAGES.join(',')).split(',');
 const DEVICES = {
   desktop: { viewport: { width: 1280, height: 720 }, deviceScaleFactor: 1 },

@@ -175,6 +175,7 @@ namespace CozyFishing
             if (reset) { player.Pos = world.Spawn; player.Pos.y = world.StandY(player.Pos.x, player.Pos.z); player.Yaw = world.SpawnYaw; }
             if (reset) { NightMode = false; nightAsked = false; }
             if (FishingController.Bot && GameUrl.Value.Contains("night") && Story.S.time < 19) { Story.S.time = 19.5f; NightMode = true; nightAsked = true; }
+            if (world.StageId == "squid" && Story.S.time < 19) { Story.S.time = 19f; NightMode = true; nightAsked = true; hud.Toast("ออกเรือไดหมึกตอนหัวค่ำ… แตะตามจังหวะไฟเขียวกะพริบ"); }   // เรือไดหมึกออกกลางคืนเท่านั้น
             var hm = System.Text.RegularExpressions.Regex.Match(GameUrl.Value, @"hour=([0-9.]+)");   // ถ่ายคลิป: เริ่มที่เวลานี้ (เช่น hour=16.8 แดดเย็นสีทอง)
             if (FishingController.Bot && hm.Success && float.TryParse(hm.Groups[1].Value, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var hh)) Story.S.time = hh;
             rig.ClearOverride();
