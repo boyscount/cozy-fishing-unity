@@ -127,14 +127,16 @@ public static partial class SceneBuilder
             Pole(new Vector3(s * 5.2f, deckY + 2.4f, -0.4f), new Vector3(s * 1.4f, deckY + 0.6f, 1.2f), 0.012f, rope);                     // เชือกยึดคาน
         }
         int bi = 0;
+        var bulbGroup = new GameObject("BulbGroup").transform; bulbGroup.SetParent(boatRoot, false);   // หลอดไฟรวมเป็น mesh เดียว (กะพริบพร้อมกันด้วยสีเดียว)
         foreach (var p in bulbs)
         {
-            var g = Prim(PrimitiveType.Sphere, "SquidBulb" + bi++, p, new Vector3(0.18f, 0.24f, 0.18f), bulbMat); g.transform.SetParent(group, true);
+            var g = Prim(PrimitiveType.Sphere, "SquidBulb" + bi++, p, new Vector3(0.18f, 0.24f, 0.18f), bulbMat); g.transform.SetParent(bulbGroup, true);
             g.GetComponent<Renderer>().shadowCastingMode = ShadowCastingMode.Off;
         }
-        foreach (var lp in new[] { new Vector3(-1.2f, deckY + 2.7f, 1.8f), new Vector3(1.2f, deckY + 2.7f, -0.6f), new Vector3(-4f, deckY + 2.8f, -0.8f), new Vector3(4f, deckY + 2.8f, -0.8f), new Vector3(0, deckY + 2.7f, 3.4f) })
+        // ไฟจริงเหลือ 2 ดวง (เดิม 5) ระยะกว้างขึ้น · ผิวน้ำเต็มจอคำนวณแสงทุกพิกเซล ไฟยิ่งน้อยยิ่งลื่นบนมือถือ
+        foreach (var lp in new[] { new Vector3(-2.6f, deckY + 2.8f, 0.4f), new Vector3(2.6f, deckY + 2.8f, -0.4f) })
         {
-            var l = new GameObject("SquidLamp").AddComponent<Light>(); l.type = LightType.Point; l.color = new Color(0.45f, 1f, 0.55f); l.range = 11f; l.intensity = 2.6f; l.shadows = LightShadows.None;
+            var l = new GameObject("SquidLamp").AddComponent<Light>(); l.type = LightType.Point; l.color = new Color(0.45f, 1f, 0.55f); l.range = 14f; l.intensity = 3.6f; l.shadows = LightShadows.None;
             l.transform.SetParent(boatRoot, true); l.transform.position = lp;
         }
         { var cl = new GameObject("LanternLight").AddComponent<Light>(); cl.type = LightType.Point; cl.color = Hex("#ffb060"); cl.range = 4f; cl.intensity = 1.2f; cl.shadows = LightShadows.None; cl.transform.SetParent(boatRoot, true); cl.transform.position = new Vector3(0, deckY + 1.4f, -3.2f); }
@@ -146,6 +148,9 @@ public static partial class SceneBuilder
         var basket = new GameObject("FishBasket"); basket.transform.SetParent(group, false); basket.transform.localPosition = new Vector3(0.9f, deckY - 0.02f, 0.4f); basket.transform.localScale = Vector3.one * 1.2f;
         basket.AddComponent<MeshFilter>().sharedMesh = SaveMesh(ProceduralMeshes.FishBasket(), "HBFishBasket"); basket.AddComponent<MeshRenderer>().sharedMaterial = SurfMat("HBBasketMat", Color.white, 0.1f, vertexColor: true, smooth: 0.15f);
         world.colliders.Add(new Vector4(0, -4.4f, 1.3f, 99));
+        CombineGroup(group, "SquidBoatBody");   // ตัวเรือร้อยกว่าชิ้นรวมเหลือชิ้นละวัสดุ (เรือโคลงทุกเฟรม)
+        CombineGroup(bulbGroup, "SquidBulbs");
+        foreach (var r in bulbGroup.GetComponentsInChildren<Renderer>()) r.shadowCastingMode = ShadowCastingMode.Off;
 
         // ---------- เรือไดหมึกลำอื่นไกล ๆ: แนวไฟเขียวกลางทะเล ----------
         var far = new GameObject("FarBoats").transform;
