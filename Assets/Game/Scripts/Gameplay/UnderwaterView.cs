@@ -100,6 +100,25 @@ namespace CozyFishing
                 var rm2 = rays.main; rm2.startColor = new Color(0.85f, 0.8f, 0.55f, 0.05f);
             }
             BuildBed();
+            StartCoroutine(Prewarm());
+        }
+
+        // วาดของใต้น้ำล่วงหน้า 2 เฟรมตอนเพิ่งเข้าด่าน (หลังจอโหลด) ให้ WebGL คอมไพล์ shader ไว้ก่อน
+        //   เดิมคอมไพล์ตอนเหวี่ยงเบ็ดครั้งแรก → ภาพค้างหลายวินาทีก่อนเข้ามุมใต้น้ำ
+        System.Collections.IEnumerator Prewarm()
+        {
+            var c = Camera.main; if (c == null) yield break;
+            var p = c.transform.position + c.transform.forward * 3f;
+            var saved = new System.Collections.Generic.List<(Transform t, Vector3 pos)>();
+            foreach (var g in new[] { bed, bait }) { if (g == null) continue; saved.Add((g.transform, g.transform.position)); g.transform.position = p; g.SetActive(true); }
+            foreach (var u in unders) u.SetActive(true);
+            motes.Play(); rays.Play(); leaves.Play(); lineBubbles.Play(); mudBubbles.Play(); silt.Play();
+            yield return null; yield return null;
+            if (active) yield break;   // ผู้เล่นเหวี่ยงเบ็ดลงน้ำไปแล้ว ปล่อยให้ Enter จัดการต่อ
+            foreach (var (t, pos) in saved) t.position = pos;
+            foreach (var u in unders) u.SetActive(false);
+            if (bed != null) bed.SetActive(false); if (bait != null) bait.SetActive(false);
+            foreach (var ps in new[] { motes, rays, leaves, lineBubbles, mudBubbles, silt }) ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
         }
 
         ParticleSystem MakePs(string name, float rate, Vector2 life, Color col, Vector3 box, int max)
@@ -456,8 +475,9 @@ namespace CozyFishing
         {
             if (!active) return;
             // DayCycle ตั้งสีหมอกทุกเฟรม → ทับด้วยหมอกใต้น้ำหลังจากนั้น · ค่อย ๆ หนาขึ้นตอนเพิ่งดำ
-            RenderSettings.fogMode = FogMode.Exponential;
-            RenderSettings.fogDensity = Mathf.Lerp(0.05f, swamp ? 0.6f : clear ? 0.11f : 0.42f, Mathf.Clamp01((Time.time - enterT) / 0.5f));   // ป่าเลน: ขุ่นจัด มองเห็นได้แค่ไม่กี่เมตร
+            // หมอกแบบเส้นตรงเหมือนบนบก (เปลี่ยนเป็นแบบ exponential ทำให้ WebGL ต้องคอมไพล์ shader ใหม่ทั้งฉาก ภาพค้างตอนดำครั้งแรก) · ระยะมองเห็นสั้นลงแทน
+            RenderSettings.fogMode = FogMode.Linear; RenderSettings.fogStartDistance = 0.2f;
+            RenderSettings.fogEndDistance = Mathf.Lerp(60f, swamp ? 4.5f : clear ? 26f : 7f, Mathf.Clamp01((Time.time - enterT) / 0.5f));   // ป่าเลน: ขุ่นจัด · เขื่อนบนดอย: น้ำใสมองไกล   // ป่าเลน: ขุ่นจัด มองเห็นได้แค่ไม่กี่เมตร
             RenderSettings.fogColor = fogColor * Mathf.Lerp(0.9f, 1.15f, Mathf.Clamp01(world.WaterY));
         }
 

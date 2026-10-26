@@ -19,9 +19,11 @@ public static class FishPhotoTools
         foreach (var png in Directory.GetFiles(Dir, "*.png"))
         {
             var path = png.Replace('\\', '/');
+            var only = System.Environment.GetEnvironmentVariable("FISH_IDS");   // ทำเฉพาะชนิดที่ระบุ (คั่นด้วย ,) ไม่แตะรูปเดิม
+            if (!string.IsNullOrEmpty(only) && System.Array.IndexOf(only.Split(','), Path.GetFileNameWithoutExtension(path)) < 0) continue;
             var ti = (TextureImporter)AssetImporter.GetAtPath(path);
             ti.textureType = TextureImporterType.Default; ti.alphaIsTransparency = true; ti.wrapMode = TextureWrapMode.Clamp;
-            ti.mipmapEnabled = true; ti.maxTextureSize = 512; ti.textureCompression = TextureImporterCompression.CompressedHQ; ti.npotScale = TextureImporterNPOTScale.None;
+            ti.mipmapEnabled = false;   // ภาพขนาดไม่ใช่เลขยกกำลังสอง + mipmap → WebGL ไม่บีบอัด (กินที่) · ภาพบน UI ไม่ต้องมี mipmap ti.maxTextureSize = 512; ti.textureCompression = TextureImporterCompression.CompressedHQ; ti.npotScale = TextureImporterNPOTScale.None;
             ti.SaveAndReimport();
             var tex = new Texture2D(2, 2); tex.LoadImage(File.ReadAllBytes(png));
             var mesh = Inflate(tex);

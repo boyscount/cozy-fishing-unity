@@ -51,6 +51,11 @@ namespace CozyFishing
                 row.style.backgroundImage = TitleTex("note"); row.style.unitySliceLeft = row.style.unitySliceRight = row.style.unitySliceTop = row.style.unitySliceBottom = 34;
                 row.style.flexDirection = FlexDirection.Row; row.style.alignItems = Align.Center; row.style.marginTop = 6;
                 row.style.paddingTop = row.style.paddingBottom = n ? 14 : 16; row.style.paddingLeft = 30; row.style.paddingRight = 26;
+                // ภาพปกด่านเล็ก ๆ แบบรูปโพลารอยด์ (เดิมมีแต่ชื่อ ไม่มีภาพประกอบ)
+                var pol = new VisualElement { pickingMode = PickingMode.Ignore }; pol.style.backgroundColor = new Color(0.97f, 0.95f, 0.9f); Pad(pol, 4, 4); pol.style.paddingBottom = 9;
+                pol.style.flexShrink = 0; pol.style.marginRight = 14; pol.style.rotate = new Rotate(sneakList.childCount % 2 == 0 ? -3 : 2); row.Add(pol);
+                var art = new VisualElement { pickingMode = PickingMode.Ignore }; art.style.width = n ? 84 : 112; art.style.height = n ? 54 : 72;
+                art.style.backgroundImage = Stages.Get(sid).Art; art.style.backgroundSize = new BackgroundSize(BackgroundSizeType.Cover); art.style.unityBackgroundImageTintColor = new Color(0.62f, 0.66f, 0.8f); pol.Add(art);   // ย้อมโทนกลางคืน
                 var nm = L(row, $"{name} · {(hz >= 3 ? "ผีดุมาก" : hz == 2 ? "ผีดุ" : "ผีดุน้อย")}", n ? 22 : 28, new Color(0.22f, 0.12f, 0.05f));
                 nm.style.flexGrow = 1; nm.style.flexShrink = 1; nm.style.unityTextAlign = TextAnchor.MiddleLeft; nm.style.unityFontDefinition = fontTitle;
                 // ไอคอนผีตามความดุ (ดุมากแดงเข้ม)
