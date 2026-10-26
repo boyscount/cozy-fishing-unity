@@ -50,21 +50,66 @@ namespace CozyFishing
                 ("ตกปลาต่อ", () => Duel.End()));
         }
 
-        /// หน้าอุปกรณ์ของฉัน: ค่าพลังของคัน รอก เหยื่อ ไฟล่อ (เห็นชัดว่าของที่ซื้อช่วยอะไร)
+        /// หน้าอุปกรณ์ของฉัน: การ์ดรูปของแต่ละชิ้น + แถบค่าพลังเทียบกับขั้นสูงสุด + ปุ่มไปร้าน
+        VisualElement gear, gearList;
         void ShowGear()
         {
+            if (gear == null)
+            {
+                gear = new VisualElement { pickingMode = PickingMode.Position }; Abs(gear, 0, 0, 0, 0); root.Add(gear);
+                gear.style.backgroundColor = new Color(0.03f, 0.02f, 0.01f, 0.85f); gear.style.alignItems = Align.Center; gear.style.justifyContent = Justify.Center;
+                var panel = new VisualElement { pickingMode = PickingMode.Position }; panel.name = "panel"; GoldFrame(panel, 3); panel.style.backgroundColor = new Color(0.12f, 0.08f, 0.04f, 0.97f);
+                panel.style.maxWidth = 900; panel.style.maxHeight = Length.Percent(94); Pad(panel, 12, 16); gear.Add(panel);
+                var head = new VisualElement(); head.style.flexDirection = FlexDirection.Row; head.style.alignItems = Align.Center; head.style.justifyContent = Justify.SpaceBetween; panel.Add(head);
+                var t = L(head, "อุปกรณ์ของฉัน", 30, ShopGold); t.style.unityFontDefinition = fontTitle;
+                var close = new Button(() => { gear.style.display = DisplayStyle.None; GameInput.Blocked = ModalOpen || CardOpen; }) { text = "ปิด" };
+                StyleButton(close, Color.clear); GoldFrame(close, 2); close.style.fontSize = 20; close.style.color = new Color(1f, 0.9f, 0.75f); Pad(close, 4, 18);
+                Hoverable(close, new Color(0.3f, 0.22f, 0.08f, 0.9f)); head.Add(close);
+                var sv = new ScrollView(ScrollViewMode.Vertical); sv.style.flexGrow = 1; sv.style.flexShrink = 1; sv.style.marginTop = 8; sv.verticalScrollerVisibility = ScrollerVisibility.Hidden; panel.Add(sv);
+                gearList = new VisualElement(); sv.Add(gearList);
+                var shop = new Button(() => { gear.style.display = DisplayStyle.None; ShowShop(); }) { text = "ไปร้านลุงส้ม อัปเกรดอุปกรณ์" };
+                WoodButton(shop, true); shop.style.alignSelf = Align.Center; shop.style.marginTop = 8; shop.style.fontSize = 22; panel.Add(shop);
+            }
+            gear.Q("panel").style.width = Length.Percent(Narrow ? 96 : 70);
+            gear.style.display = DisplayStyle.Flex; gear.BringToFront(); GameInput.Blocked = true;
+            gearList.Clear();
             var s = Story.S;
-            string Rod() => s.rod switch { 1 => "คันเบ็ดไฟเบอร์", 2 => "คันคาร์บอนเบา", 3 => "คันเบ็ดครูช่างฝีมือ", _ => "คันไม้ไผ่ของพ่อ" };
-            string Reel() => s.reel switch { 1 => "รอกสปินนิ่ง", 2 => "รอกเบทคาสติ้ง", 3 => "รอกทองเหลืองโบราณ", _ => "รอกมือ" };
-            int tension = Mathf.RoundToInt((1 - Shop.RodTension) * 100), reel = Mathf.RoundToInt((Shop.ReelSpeed - 1) * 100);
-            string bait = Shop.ActiveBait switch { "shrimp" => "ปลาหายาก/ดาวสูงเข้าบ่อยขึ้น", "bran" => "ปลากินเร็วขึ้น", "frog" => "ปลาตัวใหญ่ขึ้น", _ => "เหยื่อพื้นฐาน" };
-            Ask($"อุปกรณ์ของฉัน\n" +
-                $"คันเบ็ด: {Rod()} · เหวี่ยงไกล {Shop.CastDist:0} ม. · สายตึงช้าลง {tension}%\n" +
-                $"รอก: {Reel()} · กรอสายเร็วขึ้น {reel}%\n" +
-                $"เหยื่อที่ใช้: {Shop.BaitName(Shop.ActiveBait)} (เหลือ {(Shop.ActiveBait == "worm" ? "ไม่จำกัด" : Shop.BaitLeft(Shop.ActiveBait).ToString())}) · {bait}\n" +
-                $"ไฟล่อใต้น้ำ: {(Shop.HasUwLight ? "มี · มองเห็นใต้น้ำชัดขึ้น ปลากินเร็วขึ้นนิด" : "ยังไม่มี (ร้านลุงส้ม)")}\n" +
-                $"ปลาบึกยักษ์แม่โขง: {(Boss.GearReady ? "อุปกรณ์พร้อมสู้แล้ว" : "ต้องมีคันคาร์บอนเบา + รอกเบทคาสติ้งขึ้นไป")}",
-                ("ปิด", null));
+            // การ์ดหนึ่งใบ: รูป · ชื่อ · คำอธิบาย · แถบค่าพลัง (ตอนนี้ / ขั้นสูงสุด)
+            void Card(Texture2D art, string icon, string title, string sub, (string label, float now, string val)[] bars, Color tint)
+            {
+                var c = new VisualElement(); c.style.flexDirection = FlexDirection.Row; c.style.alignItems = Align.Center; c.style.marginBottom = 8; Pad(c, 8, 10); Radius(c, 10);
+                c.style.backgroundColor = tint; gearList.Add(c);
+                var pic = new VisualElement { pickingMode = PickingMode.Ignore }; pic.style.width = pic.style.height = Narrow ? 64 : 80; pic.style.flexShrink = 0; pic.style.marginRight = 12;
+                pic.style.backgroundImage = art != null ? art : Resources.Load<Texture2D>("UI/Icons/" + icon); pic.style.backgroundSize = new BackgroundSize(BackgroundSizeType.Contain); c.Add(pic);
+                var col = new VisualElement(); col.style.flexGrow = 1; col.style.flexShrink = 1; col.style.minWidth = 0; c.Add(col);
+                var tl = L(col, title, Narrow ? 19 : 22, new Color(1f, 0.93f, 0.8f)); tl.style.unityTextAlign = TextAnchor.MiddleLeft; tl.style.unityFontDefinition = fontTitle;
+                var sl = L(col, sub, 14, new Color(0.88f, 0.82f, 0.7f), false); sl.style.unityTextAlign = TextAnchor.MiddleLeft; sl.style.whiteSpace = WhiteSpace.Normal;
+                foreach (var (label, now, val) in bars)
+                {
+                    var r = new VisualElement(); r.style.flexDirection = FlexDirection.Row; r.style.alignItems = Align.Center; r.style.marginTop = 4; col.Add(r);
+                    var lb = L(r, label, 14, new Color(0.95f, 0.88f, 0.72f), false); lb.style.width = Narrow ? 92 : 120; lb.style.unityTextAlign = TextAnchor.MiddleLeft; lb.style.flexShrink = 0;
+                    var bar = new VisualElement(); bar.style.flexGrow = 1; bar.style.height = 12; bar.style.backgroundColor = new Color(0, 0, 0, 0.45f); Radius(bar, 6); r.Add(bar);
+                    var fill = new VisualElement(); fill.style.height = Length.Percent(100); fill.style.width = Length.Percent(Mathf.Clamp01(now) * 100); Radius(fill, 6);
+                    fill.style.backgroundColor = now >= 0.99f ? new Color(0.5f, 0.85f, 0.35f) : new Color(0.95f, 0.7f, 0.28f); bar.Add(fill);
+                    L(r, val, 14, new Color(1f, 0.86f, 0.5f)).style.marginLeft = 8;
+                }
+            }
+            string[] rods = { "คันไม้ไผ่ของพ่อ", "คันเบ็ดไฟเบอร์", "คันคาร์บอนเบา", "คันเบ็ดครูช่างฝีมือ" };
+            string[] reels = { "รอกมือ", "รอกสปินนิ่ง", "รอกเบทคาสติ้ง", "รอกทองเหลืองโบราณ" };
+            var dark = new Color(0f, 0f, 0f, 0.3f);
+            Card(s.rod > 0 ? Resources.Load<Texture2D>("UI/Shop/rod" + s.rod) : null, "cast", $"คันเบ็ด: {rods[s.rod]}", s.rod >= 3 ? "ขั้นสูงสุดแล้ว" : $"ขั้นถัดไป: {rods[s.rod + 1]} (ร้านลุงส้ม)",
+                new[] { ("เหวี่ยงไกล", s.rod / 3f, $"{Shop.CastDist:0} ม."), ("สายตึงช้าลง", s.rod / 3f, $"{(1 - Shop.RodTension) * 100:0}%") }, dark);
+            Card(s.reel > 0 ? Resources.Load<Texture2D>("UI/Shop/reel" + s.reel) : null, "reel", $"รอก: {reels[s.reel]}", s.reel >= 3 ? "ขั้นสูงสุดแล้ว" : $"ขั้นถัดไป: {reels[s.reel + 1]} (ร้านลุงส้ม)",
+                new[] { ("กรอสายเร็วขึ้น", s.reel / 3f, $"+{(Shop.ReelSpeed - 1) * 100:0}%") }, dark);
+            var b = Shop.ActiveBait;
+            Card(b == "worm" ? null : Resources.Load<Texture2D>("UI/Shop/" + b), "hook", $"เหยื่อ: {Shop.BaitName(b)}",
+                (b == "shrimp" ? "ปลาหายาก/ดาวสูงเข้าบ่อยขึ้น" : b == "bran" ? "ปลากินเร็วขึ้น" : b == "frog" ? "ปลาตัวใหญ่ขึ้น" : "เหยื่อพื้นฐาน ใช้ได้ไม่จำกัด") + (b == "worm" ? "" : $" · เหลือ {Shop.BaitLeft(b)}"),
+                new (string, float, string)[0], dark);
+            Card(null, "eye", "ไฟล่อใต้น้ำ", Shop.HasUwLight ? "มีแล้ว · มองเห็นใต้น้ำชัดขึ้น ปลากินเร็วขึ้นนิด" : "ยังไม่มี · ซื้อที่ร้านลุงส้ม ฿700",
+                new[] { ("มองเห็นใต้น้ำ", Shop.HasUwLight ? 1f : 0.4f, Shop.HasUwLight ? "ชัดมาก" : "ปกติ") }, dark);
+            Card(null, "trophy", "สู้ปลาบึกยักษ์แม่โขง", Boss.GearReady ? "อุปกรณ์พร้อมแล้ว! ไปด่านแก่งอาถรรพ์พญานาคได้เลย" : "ต้องมีคันคาร์บอนเบา + รอกเบทคาสติ้งขึ้นไป",
+                new[] { ("ความพร้อม", Mathf.Clamp01((Mathf.Min(s.rod, 2) + Mathf.Min(s.reel, 2)) / 4f), Boss.GearReady ? "พร้อม" : $"{Mathf.Min(s.rod, 2) + Mathf.Min(s.reel, 2)}/4") },
+                Boss.GearReady ? new Color(0.22f, 0.32f, 0.12f, 0.9f) : dark);
         }
     }
 }

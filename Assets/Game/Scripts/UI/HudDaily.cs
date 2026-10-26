@@ -29,8 +29,9 @@ namespace CozyFishing
             if (GameUrl.Value.Contains("opendaily")) root.schedule.Execute(() => { if (!dailyTested && Time.time > 8 && !CardOpen && !ModalOpen && Story.Phase == StoryPhase.Fishing) { dailyTested = true; OpenDaily(); } }).Every(500);   // ทดสอบ
             if (GameUrl.Value.Contains("openboard")) root.schedule.Execute(() => { if (!boardTested && Time.time > 8 && !CardOpen && !ModalOpen && Story.Phase == StoryPhase.Fishing) { boardTested = true; OpenBoard(); } }).Every(500);   // ทดสอบ: เปิดกระดานปลาใหญ่
             if (GameUrl.Value.Contains("openward")) root.schedule.Execute(() => { if (!wardTested && Time.time > 8 && !CardOpen && !ModalOpen && Story.Phase == StoryPhase.Fishing) { wardTested = true; OpenWardrobe(); } }).Every(500);   // ทดสอบ: เปิดตู้แต่งตัว
+            if (GameUrl.Value.Contains("opengear")) root.schedule.Execute(() => { if (!gearTested && Time.time > 8 && !CardOpen && !ModalOpen && Story.Phase == StoryPhase.Fishing) { gearTested = true; ShowGear(); } }).Every(500);   // ทดสอบ: เปิดหน้าอุปกรณ์
         }
-        bool dailyTested, boardTested, wardTested;
+        bool dailyTested, boardTested, wardTested, gearTested;
 
         void CloseDaily() { daily.style.display = DisplayStyle.None; GameInput.Blocked = ModalOpen || CardOpen; }
 

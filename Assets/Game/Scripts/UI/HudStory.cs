@@ -23,7 +23,7 @@ namespace CozyFishing
         Action<bool[]> onEveningDone;
         bool[] eveGrill;
         bool dialogNext;
-        public bool ModalOpen => Shown(ask) || Shown(fadeEl) || Shown(dialogEl) || Shown(morning) || Shown(evening) || Shown(bag) || Shown(casePanel) || Shown(cluePop) || Shown(title) || Shown(settings) || Shown(bed) || Shown(sneak) || Shown(shop) || Shown(daily) || Shown(wardrobe);
+        public bool ModalOpen => Shown(ask) || Shown(fadeEl) || Shown(dialogEl) || Shown(morning) || Shown(evening) || Shown(bag) || Shown(casePanel) || Shown(cluePop) || Shown(title) || Shown(settings) || Shown(bed) || Shown(sneak) || Shown(shop) || Shown(daily) || Shown(wardrobe) || Shown(gear);
         VisualElement caseBtn, casePanel, caseBody, cluePop, clueBody;
         Label caseBtnTxt;
 
@@ -549,10 +549,17 @@ namespace CozyFishing
             var bt2 = L(bcol, Cloud.Ready ? "อันดับปลาตัวหนักสุดประจำสัปดาห์" : "อันดับประจำสัปดาห์ (ออฟไลน์อยู่)", Narrow ? 16 : 19, new Color(0.36f, 0.2f, 0.08f), false); bt2.style.unityTextAlign = TextAnchor.MiddleLeft; bt2.style.whiteSpace = WhiteSpace.Normal;
             morningBody.Add(boardBtn);
             var extra = new VisualElement { pickingMode = PickingMode.Ignore }; extra.style.flexDirection = FlexDirection.Row; extra.style.justifyContent = Justify.Center; extra.style.flexWrap = Wrap.Wrap; extra.style.marginTop = 6; morningBody.Add(extra);
+            // สามปุ่มไม้เท่ากัน: ไอคอนด้านบน ชื่อด้านล่าง (เดิมไอคอนทับตัวหนังสือ ล้นปุ่มบนมือถือ)
+            extra.style.flexWrap = Wrap.NoWrap; extra.style.alignSelf = Align.Center; extra.style.width = Length.Percent(Narrow ? 100 : 90);
             foreach (var (label, icon, act) in new (string, string, System.Action)[] { ("อุปกรณ์ของฉัน", "reel", ShowGear), ("ตู้แต่งตัว", "star_on", OpenWardrobe), ("ท้าดวลเพื่อน", "trophy", StartDuelFromMorning) })
             {
-                var eb = new Button(act) { text = label }; WoodButton(eb, true); eb.style.fontSize = Narrow ? 22 : 24; eb.style.marginLeft = eb.style.marginRight = 6; eb.style.marginTop = 4; eb.style.flexShrink = 0;
-                eb.style.paddingLeft = 62; var ic = Ico(eb, icon, 34); Abs(ic, 16, null, 10); extra.Add(eb);
+                var eb = new Button(act) { text = "" }; WoodButton(eb, true);
+                eb.style.flexGrow = 1; eb.style.flexBasis = 0; eb.style.minWidth = 0; eb.style.marginLeft = eb.style.marginRight = 4; eb.style.marginTop = 4;
+                eb.style.flexDirection = FlexDirection.Column; eb.style.alignItems = Align.Center; eb.style.justifyContent = Justify.Center;
+                Pad(eb, 10, 6); eb.style.minHeight = Narrow ? 92 : 104;
+                var ic = Ico(eb, icon, Narrow ? 34 : 40); ic.style.marginBottom = 4; ic.style.flexShrink = 0;
+                var lb = L(eb, label, Narrow ? 18 : 21, new Color(0.24f, 0.11f, 0.03f)); lb.style.unityFontDefinition = fontTitle; lb.style.whiteSpace = WhiteSpace.Normal; lb.style.unityTextAlign = TextAnchor.MiddleCenter;
+                extra.Add(eb);
             }
             // เป้าหมายครอบครัว: กรอบไม้ไผ่บนกระดาษ + ภาพสเก็ตช์ของเป้าหมาย
             var g = Story.CurrentGoal;
