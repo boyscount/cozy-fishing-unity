@@ -60,7 +60,7 @@ namespace CozyFishing
             foreach (var l in FindObjectsByType<Light>(FindObjectsSortMode.None))
                 if (l.name == "LanternLight" || l.name == "PlayerLanternLight") { flicker.Add(l); flickerBase.Add(l.intensity); }
             var sh = Shader.Find("CozyFishing/NightSky");
-            if (darkStage && sh != null && shore.Count > 0)
+            if (darkStage && id != "houseboat" && sh != null && shore.Count > 0)   // หลืบแพ: ไม่มีมอสเรืองแสง (หมอกหนาทำให้จุดเขียวฟุ้งเป็นดวงใหญ่ทั้งจอ)
             {
                 // มอสเรืองแสง: จุดนิ่งเรียงตามขอบน้ำ สีเขียวฟ้าสลัว ไม่กะพริบ (a = 0)
                 mossMat = new Material(sh) { mainTexture = Dot() }; mossMat.SetFloat("_Twinkle", 0.6f);

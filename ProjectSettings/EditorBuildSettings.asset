@@ -38,5 +38,8 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Game/Scenes/Squid.unity
     guid: 9b821342a41c6ba41bdb4b26a026b61b
+  - enabled: 1
+    path: Assets/Game/Scenes/Mekong.unity
+    guid: f56f1091eef12c749892ea795d178564
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}

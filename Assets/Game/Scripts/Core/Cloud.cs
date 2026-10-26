@@ -17,7 +17,7 @@ namespace CozyFishing
     //  ออฟไลน์/เน็ตหลุด/โหมดทดสอบ (bot): เล่นได้ปกติ แค่ไม่มีส่วนออนไลน์
     public static class Cloud
     {
-        static readonly string[] SyncKeys = { "cozy.story.v1", "cozy.free.v1", "cozy.dex.v1", "abot.mystery.v1", "cozy.daily.v1", "cozy.weekly.v1" };
+        static readonly string[] SyncKeys = { "cozy.story.v1", "cozy.free.v1", "cozy.dex.v1", "abot.mystery.v1", "cozy.daily.v1", "cozy.weekly.v1", "cozy.boss.v1" };
         const string SavedAtKey = "cozy.cloud.savedAt", BlobKey = "save";
         public static bool Ready { get; private set; }
         public static string PlayerName { get; private set; } = "";
@@ -56,7 +56,7 @@ namespace CozyFishing
             if (Story.HasStorySave && Story.Phase != StoryPhase.New && Time.realtimeSinceStartup > 20) return;   // กำลังเล่นอยู่แล้ว ไม่ดึงทับกลางเกม
             for (int i = 0; i < blob.keys.Count && i < blob.values.Count; i++) PlayerPrefs.SetString(blob.keys[i], blob.values[i]);
             PlayerPrefs.SetString(SavedAtKey, blob.savedAt.ToString()); PlayerPrefs.Save();
-            Story.ReloadFromPrefs(); FishDex.Reload(); Mystery.Reload(); Daily.Reload(); Weekly.Reload();
+            Story.ReloadFromPrefs(); FishDex.Reload(); Mystery.Reload(); Daily.Reload(); Weekly.Reload(); Boss.Reload();
             Debug.Log("[Cloud] restored save from cloud");
         }
 

@@ -122,7 +122,8 @@ namespace CozyFishing
                     bool inZone = Mathf.Abs(strike.Pos - strike.Center) < strike.Width * 0.35f;
                     if (inZone && Time.time > botNext) { botNext = Time.time + 0.35f; return true; }
                     return false;
-                case FishState.Fight: return fight.Tension < Mathf.Min(0.8f, fight.ZoneCenter + fight.ZoneWidth * 0.3f);
+                case FishState.Fight: if (BossHooked && bossPhase == 3 && fight.Time < bossRunEnd) return false;   // บอทผ่อนสายตอนบอสวิ่งเข้าแก่ง
+                    return fight.Tension < Mathf.Min(0.8f, fight.ZoneCenter + fight.ZoneWidth * 0.3f);
                 case FishState.Caught: if (hud.CatchCardOpen && t > 6f) hud.CloseCard(false); return false;
                 default: return false;
             }
@@ -274,12 +275,25 @@ namespace CozyFishing
         bool NearSpecial => new Vector2(bob.x - world.Special.x, bob.z - world.Special.z).magnitude < world.SpecialRadius;
         // ดวงประจำวัน: ฟ้าครึ้ม/ฝน = ขยะบ่อยขึ้น · วันฝนหนักบางวันปลาแทบไม่กินเหยื่อ
         bool NearDock => world.OnSolid(player.Pos.x, player.Pos.z);   // ยืนบนท่าน้ำ
+        public bool BossHooked => !fish.IsJunk && fish.species != null && fish.species.id == Boss.Id;
+        int bossPhase; float bossRunAt, bossRunEnd, bossSpikeAt;
+        // แม่น้ำโขง: บอสไม่ได้มาจากการสุ่มปกติ (chance 0) · มีโอกาสโผล่เมื่อพร้อม (สัปดาห์นี้ยังไม่มีใครในเครื่องนี้จับได้ + อุปกรณ์ถึง)
+        void BossRoll()
+        {
+            bool force = Bot && GameUrl.Value.Contains("boss");   // ทดสอบ: บอสโผล่ทุกครั้ง ไม่ต้องมีอุปกรณ์
+            if (world.StageId != Boss.Stage || fish.IsJunk || (!Boss.Eligible && !force)) return;
+            if (!force && rng.NextDouble() > (Boss.Prayed ? 0.13 : 0.08) * (NearSpecial ? 2 : 1)) return;
+            var sp = FishDatabase.Get(Boss.Id); if (sp == null) return;
+            float k = (float)rng.NextDouble();
+            fish = new Catch { species = sp, kg = (float)System.Math.Round(sp.kgMin + (sp.kgMax - sp.kgMin) * k, 1), cm = (int)(sp.cmMin + (sp.cmMax - sp.cmMin) * k) };
+        }
         void Roll()
         {
             // สืบคดี: ระหว่างตามหาเบาะแส ปลาที่พาเบาะแส/ขวดจดหมาย มีโอกาสโผล่มากขึ้นเมื่ออยู่ในเงื่อนไข
             var o = Mystery.Override(world.StageId, Story.S.time, NearSpecial, NearDock, rng);
             if (o.HasValue) { fish = o.Value; return; }
             RollNormal();
+            BossRoll();
         }
         void RollNormal() => fish = Bot && GameUrl.Value.Contains("rarefish") ? FishRoller.Roll(world.StageId, true, 3f, 0f, Story.S.time, rng, 1f)   // ทดสอบ/ถ่ายคลิป: ปลาหายากขึ้นบ่อย
             : Story.S.caught == 0 ? FishRoller.Roll(world.StageId, false, 1f, 0f, Story.S.time, rng)   // ตัวแรก: ปลาจริงเสมอ
@@ -332,8 +346,33 @@ namespace CozyFishing
         }
 
         float nextSplash;
+        // บอสสามช่วงตามความคืบหน้า: ดิ่งลึก (ดึงหนัก) → พุ่งขึ้นผิวน้ำ (กระชากเป็นจังหวะ) → ว่ายเข้าแก่ง (ช่วงวิ่งต้องผ่อนสาย ไม่งั้นสายตึงพรวด)
+        void BossFight(float dt, bool held)
+        {
+            float p = fight.Progress;
+            int ph = Mathf.Max(bossPhase, p < 0.4f ? 1 : p < 0.7f ? 2 : 3);   // ช่วงเดินหน้าอย่างเดียว (ไม่สลับไปมาเมื่อความคืบหน้าแกว่งรอบเส้นแบ่ง)
+            if (ph != bossPhase)
+            {
+                bossPhase = ph;
+                hud.Toast(ph == 1 ? "ปลาบึกยักษ์ดิ่งลงลึก! ค่อย ๆ กรอ อย่าให้สายตึงเกิน" : ph == 2 ? "มันพุ่งขึ้นผิวน้ำ! ระวังกระชาก" : "มันว่ายเข้าแก่ง! ผ่อนสายตอนมันวิ่ง");
+                CameraRig.Impulse(0.6f); bossRunAt = fight.Time + 2.5f; bossSpikeAt = fight.Time + 1.5f;
+            }
+            fight.PullBoost = ph == 1 ? 0.18f : ph == 2 ? 0.05f : 0.08f;
+            fight.ReelTensionMul = 1f; fight.ReelProgMul = 1f;
+            if (ph == 2 && fight.Time > bossSpikeAt) { bossSpikeAt = fight.Time + 2.2f + (float)rng.NextDouble() * 1.8f; fight.Tension = Mathf.Min(0.95f, fight.Tension + 0.16f); WaterFx.AddRipple(bob.x, bob.z, 2.2f); Sfx.Splash(); CameraRig.Impulse(0.4f); }
+            if (ph == 3)
+            {
+                if (fight.Time > bossRunAt && fight.Time > bossRunEnd) { bossRunEnd = fight.Time + 2.2f; bossRunAt = bossRunEnd + 2.5f + (float)rng.NextDouble() * 2f; hud.Toast("ผ่อนสาย! มันวิ่งเข้าแก่ง"); }
+                bool running = fight.Time < bossRunEnd;
+                if (running) { fight.ReelTensionMul = 2.4f; fight.ReelProgMul = -0.35f; }
+            }
+            if (!Boss.Prayed && Mathf.Repeat(fight.Time, 7f) < dt) { hud.Toast("เงาพญานาคใต้น้ำ… สายสะบัดแรง"); fight.Tension = Mathf.Min(0.95f, fight.Tension + 0.12f); }   // ไม่ไหว้ศาล
+            GaugeWobble = Mathf.Max(GaugeWobble, Boss.Prayed ? 0 : 0.5f);
+        }
+
         void FightStep(float dt, bool held)
         {
+            if (BossHooked) BossFight(dt, held);
             var r = fight.Step(dt, held);
             if (GhostPull > 0) fight.Tension = Mathf.Clamp01(fight.Tension + GhostPull * dt * (0.6f + Mathf.PerlinNoise(Time.time * 3, 0.5f)));   // มีอะไรดึงสายอยู่ใต้น้ำ
             float pr = Mathf.Clamp01(fight.Progress);
@@ -359,6 +398,7 @@ namespace CozyFishing
             caughtGo = MakeFish(fish.species, Mathf.Min(2.4f, 0.55f + fish.cm / 80f));
             caughtGo.transform.position = bob;
             from = bob;
+            if (BossHooked) { Boss.MarkCaught(); bossPhase = 0; }
             caughtIsNew = FishDex.Record(fish.species.id, fish.kg);
             Cloud.SubmitFish(world.StageId, fish.species.id, fish.kg);   // กระดานปลาใหญ่ประจำสัปดาห์ของด่านนี้ (ออนไลน์เท่านั้น)
             if (Shop.ActiveBait != "worm" && Shop.UseBait()) hud.Toast("เหยื่อหมดแล้ว กลับไปใช้ไส้เดือน");
@@ -385,6 +425,13 @@ namespace CozyFishing
             if (dailyNote != null) { Sfx.Coin(); clueNote = clueNote != null ? clueNote + "\n" + dailyNote : dailyNote; }
             if (caughtClue != null) hud.Toast($"เบาะแส {Mystery.CluesFound}/{Mystery.Current.clues.Length} · บันทึกลงสมุดคดีแล้ว");
             if (caughtSecret != null) hud.Toast($"ค้นพบความลับของ{fish.species.name}! ดูในสมุดปลา");
+            if (BossHooked && pending != null)
+            {
+                hud.ShowCatch(fish, img, caughtIsNew, "เก็บ (ขายได้ราคาสูง)", () => { Boss.OnKeep(); KeepPending(true); },
+                    $"ปล่อยคืนแม่น้ำ (รับพร {Story.Baht(Boss.Blessing)})", () => { Boss.OnRelease(); pending = null; hud.Toast("ปลาบึกยักษ์ว่ายกลับสู่แม่น้ำโขง… ลูกไฟพญานาคลอยขึ้นเป็นสาย"); EndCatch(false); },
+                    "ปลาบึกยักษ์แห่งแม่น้ำโขง! ปล่อยคืนแม่น้ำ = พญานาคให้พร ครอบครัวมีความสุข · เก็บ = ขายได้เงินก้อนใหญ่");
+                return;
+            }
             if (Story.BasketFull)
             {
                 int ci = Story.CheapestIndex(); var c = Story.S.basket[ci];

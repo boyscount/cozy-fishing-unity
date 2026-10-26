@@ -11,6 +11,7 @@ namespace CozyFishing
         public float Tension = 0.45f, Progress = 0.22f, Slack, Time;
         public float ZoneCenter = 0.5f, ZoneWidth = 0.6f;
         public bool Dashing { get; private set; }
+        public float PullBoost, ReelTensionMul = 1f, ReelProgMul = 1f;   // บอส: ตั้งทุกเฟรมตามช่วงการสู้
         readonly FishSpecies sp;
         readonly float rodK;
         readonly Random rng;
@@ -37,7 +38,7 @@ namespace CozyFishing
                 OnDash?.Invoke();
             }
             Dashing = Time < dashEnd;
-            var pull = Dashing ? sp.dash : sp.pull * (0.6f + 0.4f * (float)Math.Sin(Time * 2.3f));
+            var pull = (Dashing ? sp.dash : sp.pull * (0.6f + 0.4f * (float)Math.Sin(Time * 2.3f))) + PullBoost;
             if (sp.stars >= 3)
             {
                 ZoneWidth = sp.stars >= 4 ? 0.36f : 0.48f;
@@ -46,8 +47,8 @@ namespace CozyFishing
             }
             if (reeling)
             {
-                Tension += (0.35f + pull * 0.5f) * rodK * dt;
-                Progress += sp.prog * reelK * dt * (InZone ? 1f : 0.35f) - (Dashing ? sp.dash * 0.06f * dt : 0f);
+                Tension += (0.35f + pull * 0.5f) * rodK * ReelTensionMul * dt;
+                Progress += sp.prog * reelK * ReelProgMul * dt * (InZone ? 1f : 0.35f) - (Dashing ? sp.dash * 0.06f * dt : 0f);
             }
             else
             {
