@@ -17,8 +17,8 @@ Mesh:
     firstVertex: 0
     vertexCount: 22
     localAABB:
-      m_Center: {x: 0.00292705, y: 0.3021353, z: -0.0026104804}
-      m_Extent: {x: 0.06040608, y: 0.3021353, z: 0.020126987}
+      m_Center: {x: 0.00292705, y: 0.31423175, z: -0.0026104804}
+      m_Extent: {x: 0.06040608, y: 0.31423175, z: 0.020126987}
   m_Shapes:
     vertices: []
     shapes: []
@@ -101,9 +101,9 @@ Mesh:
   m_CompressedMesh:
     m_Vertices:
       m_NumItems: 66
-      m_Range: 0.6617496
+      m_Range: 0.68594253
       m_Start: -0.05747903
-      m_Data: b2083c163c16c6233c163c1688099d2dd9149d249d2dd914eb08fd44ca12ff23fd44ca12c4065d5c8510d8215d5c8510bd03bd73900ed11ebd73900e09011e8b710d1e1c1e8b710d00007ea2940d141b7ea2940d9d01deb9400fb11cdeb9400f15063ed1871229213ed18712a40c9fe83e17b8279fe83e17a813ffff031dbc2effff031dy
+      m_Data: 6408741574158322741574153209e82c1d145223e82c1d149a085c442012ba225c4420128706d15bef0fa720d15bef0f9b0345730d0ebb1d45730d0e0001b98af70c201bb98af70c00002ea2190d201a2ea2190d8e01a2b9b60eae1ba2b9b60ede0516d1df11fe1f16d1df11320c8be86c1651268be86c16f712fffffd1b162dfffffd1by
       m_BitSize: 16
     m_UV:
       m_NumItems: 0
@@ -113,9 +113,9 @@ Mesh:
       m_BitSize: 0
     m_Normals:
       m_NumItems: 44
-      m_Range: 0.33330733
-      m_Start: -0.093726926
-      m_Data: 481a481a4813480c48024800480148054811481a4831483e485d486e489048a148c148d048ea48f448ff48ffy
+      m_Range: 0.32100725
+      m_Start: -0.09014878
+      m_Data: 481a481a4813480c48024800480148054811481a4831483e485d486e488f48a148c148d048ea48f448ff48ffy
       m_BitSize: 8
     m_Tangents:
       m_NumItems: 0
@@ -151,8 +151,8 @@ Mesh:
       m_BitSize: 5
     m_UVInfo: 0
   m_LocalAABB:
-    m_Center: {x: 0.00292705, y: 0.3021353, z: -0.0026104804}
-    m_Extent: {x: 0.06040608, y: 0.3021353, z: 0.020126987}
+    m_Center: {x: 0.00292705, y: 0.31423175, z: -0.0026104804}
+    m_Extent: {x: 0.06040608, y: 0.31423175, z: 0.020126987}
   m_CookingOptions: 30
   m_PreBakeConvexCollisionMesh: 0
   m_PreBakeTriangleCollisionMesh: 0
