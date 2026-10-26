@@ -128,8 +128,8 @@ namespace CozyFishing
                     g.position = Vector3.Lerp(showFrom, peak, Mathf.SmoothStep(0, 1, k)) + Vector3.up * Mathf.Sin(k * Mathf.PI) * (0.5f + len * 0.8f);
                     if (k >= 0.86f)
                     {
-                        phase = 1; phaseT = 0; Time.timeScale = 0;   // ภาพหยุดนิ่ง เหมือนกดชัตเตอร์
-                        hud.PhotoFlash(fishing.CaughtName, fishing.CaughtNew);
+                        // เดิมหยุดภาพ + แฟลชกรอบโพลารอยด์ "ได้ปลา!" (ผู้เล่นไม่ชอบ บังจอ) → ไปห้อยแกว่งที่ปลายสายต่อเลย
+                        phase = 2; phaseT = 0; Time.timeScale = 1; slowMo = false; blendPos = g.position; blendRot = g.rotation;
                     }
                     break;
                 }

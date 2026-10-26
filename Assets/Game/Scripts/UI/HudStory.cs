@@ -504,16 +504,19 @@ namespace CozyFishing
             var sart = new VisualElement { pickingMode = PickingMode.Ignore }; sart.style.width = sart.style.height = Narrow ? 52 : 64; sart.style.flexShrink = 0; sart.style.marginRight = 14;
             sart.style.backgroundImage = Resources.Load<Texture2D>("UI/Shop/reel2"); sart.style.backgroundSize = new BackgroundSize(BackgroundSizeType.Contain); shopBtn.Add(sart);
             var scol = new VisualElement { pickingMode = PickingMode.Ignore }; shopBtn.Add(scol);
-            var st1 = L(scol, "ร้านลุงส้ม", Narrow ? 28 : 32, new Color(0.24f, 0.11f, 0.03f)); st1.style.unityTextAlign = TextAnchor.MiddleLeft; st1.style.unityFontDefinition = fontTitle;
-            var st2 = L(scol, "คันเบ็ด · รอก · เหยื่อ · ของกันผี · ของในบ้าน", Narrow ? 16 : 19, new Color(0.36f, 0.18f, 0.06f), false); st2.style.unityTextAlign = TextAnchor.MiddleLeft;
+            var st1 = L(scol, "ร้านลุงส้ม", Narrow ? 28 : 32, new Color(1f, 0.96f, 0.86f)); st1.style.unityTextAlign = TextAnchor.MiddleLeft; st1.style.unityFontDefinition = fontTitle; Shadow(st1);   // ตัวสว่างบนไม้ส้ม (เดิมน้ำตาลเข้มบนส้ม อ่านแทบไม่ออก)
+            var st2 = L(scol, "คันเบ็ด · รอก · เหยื่อ · ของกันผี · ของในบ้าน", Narrow ? 16 : 19, new Color(1f, 0.9f, 0.72f), false); st2.style.unityTextAlign = TextAnchor.MiddleLeft; Shadow(st2);
             morningBody.Add(shopBtn);
             // กระดานปลาใหญ่ประจำสัปดาห์ (ออนไลน์) — ปุ่มเล็กใต้ร้านลุงส้ม
-            var boardBtn = new Button(() => OpenBoard()) { text = Cloud.Ready ? "กระดานปลาใหญ่ประจำสัปดาห์" : "กระดานปลาใหญ่ประจำสัปดาห์ (ออฟไลน์)" };
-            StyleButton(boardBtn, new Color(0.3f, 0.2f, 0.08f, 0.92f)); GoldFrame(boardBtn, 1); boardBtn.style.alignSelf = Align.Center; boardBtn.style.marginTop = 4; boardBtn.style.marginBottom = 4;
-            boardBtn.style.fontSize = Narrow ? 18 : 21; boardBtn.style.color = new Color(1f, 0.9f, 0.7f); Pad(boardBtn, 8, 22);
-            boardBtn.style.flexDirection = FlexDirection.Row; boardBtn.style.alignItems = Align.Center;
-            var bIco = Ico(boardBtn, "trophy", Narrow ? 28 : 34); bIco.style.marginRight = 8; bIco.SendToBack();   // ถ้วยรางวัลหน้าข้อความปุ่ม
-            Hoverable(boardBtn, new Color(0.42f, 0.3f, 0.1f, 0.95f)); morningBody.Add(boardBtn);
+            // แผ่นไม้เต็มขนาดแบบเดียวกับป้ายร้าน (เดิมเป็นข้อความในปุ่มเล็ก มือถือแล้วตัวหนังสือล้นกรอบ ไม่ดูเป็นปุ่ม)
+            var boardBtn = new Button(() => OpenBoard()) { text = "" }; WoodButton(boardBtn, true);
+            boardBtn.style.alignSelf = Align.Center; boardBtn.style.flexShrink = 0; boardBtn.style.marginTop = 8; boardBtn.style.marginBottom = 4;
+            boardBtn.style.flexDirection = FlexDirection.Row; boardBtn.style.alignItems = Align.Center; Pad(boardBtn, 10, 26); boardBtn.style.minWidth = Narrow ? 300 : 460;
+            var bIco = Ico(boardBtn, "trophy", Narrow ? 44 : 52); bIco.style.marginRight = 14; bIco.style.flexShrink = 0;
+            var bcol = new VisualElement { pickingMode = PickingMode.Ignore }; bcol.style.flexShrink = 1; boardBtn.Add(bcol);
+            var bt1 = L(bcol, "กระดานปลาใหญ่", Narrow ? 26 : 30, new Color(0.24f, 0.11f, 0.03f)); bt1.style.unityTextAlign = TextAnchor.MiddleLeft; bt1.style.unityFontDefinition = fontTitle;
+            var bt2 = L(bcol, Cloud.Ready ? "อันดับปลาตัวหนักสุดประจำสัปดาห์" : "อันดับประจำสัปดาห์ (ออฟไลน์อยู่)", Narrow ? 16 : 19, new Color(0.36f, 0.2f, 0.08f), false); bt2.style.unityTextAlign = TextAnchor.MiddleLeft; bt2.style.whiteSpace = WhiteSpace.Normal;
+            morningBody.Add(boardBtn);
             // เป้าหมายครอบครัว: กรอบไม้ไผ่บนกระดาษ + ภาพสเก็ตช์ของเป้าหมาย
             var g = Story.CurrentGoal;
             var gb = new VisualElement { pickingMode = PickingMode.Ignore }; Skin(gb, "bamboo_paper", 26); gb.style.paddingTop = 22; gb.style.paddingBottom = 24; gb.style.paddingLeft = 30; gb.style.paddingRight = 26;
@@ -634,15 +637,20 @@ namespace CozyFishing
             eveGoals = new VisualElement { pickingMode = PickingMode.Ignore }; Skin(eveGoals, "parchment", 20); evening.Add(eveGoals);
             eveGoals.style.paddingTop = 18; eveGoals.style.paddingBottom = 20; eveGoals.style.paddingLeft = 24; eveGoals.style.paddingRight = 22;
             // ปุ่ม: ปิ้งทั้งหมด (ส้ม) · ขายทั้งหมด (มัสตาร์ด) · ตกลง (เขียว) บนแผ่นไม้
-            eveBtns = new VisualElement { pickingMode = PickingMode.Ignore }; eveBtns.style.flexDirection = FlexDirection.Row; eveBtns.style.flexWrap = Wrap.Wrap; evening.Add(eveBtns);
-            Button Plank(string text, Color tint, Action click)
+            eveBtns = new VisualElement { pickingMode = PickingMode.Ignore }; eveBtns.style.flexShrink = 0; eveBtns.style.alignItems = Align.Center; eveBtns.style.flexDirection = FlexDirection.Row; eveBtns.style.flexWrap = Wrap.Wrap; evening.Add(eveBtns);
+            // ปุ่มลัด (ปิ้ง/ขายทุกตัว) เป็นไม้สีเรียบตัวเล็ก มีไอคอนไฟ/เหรียญ · "ตกลง" ปุ่มหลักใหญ่สีเขียว ตัวขาว แยกห่างออกไป (เดิมสามปุ่มหน้าตาเหมือนกัน)
+            Button Plank(string text, string icon, Color tint, Action click, bool primary)
             {
                 var b = new Button(click) { text = text }; WoodButton(b, true); b.style.unityBackgroundImageTintColor = tint;
-                b.style.fontSize = 30; b.style.unityFontDefinition = fontTitle; Pad(b, 12, 30); b.style.marginLeft = 10; b.style.marginTop = 8; eveBtns.Add(b); return b;
+                b.style.fontSize = primary ? 34 : 28; b.style.unityFontDefinition = fontTitle; Pad(b, primary ? 14 : 10, primary ? 40 : 22);
+                b.style.marginLeft = primary ? 26 : 10; b.style.marginTop = 8; b.style.flexShrink = 0; b.style.minHeight = primary ? 76 : 62; b.style.minWidth = primary ? 230 : 250; b.style.whiteSpace = WhiteSpace.NoWrap;   // จอเล็กเคยถูกบีบทั้งสูงและกว้างจนตัวหนังสือล้นแผ่นไม้ ไอคอนทับคำ
+                if (primary) { b.style.color = Color.white; b.style.textShadow = new TextShadow { offset = new Vector2(0, 2), blurRadius = 4, color = new Color(0, 0.15f, 0, 0.8f) }; }
+                b.style.paddingLeft = primary ? 72 : 56; var ic = Ico(b, icon, primary ? 40 : 30); Abs(ic, primary ? 20 : 16, null, primary ? 12 : 9);
+                eveBtns.Add(b); return b;
             }
-            Plank("ปิ้งทั้งหมด", new Color(1f, 0.6f, 0.3f), () => { for (int i = 0; i < eveGrill.Length; i++) eveGrill[i] = true; FillEvening(); });
-            Plank("ขายทั้งหมด", new Color(0.95f, 0.8f, 0.35f), () => { for (int i = 0; i < eveGrill.Length; i++) eveGrill[i] = false; FillEvening(); });
-            Plank("ตกลง", new Color(0.55f, 0.95f, 0.55f), () => { Hide(evening); onEveningDone?.Invoke(eveGrill); });
+            Plank("ปิ้งทุกตัว", "fire", new Color(0.82f, 0.72f, 0.6f), () => { for (int i = 0; i < eveGrill.Length; i++) eveGrill[i] = true; FillEvening(); }, false);
+            Plank("ขายทุกตัว", "coin", new Color(0.82f, 0.72f, 0.6f), () => { for (int i = 0; i < eveGrill.Length; i++) eveGrill[i] = false; FillEvening(); }, false);
+            Plank("ตกลง", "stamp_on", new Color(0.35f, 0.78f, 0.32f), () => { Hide(evening); onEveningDone?.Invoke(eveGrill); }, true);
         }
 
         // จอกว้าง: รายการปลาซ้าย · เป้าหมายขวา · ปุ่มล่างขวา · จอแคบ (แนวตั้ง): ซ้อนเต็มกว้าง ซ่อนเป้าหมาย (ดูได้ที่หน้าเช้า)

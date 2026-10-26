@@ -59,13 +59,14 @@ namespace CozyFishing
             // หมุนจอ/เปลี่ยนขนาด: จัดหน้าแรกใหม่ · หน้าเช้าวาดใหม่ตามความกว้าง
             root.RegisterCallback<GeometryChangedEvent>(e =>
             {
+                bool pt = Portrait; if (pt != lastPortrait) { lastPortrait = pt; LayoutCard(Narrow); }   // หมุนจอ: จัดปุ่มการ์ดปลาใหม่
                 bool n = Narrow; if (n == lastNarrow) return; lastNarrow = n;
                 // สมุดปลา: จอแคบปุ่มด่านเล็กลง เรียงได้หลายปุ่มต่อแถว (เดิมแถวละปุ่ม กินครึ่งจอ)
                 if (dexTabs != null) foreach (var tb in dexTabs.Children()) { tb.style.fontSize = n ? 18 : 24; Pad(tb, n ? 6 : 10, n ? 14 : 30); tb.style.marginRight = n ? 5 : 8; tb.style.marginBottom = n ? 5 : 6; tb.style.minHeight = n ? 38 : 0; }
                 if (iconBar != null)
                 {   // จอแคบ: จอสัมผัสไม่ย่อปุ่ม (นิ้วกดยาก) แต่ขึ้นแถวใหม่แทน · เมาส์ย่อลงนิดหน่อยเหมือนเดิม
                     iconBar.style.scale = new Scale(Vector3.one * (n && !TouchUi ? 0.78f : 1f)); iconBar.style.transformOrigin = new TransformOrigin(Length.Percent(100), 0);
-                    iconBar.style.flexWrap = n ? Wrap.Wrap : Wrap.NoWrap; iconBar.style.maxWidth = n ? new StyleLength(Length.Percent(62)) : new StyleLength(StyleKeyword.None);
+                    iconBar.style.flexWrap = Wrap.Wrap;   // ความกว้างสูงสุดตั้งทุกเฟรมใน Update (ไม่ให้ทับป้ายเงินมุมซ้าย)
                 }
                 if (hintBox != null) hintBox.style.maxWidth = n ? Length.Percent(74) : new StyleLength(TouchUi ? 680 : 780);
                 cardNameSize = n ? 44 : 62; if (cardName != null) FitCardName();
@@ -134,7 +135,8 @@ namespace CozyFishing
         static void MaxW(VisualElement e, float w) { e.style.maxWidth = w; e.style.width = Length.Percent(92); }
         /// จอแคบ (มือถือแนวตั้ง · iPad แนวตั้ง): ความกว้างหน้าจอ UI น้อยกว่า 1000 หน่วย → จัดแบบซ้อนแนวตั้ง
         bool Narrow => root != null && root.layout.width > 0 && root.layout.width < 1000;
-        bool lastNarrow;
+        bool lastNarrow, lastPortrait;
+        bool Portrait => root != null && root.layout.height > root.layout.width;
 
         VisualElement Bar(VisualElement parent, float height, Color bg)
         {
@@ -316,7 +318,7 @@ namespace CozyFishing
             Ico(cardNote, "magnifier", 34);
             cardNoteTxt = L(cardNote, "", 22, new Color(0.55f, 0.12f, 0.06f)); cardNoteTxt.style.unityTextAlign = TextAnchor.MiddleLeft; cardNoteTxt.style.marginLeft = 8; cardNoteTxt.style.flexShrink = 1;
             cardDesc = L(cb, "", 22, new Color(0.3f, 0.2f, 0.1f), false); cardDesc.style.marginTop = 10; cardDesc.style.unityTextAlign = TextAnchor.MiddleLeft;
-            var btns = new VisualElement { pickingMode = PickingMode.Ignore }; btns.style.flexDirection = FlexDirection.Row; btns.style.justifyContent = Justify.Center; btns.style.marginTop = 16; btns.style.flexShrink = 0; cb.Add(btns);
+            var btns = cardBtns = new VisualElement { pickingMode = PickingMode.Ignore }; btns.style.flexDirection = FlexDirection.Row; btns.style.justifyContent = Justify.Center; btns.style.marginTop = 16; btns.style.flexShrink = 0; cb.Add(btns);
             cardAlt = new Button(() => CloseCard(true)) { text = "ปล่อย" };
             StyleButton(cardAlt, Gray); cardAlt.style.minWidth = 240; cardAlt.style.fontSize = 30; btns.Add(cardAlt);
             Skin(cardAlt, "plank", 22); cardAlt.style.unityBackgroundImageTintColor = new Color(0.72f, 0.7f, 0.68f); cardAlt.style.color = new Color(0.2f, 0.16f, 0.12f); Pad(cardAlt, 14, 30);
@@ -329,7 +331,7 @@ namespace CozyFishing
             card.style.display = DisplayStyle.None;
         }
 
-        VisualElement cardNote, cardHead; Label cardNoteTxt; VisualElement[] cardStarIco; int cardStarCount; bool shareTested;
+        VisualElement cardNote, cardHead, cardBtns; Label cardNoteTxt; VisualElement[] cardStarIco; int cardStarCount; bool shareTested;
         // จอแคบ: น้ำหนัก/ราคาลงไปอยู่ใต้ชื่อปลา (ไม่ทับชื่อ)
         void LayoutCard(bool n)
         {
@@ -344,6 +346,16 @@ namespace CozyFishing
             cardAlt.style.width = n ? 190 : StyleKeyword.Auto; cardOk.style.width = n ? 370 : StyleKeyword.Auto;
             cardAlt.style.paddingRight = cardOk.style.paddingRight = n ? 18 : 30; cardAlt.style.paddingLeft = n ? 18 : 30;
             cardAlt.style.flexShrink = cardOk.style.flexShrink = 0;
+            // มือถือแนวตั้ง: ปุ่มเก็บเต็มแถวบน · ปล่อย/แชร์ครึ่งแถวล่าง (เดิมสามปุ่มขึ้นแถวเองจนถูกบีบแบน ไอคอนหลุดนอกปุ่ม)
+            bool pt = Portrait;
+            if (cardBtns == null || shareBtn == null) return;
+            cardBtns.Clear();
+            if (pt) { cardBtns.Add(cardOk); cardBtns.Add(cardAlt); cardBtns.Add(shareBtn); } else { cardBtns.Add(cardAlt); cardBtns.Add(cardOk); cardBtns.Add(shareBtn); }
+            cardOk.style.width = pt ? Length.Percent(100) : cardOk.style.width; cardOk.style.marginLeft = pt ? 0 : 14;
+            cardAlt.style.width = pt ? Length.Percent(47) : cardAlt.style.width; shareBtn.style.width = pt ? Length.Percent(47) : StyleKeyword.Auto;
+            if (pt) cardAlt.style.minWidth = shareBtn.style.minWidth = 0; else shareBtn.style.minWidth = 170;
+            cardAlt.style.marginTop = shareBtn.style.marginTop = pt ? 12 : 0; shareBtn.style.marginLeft = pt ? Length.Percent(6) : 14;
+            foreach (var b in new VisualElement[] { cardAlt, cardOk, shareBtn }) { b.style.minHeight = n ? 64 : 72; b.style.flexShrink = 0; }
         }
         VisualElement Stat(VisualElement parent)
         {
@@ -711,6 +723,12 @@ namespace CozyFishing
             var hide = play ? DisplayStyle.Flex : DisplayStyle.None;
             if (dexBtn != null) dexBtn.style.display = CardOpen || ModalOpen ? DisplayStyle.None : DisplayStyle.Flex;
             UpdateDailyBtn(play);
+            // แถบปุ่มมุมขวาบนห้ามกว้างเกินที่เหลือจากป้ายเงิน/ข้องมุมซ้าย (มือถือมี 5 ปุ่มแล้วลามไปทับป้ายเงิน) · ไม่พอ → ขึ้นแถวใหม่
+            if (iconBar != null && countBoxRef != null && countBoxRef.layout.width > 1 && !float.IsNaN(root.layout.width))
+            {
+                float sc = iconBar.resolvedStyle.scale.value.x; if (sc <= 0) sc = 1;
+                iconBar.style.maxWidth = Mathf.Max(200, (root.layout.width - countBoxRef.layout.xMax - 18 - 24) / sc);
+            }
             if (joy != null) joy.style.display = hide;
             if (jumpBtn != null) jumpBtn.style.display = hide;
             actBtn.style.display = hide; actRing.style.display = hide; if (hide == DisplayStyle.None) strikeTag.style.display = DisplayStyle.None;

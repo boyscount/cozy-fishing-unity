@@ -1,5 +1,12 @@
 {
 "items": [
+{"th": "ปิ้งทุกตัว", "en": "Grill all"},
+{"th": "ขายทุกตัว", "en": "Sell all"},
+{"th": "กระดานปลาใหญ่", "en": "Big Fish Board"},
+{"th": "อันดับปลาตัวหนักสุดประจำสัปดาห์", "en": "This week's heaviest catches"},
+{"th": "อันดับประจำสัปดาห์ (ออฟไลน์อยู่)", "en": "Weekly ranking (offline)"},
+{"th": "ภารกิจประจำวัน", "en": "Daily Quests"},
+{"th": "ปลาเด่นวันนี้", "en": "Fish of the Day"},
 {"th": "แตะเพื่อข้าม ▸", "en": "Tap to skip ▸"},
 {"th": "คืนนั้น ทั้งบ้านไปเที่ยวงานวัดด้วยกัน", "en": "That night, the whole family went to the temple fair together"},
 {"th": "ตะกร้าแห่งวันพรุ่งนี้\n— จบ —", "en": "A Basket of Tomorrows\n— The End —"},

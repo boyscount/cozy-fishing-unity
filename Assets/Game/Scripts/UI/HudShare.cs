@@ -15,7 +15,7 @@ namespace CozyFishing
 #else
         static void CozyShareImage(byte[] png, int len, string title, string text, string url) { System.IO.File.WriteAllBytes(System.IO.Path.Combine(Application.persistentDataPath, "share.png"), png); Debug.Log("[Share] saved share.png"); }
 #endif
-        VisualElement shareFrame; Label shareName, shareStats, shareStage; VisualElement[] shareStars; bool sharing;
+        VisualElement shareFrame, shareBtn; Label shareName, shareStats, shareStage; VisualElement[] shareStars; bool sharing;
 
         void AddShareButton(VisualElement btns)
         {
@@ -24,7 +24,7 @@ namespace CozyFishing
             b.style.minWidth = 170; b.style.flexShrink = 0; b.style.whiteSpace = WhiteSpace.NoWrap;   // ไม่ให้ถูกบีบจนไอคอนทับคำ · ที่ไม่พอขึ้นแถวใหม่แทน
             Skin(b, "plank", 22); b.style.unityBackgroundImageTintColor = new Color(0.7f, 0.86f, 1f); b.style.color = new Color(0.06f, 0.14f, 0.24f);
             b.style.paddingLeft = 64; var ic = Ico(b, "camera_share", 38); Abs(ic, 16, null, 11);
-            btns.Add(b);
+            btns.Add(b); shareBtn = b;
         }
 
         void BuildShareFrame()
