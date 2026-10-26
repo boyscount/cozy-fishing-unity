@@ -277,7 +277,7 @@ public static partial class SceneBuilder
         lg.type = LightType.Point; lg.range = 14f; lg.intensity = 12f; lg.color = Hex("#ffb060"); lg.shadows = LightShadows.None;
         lg.transform.position = lanternPos + Vector3.up * 1.2f;
         // แสงเรืองจากกลุ่มราบนผนัง + แสงฟ้าจากน้ำลึกปลายอุโมงค์
-        foreach (var (p, c, range, inten) in new[] { (new Vector3(CXc(10) - 5.5f, CW + 1.8f, 10), "#58c8ff", 8f, 1.3f), (new Vector3(CXc(4) + 6f, CW + 2.2f, 4), "#70e0d0", 7f, 1.0f), (new Vector3(CXc(22), CW + 0.4f, 22), "#40c8ff", 12f, 1.8f) })
+        foreach (var (p, c, range, inten) in new[] { (new Vector3(CXc(8) - 2f, CW + 2f, 8), "#60d4f0", 10f, 1.5f), (new Vector3(CXc(22), CW + 0.4f, 22), "#40c8ff", 12f, 1.8f) })   // ไฟเรือง 2 ดวง (เดิม 3)
         {
             var gl = new GameObject("GlowLight").AddComponent<Light>();
             gl.type = LightType.Point; gl.range = range; gl.intensity = inten; gl.color = Hex(c); gl.shadows = LightShadows.None; gl.transform.position = p;
@@ -358,7 +358,8 @@ public static partial class SceneBuilder
         Particles("Drips", new Vector3(CXc(16), CBase + 8.5f, 16), new Vector3(9f, 40f, 0.1f), ParticleMat("CaveDrip", new Color(0.85f, 0.95f, 1f, 0.8f)), 7, new Vector2(0.02f, 0.035f), new Vector2(1.1f, 1.5f), new Vector2(0f, 0f), new Color(0.8f, 0.95f, 1f, 0.9f), 1f);
         var wg = Particles("WaterGlow", new Vector3(CXc(14), CW + 0.04f, 14), new Vector3(8f, 40f, 0.02f), ParticleMat("CaveWaterGlow", new Color(0.4f, 1.4f, 1.9f, 1)), 22, new Vector2(0.04f, 0.1f), new Vector2(3f, 6f), new Vector2(0f, 0.02f), new Color(0.5f, 1f, 1f, 1));
         var noise = wg.noise; noise.enabled = true; noise.strength = 0.15f; noise.frequency = 0.3f;
-        Particles("CaveMist", new Vector3(CXc(12), CW + 0.5f, 12), new Vector3(12f, 44f, 1.2f), ParticleMat("Spray", new Color(1, 1, 1, 0.5f)), 30, new Vector2(3f, 7f), new Vector2(7f, 11f), new Vector2(0.02f, 0.08f), new Color(0.62f, 0.78f, 0.86f, 0.1f));
+        // หมอก: เดิม ~270 แผ่นใหญ่ซ้อนเต็มจอ (มือถือวาดซ้ำหลายสิบชั้นทุกเฟรม) → ~60 แผ่น ใหญ่และทึบขึ้นนิด ความหนาหมอกใกล้เดิม
+        Particles("CaveMist", new Vector3(CXc(12), CW + 0.5f, 12), new Vector3(12f, 44f, 1.2f), ParticleMat("Spray", new Color(1, 1, 1, 0.5f)), 6, new Vector2(4f, 8f), new Vector2(8f, 12f), new Vector2(0.02f, 0.08f), new Color(0.62f, 0.78f, 0.86f, 0.17f));
         var rippleMat = ParticleMat("CaveRipple", new Color(0.8f, 0.92f, 1f, 0.55f)); rippleMat.SetTexture("_BaseMap", AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Game/Textures/Cave/ripple.png"));
         var rip = Particles("DripRipples", new Vector3(CXc(12), CW + 0.015f, 12), new Vector3(8f, 34f, 0.01f), rippleMat, 9, new Vector2(0.25f, 0.5f), new Vector2(1f, 1.6f), new Vector2(0f, 0f), new Color(0.85f, 0.95f, 1f, 0.6f));
         rip.GetComponent<ParticleSystemRenderer>().renderMode = ParticleSystemRenderMode.HorizontalBillboard;
