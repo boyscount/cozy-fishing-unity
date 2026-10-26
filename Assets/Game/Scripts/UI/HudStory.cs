@@ -486,6 +486,7 @@ namespace CozyFishing
             Notice(lk0.text, brown, lk0.rain ? "rain" : lk0.sun > 0.8f ? "sun" : lk0.sun > 0.45f ? "partly" : "cloud");
             var hot = s.hot != null ? FishDatabase.Get(s.hot) : null;
             if (hot != null && !Story.FreePlay) Notice($"วันนี้แม่ค้ารับซื้อ{(FishDex.Has(hot.id) ? hot.name : "ปลาลึกลับ")}ราคาพิเศษ {Story.Baht(Story.PriceOf(hot.id))}/กก.", new Color(0.55f, 0.2f, 0.05f));
+            Notice(Weekly.CanJoin ? $"เทศกาลปลาใหญ่สัปดาห์นี้ที่{Weekly.Stage.name} · รางวัลสูงสุด {Story.Baht(Weekly.TierReward[2])}" : $"เทศกาลปลาใหญ่สัปดาห์นี้ที่{Weekly.Stage.name} · ร่วมได้ในโหมดตกปลาอิสระ", new Color(0.45f, 0.25f, 0.02f), "trophy");
             // ป้ายไม้: เงินเก็บ · ความสุขครอบครัว
             var stats = Row(morningBody); stats.style.marginTop = 10; stats.style.display = Story.FreePlay ? DisplayStyle.None : DisplayStyle.Flex;
             VisualElement Plaque(string icon, string text, Color col)

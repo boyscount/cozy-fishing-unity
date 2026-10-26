@@ -6,7 +6,7 @@ namespace CozyFishing
     // กระดาน "ปลาใหญ่ประจำสัปดาห์": แท็บด่านที่เปิดแล้ว · 10 อันดับแรก (ชื่อ ปลา น้ำหนัก) + อันดับของเรา · รีเซ็ตทุกสัปดาห์ (ตั้งในหน้า Unity Cloud)
     public partial class Hud
     {
-        VisualElement board, boardList, boardTabs; Label boardInfo; string boardStage = "paddy";
+        VisualElement board, boardList, boardTabs, boardEvent; Label boardInfo; string boardStage = "paddy";
 
         void BuildBoard()
         {
@@ -20,6 +20,7 @@ namespace CozyFishing
             var title = L(trow, "ปลาใหญ่ประจำสัปดาห์", Narrow ? 30 : 36, ShopGold); title.style.unityFontDefinition = fontTitle;
             Ico(trow, "trophy", Narrow ? 40 : 52).style.marginLeft = 10;
             boardInfo = L(panel, "", 17, new Color(0.9f, 0.84f, 0.7f), false); boardInfo.style.marginTop = 2;
+            boardEvent = new VisualElement(); boardEvent.style.marginTop = 8; panel.Add(boardEvent);
             boardTabs = new VisualElement(); boardTabs.style.flexDirection = FlexDirection.Row; boardTabs.style.flexWrap = Wrap.Wrap; boardTabs.style.marginTop = 10; panel.Add(boardTabs);
             var sv = new ScrollView(ScrollViewMode.Vertical); sv.style.flexGrow = 1; sv.style.flexShrink = 1; sv.style.marginTop = 10; sv.verticalScrollerVisibility = ScrollerVisibility.Hidden; panel.Add(sv);
             boardList = new VisualElement(); sv.Add(boardList);
@@ -32,17 +33,43 @@ namespace CozyFishing
         {
             if (board == null) BuildBoard();
             board.style.display = DisplayStyle.Flex; board.BringToFront(); GameInput.Blocked = true;
+            FillBoardEvent();
+            if (Weekly.CanJoin) boardStage = Weekly.Stage.id;   // เปิดที่แท็บด่านเทศกาลก่อน
             boardTabs.Clear();
             foreach (var st in Stages.All)
             {
                 if (!Stages.Unlocked(st.id)) continue;
                 var id = st.id;
-                var tb = new Button(() => { boardStage = id; FillBoard(); }) { text = st.name }; tb.name = id; StyleButton(tb, Color.clear); GoldFrame(tb, 1);
+                var tb = new Button(() => { boardStage = id; FillBoard(); }) { text = id == Weekly.Stage.id ? st.name + " · เทศกาล" : st.name }; tb.name = id; StyleButton(tb, Color.clear); GoldFrame(tb, 1);
                 tb.style.fontSize = 16; tb.style.color = new Color(0.95f, 0.88f, 0.72f); Pad(tb, 4, 10); tb.style.marginRight = 5; tb.style.marginTop = 4;
                 Hoverable(tb, new Color(0.38f, 0.28f, 0.1f, 0.95f)); boardTabs.Add(tb);
             }
             if (!Stages.Unlocked(boardStage)) boardStage = "paddy";
             FillBoard();
+        }
+
+        // ป้ายเทศกาลปลาใหญ่: ด่าน · เวลาที่เหลือ · ตัวหนักสุดของเรา · รางวัลสามขั้น (เหรียญทองแดง/เงิน/ทอง)
+        void FillBoardEvent()
+        {
+            boardEvent.Clear();
+            var box = new VisualElement(); GoldFrame(box, 2); Radius(box, 10); Pad(box, 10, 14); box.style.backgroundColor = new Color(0.36f, 0.22f, 0.05f, 0.92f); boardEvent.Add(box);
+            var head = new VisualElement(); head.style.flexDirection = FlexDirection.Row; head.style.alignItems = Align.Center; head.style.flexWrap = Wrap.Wrap; box.Add(head);
+            var t = L(head, $"เทศกาลปลาใหญ่สัปดาห์นี้: {Weekly.Stage.name}", Narrow ? 22 : 26, new Color(1f, 0.88f, 0.5f)); t.style.unityFontDefinition = fontTitle; t.style.marginRight = 12;
+            var left = Weekly.Left;
+            L(head, left.TotalDays >= 1 ? $"เหลืออีก {(int)left.TotalDays} วัน {left.Hours} ชม." : $"เหลืออีก {left.Hours} ชม. {left.Minutes} นาที", 17, new Color(0.95f, 0.88f, 0.75f), false);
+            var info = Weekly.CanJoin
+                ? (Weekly.Best > 0 ? $"ตัวหนักสุดของคุณที่ด่านนี้สัปดาห์นี้: {Weekly.Best:0.00} กก." : "ยังไม่ได้ตกปลาที่ด่านนี้ในสัปดาห์นี้ — ไปลุยกัน!")
+                : "ด่านนี้ยังไม่เปิดในเนื้อเรื่อง · ร่วมได้ในโหมดตกปลาอิสระ (หน้าแรก)";
+            var il = L(box, info, 17, new Color(0.97f, 0.92f, 0.82f), false); il.style.marginTop = 4; il.style.whiteSpace = WhiteSpace.Normal; il.style.unityTextAlign = TextAnchor.MiddleLeft;
+            var tiers = new VisualElement(); tiers.style.flexDirection = FlexDirection.Row; tiers.style.flexWrap = Wrap.Wrap; tiers.style.marginTop = 6; box.Add(tiers);
+            for (int i = 0; i < 3; i++)
+            {
+                bool got = Weekly.Got(i);
+                var c = new VisualElement(); c.style.flexDirection = FlexDirection.Row; c.style.alignItems = Align.Center; Pad(c, 4, 10); Radius(c, 8); c.style.marginRight = 8; c.style.marginTop = 4;
+                c.style.backgroundColor = got ? new Color(0.25f, 0.42f, 0.12f, 0.95f) : new Color(0f, 0f, 0f, 0.3f); tiers.Add(c);
+                var md = Ico(c, "medal_" + (3 - i), 30); md.style.marginRight = 6; if (!got) md.style.opacity = 0.55f;
+                L(c, $"{Weekly.TierName[i]} {Weekly.Tier(i):0.0} กก. · {(got ? "ได้แล้ว" : Story.Baht(Weekly.TierReward[i]))}", 16, got ? new Color(0.8f, 1f, 0.7f) : new Color(0.95f, 0.88f, 0.72f), false);
+            }
         }
 
         async void FillBoard()

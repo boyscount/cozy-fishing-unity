@@ -338,7 +338,8 @@ namespace CozyFishing
             if (Shop.ActiveBait != "worm" && Shop.UseBait()) hud.Toast("เหยื่อหมดแล้ว กลับไปใช้ไส้เดือน");
             caughtClue = Mystery.OnCatch(world.StageId, fish.species.id, Story.S.time, NearSpecial, NearDock, rng);
             caughtSecret = Mystery.CheckCatchSecret(fish.species.id, fish.kg, Story.S.time, Story.S.luck);
-            dailyMsgs = Daily.OnCatch(world.StageId, fish.species, fish.kg);   // ภารกิจรายวัน/ปลาเด่น: รางวัลเข้ากระเป๋าทันที แจ้งในการ์ด
+            dailyMsgs = Daily.OnCatch(world.StageId, fish.species, fish.kg);
+            dailyMsgs.AddRange(Weekly.OnCatch(world.StageId, fish.species, fish.kg));   // เทศกาลปลาใหญ่ประจำสัปดาห์   // ภารกิจรายวัน/ปลาเด่น: รางวัลเข้ากระเป๋าทันที แจ้งในการ์ด
             // ข้องเต็ม → ยังไม่ใส่ รอให้ผู้เล่นเลือกแลกหรือปล่อยในการ์ด
             var f = new BasketFish { id = fish.species.id, kg = fish.kg, cm = fish.cm };
             pending = f;   // ยังไม่ใส่ข้อง รอผู้เล่นกด "เก็บ" หรือ "ปล่อย" ในการ์ด
