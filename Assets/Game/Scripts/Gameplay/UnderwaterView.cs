@@ -24,6 +24,7 @@ namespace CozyFishing
 
         public void Init(IWorld w, FishingController f, CameraRig r)
         {
+            blockersReady = false; lastB = new Vector3(9999, 0, 0);   // ด่านใหม่: เก็บของที่บังใหม่
             world = w; fishing = f; rig = r; swamp = w.StageId == "mangrove"; manor = w.StageId == "headman"; cave = w.StageId == "cave"; clear = w.StageId == "reservoir";   // เขื่อนบนดอย: น้ำใสเย็น มองไกล
             // ผิวน้ำมองจากใต้น้ำ: แผ่นใหญ่ระดับผิวน้ำตามกล้องไป (mesh ผิวน้ำของบางด่านเล็ก มองไกลแล้วทะลุเห็นฟ้า) · ตลิ่งที่สูงกว่าน้ำบังส่วนเกินเอง
             Material waterMat = null;
@@ -424,6 +425,7 @@ namespace CozyFishing
             // กล้องอยู่ใต้น้ำข้าง ๆ เหยื่อ: ลองหลายทิศรอบเหยื่อ (เริ่มจากฝั่งผู้เล่น) เอาจุดแรกที่จมน้ำจริงและไม่มุดดิน
             if (!FindCam(b, d, right, out var cam)) { noSpot = true; Exit(); return; }   // ตรงนี้น้ำแคบ/ตื้น ดำไม่ได้ ไว้รอบหน้า
             rig.Override(cam, b + Vector3.up * 0.04f);
+            UpdateXRay(b);
             bool nibble = fishing.State == FishState.Bite;
             bait.transform.position = b + Vector3.up * 0.03f;
             bait.transform.rotation = Quaternion.Euler(Mathf.Sin(Time.time * 2.6f) * 10, Time.time * 12, Mathf.Sin(Time.time * 4.1f) * 14);
@@ -458,7 +460,24 @@ namespace CozyFishing
             foreach (var u in unders) u.transform.position = new Vector3(cam.x, world.WaterY, cam.z);
         }
 
+        // กล้องใต้น้ำ: ลองมุมรอบเหยื่อ 12 ทิศ (เริ่มจากฝั่งผู้เล่น) · รอบแรกเอาเฉพาะมุมที่หิน/ขอนไม้/เสาไม่บังเหยื่อ
+        //   ไม่มีมุมไหนโล่งจริง (เหยื่อชิดเสาท่าน้ำ ฯลฯ) → ใช้มุมที่ดำได้ตามเดิม แล้วเปิดมองทะลุ (เหยื่อ+ปลาเป็นเส้นขอบเรืองแสง)
+        //   คิดใหม่เมื่อเหยื่อขยับเกิน 0.3 ม. (ไม่ต้องคำนวณทุกเฟรม)
+        Vector3 lastB = new Vector3(9999, 0, 0), lastCam; bool lastOk;
+        public bool Blocked { get; private set; }
         bool FindCam(Vector3 b, Vector3 d, Vector3 right, out Vector3 cam)
+        {
+            if ((b - lastB).sqrMagnitude < 0.09f) { cam = lastCam; return lastOk; }
+            lastB = b;
+            for (int pass = 0; pass < 2; pass++)
+                if (TryCam(b, d, right, pass == 0, out cam))
+                {
+                    Blocked = (pass == 1 && Occluded(cam, b)) || (FishingController.Bot && GameUrl.Value.Contains("forcexray"));   // ทดสอบ: ?forcexray เปิดมองทะลุเสมอ
+                    lastCam = cam; lastOk = true; return true;
+                }
+            cam = b; lastCam = b; lastOk = false; Blocked = false; return false;
+        }
+        bool TryCam(Vector3 b, Vector3 d, Vector3 right, bool needClear, out Vector3 cam)
         {
             float top = world.WaterY - 0.15f;
             for (int i = 0; i < 12; i++)
@@ -469,10 +488,78 @@ namespace CozyFishing
                 {
                     cam = b + dir * k;
                     float floor = world.GroundH(cam.x, cam.z) + 0.15f;
-                    if (floor < top - 0.05f) { cam.y = Mathf.Clamp(b.y + 0.05f, floor, top); return true; }
+                    if (floor >= top - 0.05f) continue;
+                    cam.y = Mathf.Clamp(b.y + 0.05f, floor, top);
+                    if (needClear && Occluded(cam, b)) continue;
+                    return true;
                 }
             }
             cam = b; return false;
+        }
+
+        // ของในฉากที่บังได้: กรอบ (AABB) ของทุกชิ้นที่จมน้ำบางส่วน ไม่ใหญ่เท่าพื้น/ผิวน้ำ · เก็บครั้งแรกที่ดำในด่านนี้
+        //   (เว็บไม่มีระบบฟิสิกส์ จึงเช็กเส้นจากกล้องถึงเหยื่อกับกรอบเหล่านี้เอง)
+        readonly System.Collections.Generic.List<Bounds> blockers = new System.Collections.Generic.List<Bounds>();
+        bool blockersReady;
+        void CollectBlockers()
+        {
+            blockersReady = true; blockers.Clear();
+            var skip = new System.Collections.Generic.List<Transform> { bed.transform, bait.transform, fishing.player.transform };
+            if (fishing.bobber != null) skip.Add(fishing.bobber.transform);
+            foreach (var u in unders) skip.Add(u.transform);
+            foreach (var r in FindObjectsByType<MeshRenderer>(FindObjectsSortMode.None))
+            {
+                if (!r.enabled || !r.gameObject.activeInHierarchy) continue;
+                var bd = r.bounds;
+                if (bd.size.x > 12f || bd.size.z > 12f || bd.min.y > world.WaterY || bd.size.sqrMagnitude < 0.01f) continue;   // พื้น/ผิวน้ำ/ของบนบก/ของจิ๋ว
+                bool mine = false; foreach (var t in skip) if (r.transform.IsChildOf(t)) { mine = true; break; }
+                if (mine || r.name.Contains("Water") || r.name.Contains("Fish")) continue;
+                bd.Expand(-0.1f);   // กรอบหลวมกว่ารูปทรงจริง หดนิดให้ไม่ตัดมุมทิ้งเกินไป
+                blockers.Add(bd);
+            }
+        }
+        bool Occluded(Vector3 cam, Vector3 b)
+        {
+            if (!blockersReady) CollectBlockers();
+            var to = b - cam; float len = to.magnitude; if (len < 0.05f) return false;
+            var ray = new Ray(cam, to / len);
+            foreach (var bd in blockers)
+            {
+                if (bd.Contains(cam)) return true;
+                if (bd.IntersectRay(ray, out float hit) && hit < len - 0.12f) return true;
+            }
+            return false;
+        }
+
+        // มองทะลุ: ติดวัสดุเส้นขอบเรืองแสงเพิ่มให้เหยื่อและปลาใกล้ ๆ (วาดเฉพาะส่วนที่ถูกบัง) · เอาออกเมื่อมองเห็นแล้ว
+        Material xray; readonly System.Collections.Generic.List<Renderer> xrayOn = new System.Collections.Generic.List<Renderer>(), xrayWant = new System.Collections.Generic.List<Renderer>();
+        PondLife pond; float xrayNext;
+        void UpdateXRay(Vector3 b)
+        {
+            if (Time.time < xrayNext && Blocked == (xrayOn.Count > 0)) return;
+            xrayNext = Time.time + 0.4f;
+            xrayWant.Clear();
+            if (Blocked)
+            {
+                if (xray == null) { var sh = Resources.Load<Shader>("Shaders/XRay"); if (sh != null) xray = new Material(sh); }
+                if (xray != null)
+                {
+                    xrayWant.AddRange(bait.GetComponentsInChildren<Renderer>());
+                    if (pond == null) pond = FindAnyObjectByType<PondLife>();
+                    if (pond != null) pond.NearFish(b, 3.5f, xrayWant);
+                }
+            }
+            for (int i = xrayOn.Count - 1; i >= 0; i--)
+                if (xrayOn[i] == null || !xrayWant.Contains(xrayOn[i])) { SetXRay(xrayOn[i], false); xrayOn.RemoveAt(i); }
+            foreach (var r in xrayWant) if (r != null && !xrayOn.Contains(r) && !(r is ParticleSystemRenderer) && !(r is LineRenderer)) { SetXRay(r, true); xrayOn.Add(r); }
+        }
+        void SetXRay(Renderer r, bool on)
+        {
+            if (r == null) return;
+            var mats = new System.Collections.Generic.List<Material>(r.sharedMaterials);
+            mats.RemoveAll(m => m == xray);
+            if (on) mats.Add(xray);
+            r.sharedMaterials = mats.ToArray();
         }
 
         void LateUpdate()
@@ -501,6 +588,7 @@ namespace CozyFishing
             RenderSettings.fogMode = savedMode; RenderSettings.fogDensity = savedDensity; RenderSettings.fogStartDistance = savedStart; RenderSettings.fogEndDistance = savedEnd;
             foreach (var u in unders) u.SetActive(false); bait.SetActive(false); leader.enabled = false; motes.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
             bed.SetActive(false); fishing.hud.DepthReading = -1;
+            Blocked = false; UpdateXRay(Vector3.zero); lastB = new Vector3(9999, 0, 0);
             foreach (var ps in new[] { rays, leaves, lineBubbles, mudBubbles, silt }) ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
             rig.ClearOverride();
         }

@@ -22,6 +22,12 @@ namespace CozyFishing
         readonly System.Random rng = GameUrl.Rng();
         float R(float a, float b) => a + (float)rng.NextDouble() * (b - a);
         public Vector3 BaitPos => fishing.BobberPos + Vector3.down * 0.45f;   // เหยื่อห้อยใต้ทุ่น
+        /// ปลาที่อยู่ใกล้จุดนี้ (มองทะลุสิ่งบังใต้น้ำ: ให้เห็นปลาที่ว่ายมาหาเหยื่อด้วย)
+        public void NearFish(Vector3 p, float r, List<Renderer> into)
+        {
+            foreach (var s in school)
+                if (s.go != null && s.go.activeInHierarchy && (s.pos - p).sqrMagnitude < r * r) into.AddRange(s.go.GetComponentsInChildren<Renderer>());
+        }
 
         public void Init(IWorld w, FishingController f)
         {
