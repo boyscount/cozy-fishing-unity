@@ -2,6 +2,7 @@ using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UIElements;
+using static CozyFishing.HudKit;
 
 namespace CozyFishing
 {
@@ -21,10 +22,21 @@ namespace CozyFishing
             Glass2 = new Color(0.13f, 0.16f, 0.19f, 0.92f), Glass3 = new Color(0.2f, 0.23f, 0.27f, 0.92f), Sub = new Color(0.72f, 0.76f, 0.8f),
             Money = new Color(1f, 0.82f, 0.38f), Track = new Color(1f, 1f, 1f, 0.12f), Gray = new Color(0.33f, 0.36f, 0.4f, 0.95f);
         UIDocument doc;
-        VisualElement root, hintRow, toastRow, fightRow, strikeRow, jumpBtn, hintBox, toastBox, powerBox, powerFill, fightBox, needle, zone, progFill, strikeBox, sMark, sZone, card, joy, knob, actBtn, alertBg;
+        internal VisualElement root;
+        VisualElement hintRow, toastRow, fightRow, strikeRow, jumpBtn, hintBox, toastBox, powerBox, powerFill, fightBox, needle, zone, progFill, strikeBox, sMark, sZone, card, joy, knob, actBtn, alertBg;
         VisualElement cardImg, cardNew, dex, dexGrid, dexBtn; Label dexCount, dexTitle; string dexStage = "paddy";
         Label count, hint, toast, alert, sHits, cardName, cardStars, cardKg, cardPrice, cardDesc, actTxt, actKey;
         FontDefinition font, fontBold, fontTitle;
+        HudKit kit;   // ตัวช่วยสร้างหน้าจอที่ใช้ร่วมกับแผงแยก
+
+        // แผงแยกที่มีสถานะของตัวเอง: ร้านลุงส้ม (ShopPanel) · ตู้แต่งตัว (WardrobePanel) — สร้างตอนเปิดครั้งแรก
+        ShopPanel shopUi; WardrobePanel wardUi;
+        ShopPanel ShopUi => shopUi ??= new ShopPanel(this, kit);
+        public void ShowShop() => ShopUi.Show();
+        public bool ShopOpen => shopUi != null && shopUi.Open;
+        System.Collections.IEnumerator ShopDemo(Action done) => ShopUi.Demo(done);
+        public void OpenWardrobe() => (wardUi ??= new WardrobePanel(this, kit)).Show();
+        public bool WardrobeOpen => wardUi != null && wardUi.Open;
         float toastUntil;
         Action onCardOk, onCardAlt;
         Button cardOk, cardAlt;
@@ -36,6 +48,7 @@ namespace CozyFishing
             fontBold = FontDefinition.FromFont(Resources.Load<Font>("Fonts/Mali-Bold"));
             var charm = Resources.Load<Font>("Fonts/Charm-Bold");   // หัวข้อ/ชื่อคน: ฟอนต์ไทยแบบตัวเขียนโบราณ อ่านง่าย
             fontTitle = fontBold;   // ใช้ฟอนต์ Mali ชุดเดียวทั้งเกม (ไทย/อังกฤษหน้าตาเหมือนกันหมด) · Charm เก็บไว้เผื่อใช้ภายหลัง
+            kit = new HudKit(font, fontBold, fontTitle);
             // PanelSettings สร้างไว้เป็น asset (SceneBuilder) — build จะได้ธีม + ข้อมูล ICU ตัดคำภาษาไทย
             var panel = Resources.Load<PanelSettings>("UI/HudPanel");
             if (panel == null)
@@ -83,20 +96,7 @@ namespace CozyFishing
         }
 
         // ---------- สร้างหน้าจอ ----------
-        Label L(VisualElement parent, string text, int size, Color color, bool bold = true)
-        {
-            var l = new Label(text) { pickingMode = PickingMode.Ignore };
-            l.style.fontSize = size; l.style.color = color;
-            l.style.unityFontDefinition = bold ? fontBold : font;
-            l.style.unityTextGenerator = TextGeneratorType.Advanced;
-            l.style.unityTextAlign = TextAnchor.MiddleCenter;
-            l.style.whiteSpace = WhiteSpace.Normal;
-            l.style.flexShrink = 0;
-            l.style.marginTop = l.style.marginBottom = 0;
-            parent?.Add(l);
-            return l;
-        }
-        static void Radius(VisualElement e, float r) { e.style.borderTopLeftRadius = e.style.borderTopRightRadius = e.style.borderBottomLeftRadius = e.style.borderBottomRightRadius = r; }
+        Label L(VisualElement parent, string text, int size, Color color, bool bold = true) => kit.L(parent, text, size, color, bold);
         static void Border(VisualElement e, float w, Color c)
         {
             e.style.borderTopWidth = e.style.borderBottomWidth = e.style.borderLeftWidth = e.style.borderRightWidth = w;
@@ -116,13 +116,6 @@ namespace CozyFishing
             parent?.Add(e);
             return e;
         }
-        static void Abs(VisualElement e, float? left = null, float? right = null, float? top = null, float? bottom = null)
-        {
-            e.style.position = Position.Absolute;
-            if (left.HasValue) e.style.left = left.Value; if (right.HasValue) e.style.right = right.Value;
-            if (top.HasValue) e.style.top = top.Value; if (bottom.HasValue) e.style.bottom = bottom.Value;
-        }
-        static void Pad(VisualElement e, float v, float h) { e.style.paddingTop = e.style.paddingBottom = v; e.style.paddingLeft = e.style.paddingRight = h; }
         // แถวเต็มกว้างที่จัดลูกไว้กลางจอ (กล่องข้างในกว้างไม่เกิน maxW)
         VisualElement CenterRow(float? top, float? bottom)
         {
@@ -134,7 +127,7 @@ namespace CozyFishing
         }
         static void MaxW(VisualElement e, float w) { e.style.maxWidth = w; e.style.width = Length.Percent(92); }
         /// จอแคบ (มือถือแนวตั้ง · iPad แนวตั้ง): ความกว้างหน้าจอ UI น้อยกว่า 1000 หน่วย → จัดแบบซ้อนแนวตั้ง
-        bool Narrow => root != null && root.layout.width > 0 && root.layout.width < 1000;
+        internal bool Narrow => root != null && root.layout.width > 0 && root.layout.width < 1000;
         bool lastNarrow, lastPortrait;
         bool Portrait => root != null && root.layout.height > root.layout.width;
 
@@ -165,15 +158,6 @@ namespace CozyFishing
             }
         }
         VisualElement actIco;
-        // ไอคอนเล็ก (Resources/UI/Icons/<name>.png)
-        static VisualElement Ico(VisualElement parent, string name, float size)
-        {
-            var e = new VisualElement { pickingMode = PickingMode.Ignore };
-            e.style.width = e.style.height = size; e.style.flexShrink = 0;
-            e.style.backgroundImage = Resources.Load<Texture2D>("UI/Icons/" + name);
-            parent.Add(e);
-            return e;
-        }
         /// ไอคอนด้านซ้ายในปุ่ม (ย้อมสีเดียวกับตัวหนังสือ) · เว้นที่ให้ข้อความ
         static VisualElement ButtonIcon(Button b, string name, float size, Color tint)
         {
@@ -181,15 +165,6 @@ namespace CozyFishing
             ic.style.unityBackgroundImageTintColor = tint; b.style.paddingLeft = size + 20; return ic;
         }
         static void SetIco(VisualElement e, string name) => e.style.backgroundImage = Resources.Load<Texture2D>("UI/Icons/" + name);
-        // ผิวกรอบจากภาพ (Resources/UI/Frames/<name>) แบบ 9 ส่วน: ขอบไม่ยืด ตรงกลางยืดตามขนาดกล่อง
-        static void Skin(VisualElement e, string frame, int slice)
-        {
-            var t = Resources.Load<Texture2D>("UI/Frames/" + frame);
-            if (t == null) return;
-            e.style.backgroundImage = t; e.style.backgroundColor = Color.clear;
-            e.style.unitySliceLeft = e.style.unitySliceRight = e.style.unitySliceTop = e.style.unitySliceBottom = slice;
-            e.style.borderTopWidth = e.style.borderBottomWidth = e.style.borderLeftWidth = e.style.borderRightWidth = 0;
-        }
 
         void Build()
         {
@@ -501,29 +476,7 @@ namespace CozyFishing
         }
 
         VisualElement dexTabs;
-        void StyleButton(Button b, Color bg)
-        {
-            b.style.unityFontDefinition = fontBold; b.style.unityTextGenerator = TextGeneratorType.Advanced;
-            b.style.fontSize = 28; b.style.color = Color.white; b.style.backgroundColor = bg; Pad(b, 8, 26);
-            b.style.borderTopLeftRadius = b.style.borderTopRightRadius = b.style.borderBottomLeftRadius = b.style.borderBottomRightRadius = 10;
-            b.style.borderTopWidth = b.style.borderBottomWidth = b.style.borderLeftWidth = b.style.borderRightWidth = 0;
-            b.style.flexShrink = 0;
-            // นิ้วแตะ: กดแล้วยกนิ้วบนปุ่ม = กด (Clickable ของ Button บางครั้งไม่รับแตะบนเว็บมือถือ) · เมาส์ใช้ระบบเดิม
-            b.RegisterCallback<PointerDownEvent>(e =>
-            {
-                if (e.pointerType == UnityEngine.UIElements.PointerType.mouse) return;
-                b.CapturePointer(e.pointerId);
-                e.StopImmediatePropagation();
-            }, TrickleDown.TrickleDown);
-            b.RegisterCallback<PointerUpEvent>(e =>
-            {
-                if (e.pointerType == UnityEngine.UIElements.PointerType.mouse || !b.HasPointerCapture(e.pointerId)) return;
-                b.ReleasePointer(e.pointerId);
-                e.StopImmediatePropagation();
-                if (!b.enabledInHierarchy || !b.worldBound.Contains(e.position)) return;
-                using (var ev = NavigationSubmitEvent.GetPooled()) { ev.target = b; b.SendEvent(ev); }
-            }, TrickleDown.TrickleDown);
-        }
+        void StyleButton(Button b, Color bg) => kit.StyleButton(b, bg);
 
         void OpenDex()
         {

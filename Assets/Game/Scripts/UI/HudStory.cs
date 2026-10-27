@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UIElements;
+using static CozyFishing.HudKit;
 
 namespace CozyFishing
 {
@@ -13,7 +14,8 @@ namespace CozyFishing
     {
         public StoryDirector director;
         ScrollView morningScroll;
-        VisualElement statusBox, clockBox, homeBtn, ask, askBox, askBtns, fadeEl, dialogEl, morning, morningBody, evening, eveList, eveSum, bag, bagList;
+        VisualElement statusBox, clockBox, homeBtn, ask, askBox, askBtns, fadeEl, morning, morningBody, evening, eveList, eveSum, bag, bagList;
+        internal VisualElement dialogEl;
         VisualElement fadeArt;
         VisualElement timeIco, skyIco, viewBtn; Label dayTxt, tempTxt, windTxt;
         Label statusTxt, clockTxt, askTxt, fadeTxt, dialogWho, dialogSay, bagTitle;
@@ -23,7 +25,7 @@ namespace CozyFishing
         Action<bool[]> onEveningDone;
         bool[] eveGrill;
         bool dialogNext;
-        public bool ModalOpen => Shown(ask) || Shown(fadeEl) || Shown(dialogEl) || Shown(morning) || Shown(evening) || Shown(bag) || Shown(casePanel) || Shown(cluePop) || Shown(title) || Shown(settings) || Shown(bed) || Shown(sneak) || Shown(shop) || Shown(daily) || Shown(wardrobe) || Shown(gear) || Shown(skillsEl);
+        public bool ModalOpen => Shown(ask) || Shown(fadeEl) || Shown(dialogEl) || Shown(morning) || Shown(evening) || Shown(bag) || Shown(casePanel) || Shown(cluePop) || Shown(title) || Shown(settings) || Shown(bed) || Shown(sneak) || ShopOpen || Shown(daily) || WardrobeOpen || Shown(gear) || Shown(skillsEl);
         VisualElement caseBtn, casePanel, caseBody, cluePop, clueBody;
         Label caseBtnTxt;
 
@@ -663,13 +665,7 @@ namespace CozyFishing
         }
 
         // ปุ่มป้ายไม้เก่า (หน้าเช้า)
-        void WoodButton(Button b, bool active)
-        {
-            StyleButton(b, Color.clear);
-            Skin(b, "plank", 22); b.style.color = active ? new Color(0.22f, 0.12f, 0.04f) : new Color(0.4f, 0.34f, 0.28f);
-            b.style.unityBackgroundImageTintColor = active ? Color.white : new Color(0.7f, 0.68f, 0.65f);
-            Pad(b, 14, 30); b.style.fontSize = 26;
-        }
+        void WoodButton(Button b, bool active) => kit.WoodButton(b, active);
 
         // ---------- มื้อเย็น: ภาพครอบครัวล้อมเตาปิ้งปลาหน้าบ้านยามค่ำ · ซ้าย = ปลาในข้อง (ป้ายไม้) + ความอิ่ม · ขวา = เป้าหมายครอบครัว · ล่างขวา = ปุ่ม ----------
         VisualElement eveTitle, eveLeft, eveGoals, eveBtns; Button eveGrillBtn, eveSellBtn, eveOkBtn;
