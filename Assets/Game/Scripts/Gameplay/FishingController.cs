@@ -71,6 +71,7 @@ namespace CozyFishing
                 var u = GameUrl.Value; int li = u.IndexOf("lure=");
                 if (li >= 0) { var id = "lure_" + u.Substring(li + 5).Split('&')[0]; if (Shop.Get(id) != null) { Tackle.Give(id); Tackle.Equip(id); } }
             }
+            if (Bot && GameUrl.Value.Contains("measurecast")) CastProbe.Run(world);   // ทดสอบ: วัดระยะเหวี่ยงลงน้ำไกลสุดของด่าน
             ApplyTackleLook(); Tackle.Changed += ApplyTackleLook;
             Set(FishState.Free);
         }
@@ -153,7 +154,7 @@ namespace CozyFishing
         public void ResetLine()
         {
             if (hud.CatchCardOpen) hud.CloseCard(true);
-            pending = null; cardShown = false;
+            pending = null; cardShown = false; lureRun = null;   // เลิกลากเหยื่อปลอมค้าง (แถบปลาสนใจไม่ค้างข้ามวัน)
             if (preview != null) preview.StopLive();
             if (caughtGo) Destroy(caughtGo);
             caughtGo = null;
@@ -164,7 +165,7 @@ namespace CozyFishing
 
         void Update()
         {
-            if (paused) { hud.Power(-1); hud.Tension(false, 0, 0, 0, 0, false); hud.Strike(false, 0, 0, 0, 0, 0, 0); hud.Alert(false, default, false); return; }
+            if (paused) { hud.Power(-1); hud.Tension(false, 0, 0, 0, 0, false); hud.Strike(false, 0, 0, 0, 0, 0, 0); hud.Alert(false, default, false); hud.Lure(false, null); return; }
             float dt = Time.deltaTime;
             bool held = GameInput.ActionHeld || (Bot && BotHeld());
             if (held && !prevHeld) OnDown();
@@ -293,6 +294,20 @@ namespace CozyFishing
         {
             target = CastPoint(charge);
             onWater = world.CanCast(target.x, target.z);
+            if (!onWater)   // เหวี่ยงแรงเลยน้ำไปตกฝั่งตรงข้าม: ให้ตกที่ขอบน้ำฝั่งไกลแทน (น้ำแคบ/คันแรง ไม่เสียจังหวะ)
+            {
+                var f = player.Forward; float d0 = new Vector2(target.x - player.Pos.x, target.z - player.Pos.z).magnitude;
+                for (float d = d0 - 0.5f; d > 1.3f; d -= 0.5f)
+                {
+                    float x = player.Pos.x + f.x * d, z = player.Pos.z + f.z * d;
+                    if (!world.CanCast(x, z)) continue;
+                    float back = Mathf.Min(0.6f, d - 1.3f);
+                    target = new Vector3(player.Pos.x + f.x * (d - back), 0, player.Pos.z + f.z * (d - back));
+                    onWater = world.CanCast(target.x, target.z) || world.CanCast(x, z);
+                    if (!world.CanCast(target.x, target.z)) target = new Vector3(x, 0, z);
+                    break;
+                }
+            }
             target.y = onWater ? world.WaterY + 0.03f : world.OnSolid(target.x, target.z) ? world.StandY(target.x, target.z) + 0.05f : world.GroundH(target.x, target.z) + 0.08f;
             from = player.rodTip.position;
             flightDur = 0.5f + Vector3.Distance(from, target) * 0.045f;

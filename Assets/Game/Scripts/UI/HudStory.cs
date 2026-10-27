@@ -378,7 +378,7 @@ namespace CozyFishing
             if (GameUrl.Value.Contains("opencase"))
                 root.schedule.Execute(() => { if (!testCase && Time.time > 6 && !CardOpen && !ModalOpen) { testCase = true; OpenCase(); } }).Every(500);
             if (FishingController.Bot && GameUrl.Value.Contains("openskills"))   // ทดสอบ: เปิดหน้าต้นไม้ทักษะ (มีแต้มให้ลองเรียน)
-                root.schedule.Execute(() => { if (!testSkills && Time.time > 6 && !CardOpen) { testSkills = true; Story.S.skillPts = Mathf.Max(Story.S.skillPts, 4); ShowSkills(); } }).Every(500);
+                root.schedule.Execute(() => { if (Time.time > 6 && Time.time < 40 && !CardOpen && !Shown(skillsEl)) { if (!testSkills) { testSkills = true; Story.S.skillPts = Mathf.Max(Story.S.skillPts, 4); } ShowSkills(); } else if (Shown(skillsEl) && Time.time < 40) skillsEl.BringToFront(); }).Every(500);
             quest =new VisualElement { pickingMode = PickingMode.Position }; Abs(quest, null, 22, 136);
             quest.style.width = 250; Skin(quest, "parchment", 20); quest.style.paddingTop = 10; quest.style.paddingBottom = 12; quest.style.paddingLeft = 16; quest.style.paddingRight = 14;
             quest.style.opacity = 0.86f;
