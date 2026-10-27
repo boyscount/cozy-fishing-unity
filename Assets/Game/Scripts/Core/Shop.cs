@@ -45,6 +45,7 @@ namespace CozyFishing
             new ShopItem { id = "lure_spinner", cat = TackleCat, slot = Tackle.Lure, day = 5, price = 450, name = "สปินเนอร์ใบหมุน", desc = "กดค้างกรอสม่ำเสมอ · ปลาว่องไวชอบ · ใช้ได้ไม่หมด" },
             new ShopItem { id = "lure_spoon", cat = TackleCat, slot = Tackle.Lure, day = 7, price = 700, name = "ช้อนโลหะ", desc = "กรอเร็วแล้วปล่อยให้พลิ้ว · ปลาดาวสูงเข้าบ่อยขึ้นมาก · ใช้ได้ไม่หมด" },
             new ShopItem { id = "lure_swim", cat = TackleCat, slot = Tackle.Lure, day = 9, price = 1100, name = "ปลายางส่ายหาง", desc = "แตะถี่ ๆ สม่ำเสมอ · ปลาตัวโตชอบมาก · ใช้ได้ไม่หมด" },
+            new ShopItem { id = CastNet.Id, cat = TackleCat, slot = Tackle.Net, day = 4, price = 500, name = "แหทอดถักมือ", desc = "ทอดได้ปลาเล็กทีละหลายตัว · ใช้ที่บ่อหลังบ้าน (ยืนท่าน้ำ) · วันละ 5 ครั้ง · สลับเบ็ด/แหด้วยปุ่มมุมขวาบน" },
             new ShopItem { id = "reel_drag", cat = TackleCat, slot = Tackle.Drag, day = 6, price = 800, name = "ชุดเบรกรอก", desc = "สายตึงจนเกือบขาด รอกคลายสายให้เอง ปลาได้ระยะคืนนิดหน่อยแต่สายไม่ขาด" },
             new ShopItem { id = "uwlight", cat = Rods, price = 700, name = "ไฟล่อใต้น้ำ", desc = "แท่งไฟเรืองแสงผูกเหนือเหยื่อ · มองเห็นเหยื่อและปลาใต้น้ำชัดขึ้นมาก · ปลากินเหยื่อเร็วขึ้นนิดหน่อย" },
             new ShopItem { id = "lamp", cat = Ghost, price = 800, name = "ตะเกียงน้ำมันอย่างดี", desc = "แสงสว่างกว้างขึ้น · สติลดช้าลง 15%" },

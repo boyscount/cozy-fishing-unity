@@ -832,7 +832,7 @@ namespace CozyFishing
                 FishThumb(row, sp, 110, 64);
                 var info = new VisualElement { pickingMode = PickingMode.Ignore }; info.style.flexGrow = 1; info.style.marginLeft = 8; row.Add(info);
                 var n = L(info, sp?.name ?? f.id, 26, Ink); n.style.unityTextAlign = TextAnchor.MiddleLeft;
-                var d = L(info, $"{f.kg:0.00} กก. · {f.cm} ซม. · {Story.Baht(Story.Value(f))}", 20, Sub, false); d.style.unityTextAlign = TextAnchor.MiddleLeft;
+                var d = L(info, f.cm < 0 ? $"{f.kg:0.00} กก. · {-f.cm} ตัวจากแห · {Story.Baht(Story.Value(f))}" : $"{f.kg:0.00} กก. · {f.cm} ซม. · {Story.Baht(Story.Value(f))}", 20, Sub, false);   // cm < 0 = กองปลาจากแห (จำนวนตัว) d.style.unityTextAlign = TextAnchor.MiddleLeft;
                 var rel = new Button(() => { var old = Story.Release(idx); Toast($"ปล่อย{FishDatabase.Get(old.id)?.name}คืนน้ำแล้ว"); FillBag(); }) { text = "ปล่อยคืนน้ำ" };
                 StyleButton(rel, new Color(0.3f, 0.55f, 0.7f)); rel.style.fontSize = 22; row.Add(rel);
             }

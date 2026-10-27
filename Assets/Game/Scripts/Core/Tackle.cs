@@ -10,7 +10,7 @@ namespace CozyFishing
 
     public static class Tackle
     {
-        public const string Float = "float", Line = "line", Hook = "hook", Drag = "drag", Lure = "lure";
+        public const string Float = "float", Line = "line", Hook = "hook", Drag = "drag", Lure = "lure", Net = "net";   // Net = แหทอด (CastNet.cs) มีแล้วสลับใช้ด้วยปุ่มบนจอ
         public const string DefFloat = "float_feather", DefLine = "line_mono", DefHook = "hook_std";
 
         // ด่านน้ำไหลแรง: ทุ่นเบาโดนกระแสลาก สัญญาณปลากินเห็นสั้นลง · ด่านน้ำใส: ปลาเห็นสายชัด ระแวง
@@ -35,7 +35,7 @@ namespace CozyFishing
             Lure => Has(S.tLure) ? S.tLure : Lures.None,
             _ => Has(S.tHook) ? S.tHook : DefHook,
         };
-        public static bool IsEquipped(ShopItem it) => it.slot == Drag ? Has(it.id) : Equipped(it.slot) == it.id;
+        public static bool IsEquipped(ShopItem it) => it.slot == Drag || it.slot == Net ? Has(it.id) : Equipped(it.slot) == it.id;
         public static void Equip(string id)
         {
             var it = Shop.Get(id); if (it == null || !Has(id)) return;
@@ -112,6 +112,11 @@ namespace CozyFishing
                 "เหวี่ยงไปแล้ว แตะทีหนึ่งกบจะกระโดด รอสักอึดใจค่อยแตะอีกที ปลาช่อนปลาชะโดชอบนัก",
                 "ดูแถบ ปลาสนใจ บนจอ ลากถูกจังหวะแถบจะขึ้น เต็มเมื่อไหร่ปลาฮุบ ค่อยวัดเบ็ด",
                 "ตัวนี้ลุงให้ ใส่ไว้แล้ว อยากกลับไปใช้ไส้เดือนก็เลือก ไม่ใช้เหยื่อปลอม ในร้านได้" } },
+            new TackleTeach { id = CastNet.Id, gift = true, lines = new[] {
+                "หลาน มาดูนี่ แหทอดของลุงเอง ถักมากับมือ ใช้ตอนปลาเล็กมันรวมฝูงกันเยอะ ๆ",
+                "อยู่ที่บ่อหลังบ้าน กดปุ่มแหมุมขวาบนเพื่อถือแห ดูน้ำไว้ ตรงไหนปลาผุดยุบยิบ นั่นแหละฝูงมัน",
+                "กดค้างแกว่งแห ปล่อยตอนเข็มเข้าช่องเขียว แหจะกางเต็มวง แล้วสาวแหเข้ามาทีละจังหวะ อย่ารีบ ปลาจะลอดหนี",
+                "แหได้ปลาเล็กทีละหลายตัว แต่ทอดได้วันละห้าครั้งพอ ปลาตัวโต ๆ ยังต้องใช้เบ็ดนะหลาน ผืนนี้ลุงให้" } },
             new TackleTeach { id = "lure_spinner", lines = new[] {
                 "สปินเนอร์ใบหมุน กดค้างกรอไปเรื่อย ๆ อย่าหยุด ใบมันจะวาวล่อปลาว่องไว",
                 "หยุดกรอเมื่อไหร่ ปลาก็หมดความสนใจ" } },

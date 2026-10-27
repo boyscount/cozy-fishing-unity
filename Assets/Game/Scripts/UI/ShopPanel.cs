@@ -140,6 +140,7 @@ namespace CozyFishing
         static Texture2D ShopArt(ShopItem it) => Resources.Load<Texture2D>("UI/Shop/" + it.id) ?? Resources.Load<Texture2D>("UI/Icons/" + ShopIcon(it));
         static string ShopIcon(ShopItem it) => it.id switch
         {
+            CastNet.Id => "net",
             _ when it.id.StartsWith("rod") => "cast", _ when it.id.StartsWith("reel") => "reel", _ when it.cat == Shop.TackleCat => "hook",
             "lamp" => "fire", "torch" => "flashlight", "amulet" => "seal", "merit" => "incense", "uwlight" => "eye",
             _ => it.cat == Shop.Bait ? "hook" : "home",
@@ -151,6 +152,7 @@ namespace CozyFishing
             if (sel != null && sel.cat == Shop.TackleCat && !Tackle.Unlocked(sel)) return $"ของชิ้นนี้ลุงสั่งไว้แล้ว อีกไม่กี่วันมาถึง (วันที่ {sel.day}) ไว้ลุงสอนวิธีใช้ให้";
             if (sel != null && sel.cat == Shop.TackleCat && sel.slot == Tackle.Float) return "ทุ่นดีช่วยให้เห็นปลากินเหยื่อเร็ว ดูให้เหมาะกับน้ำที่จะไปนะ";
             if (sel != null && sel.cat == Shop.TackleCat && sel.slot == Tackle.Line) return "สายใสเหมาะน้ำใส สายถักเหมาะสู้ปลาใหญ่ เลือกตามที่จะไป";
+            if (sel != null && sel.slot == Tackle.Net) return "แหทอดได้ทีละหลายตัว แต่ได้แต่ปลาเล็ก ตัวโต ๆ ต้องเบ็ด ทอดตอนปลาผุดเป็นฝูงนะ";
             if (sel != null && sel.cat == Shop.TackleCat && sel.slot == Tackle.Lure) return "เหยื่อปลอมไม่ต้องรอทุ่นจม ลากให้ถูกจังหวะ ปลาจะไล่ฮุบเอง";
             if (sel != null && sel.cat == Shop.TackleCat) return "ตัวเบ็ดเล็กนิดเดียว แต่ได้ปลาหรือไม่ได้ก็อยู่ที่มัน";
             if (sel != null && sel.id == "merit") return "ทำบุญกรวดน้ำให้เขาเสียหน่อย คืนนี้จะได้ตกปลาสบายใจ";
@@ -186,7 +188,7 @@ namespace CozyFishing
                 if (it.cat == Shop.TackleCat && it.slot != lastSlot)   // หัวข้อย่อย: ทุ่น / สาย / ตัวเบ็ด / รอก
                 {
                     lastSlot = it.slot;
-                    var hd = L(shopList, it.slot == Tackle.Float ? "ทุ่น" : it.slot == Tackle.Line ? "สาย" : it.slot == Tackle.Hook ? "ตัวเบ็ด" : it.slot == Tackle.Lure ? "เหยื่อปลอม" : "รอก", 17, ShopGold);
+                    var hd = L(shopList, it.slot == Tackle.Float ? "ทุ่น" : it.slot == Tackle.Line ? "สาย" : it.slot == Tackle.Hook ? "ตัวเบ็ด" : it.slot == Tackle.Lure ? "เหยื่อปลอม" : it.slot == Tackle.Net ? "แห" : "รอก", 17, ShopGold);
                     hd.style.unityTextAlign = TextAnchor.MiddleLeft; hd.style.marginTop = 8;
                 }
                 var row = new Button(() => { shopSel = item; Fill(); }) { text = "" }; StyleButton(row, Color.clear); GoldFrame(row, item == shopSel ? 2 : 1);
@@ -197,7 +199,7 @@ namespace CozyFishing
                 var nm = L(row, item.name, 20, new Color(0.97f, 0.92f, 0.82f), false); nm.style.flexGrow = 1; nm.style.flexShrink = 1; nm.style.unityTextAlign = TextAnchor.MiddleLeft;
                 bool owned = !Shop.CanBuy(item, out var why) && (why == "มีแล้ว" || why == "ทำบุญวันนี้แล้ว");
                 bool locked = item.cat == Shop.TackleCat && !Tackle.Unlocked(item);
-                bool using_ = item.cat == Shop.TackleCat && Tackle.IsEquipped(item) && item.slot != Tackle.Drag;
+                bool using_ = item.cat == Shop.TackleCat && Tackle.IsEquipped(item) && item.slot != Tackle.Drag && item.slot != Tackle.Net;
                 var pr = L(row, using_ ? "ใช้อยู่" : owned ? "มีแล้ว" : locked ? $"วันที่ {item.day}" : Story.Baht(item.price), 19,
                     using_ ? new Color(0.45f, 0.95f, 0.5f) : owned ? new Color(0.6f, 0.9f, 0.6f) : locked ? new Color(0.65f, 0.6f, 0.55f) : ShopGold); pr.style.flexShrink = 0; pr.style.marginLeft = 8;
                 if (locked) { ic.style.opacity = 0.35f; nm.style.color = new Color(0.7f, 0.65f, 0.58f); }

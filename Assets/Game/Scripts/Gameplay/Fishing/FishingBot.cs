@@ -20,7 +20,8 @@ namespace CozyFishing
                     if (c.lure.Run != null) return c.lure.Run.BotHold(Time.time);
                     if (c.Jigging && FishingController.JigPulse > 0.85f && Time.time > next) { next = Time.time + 0.8f; return true; }
                     return false;
-                case FishState.Free: return t > 1.2f && t < 1.2f + 0.9f;            // ง้าง ~0.9 วิ แล้วปล่อย
+                case FishState.Free: if (CastNet.Using && !c.net.HasSchool) return false;   // บอทรอฝูงปลาก่อนทอดแห
+                    return t > 1.2f && t < 1.2f + 0.9f;            // ง้าง ~0.9 วิ แล้วปล่อย
                 case FishState.Charging: return c.cast.Charge < 0.45f;   // บอททดสอบเหวี่ยงราว 9 ม. เท่าเดิม
                 case FishState.Bite: return t > 0.25f;                              // รอเห็นทุ่นจมแป๊บหนึ่งค่อยกด
                 case FishState.Strike:
@@ -29,6 +30,7 @@ namespace CozyFishing
                     return false;
                 case FishState.Fight: if (c.BossHooked && c.boss.Running) return false;   // บอทผ่อนสายตอนบอสวิ่งเข้าแก่ง
                     return fight.Tension < Mathf.Min(0.8f, fight.ZoneCenter + fight.ZoneWidth * 0.3f);
+                case FishState.Netting: return c.net.Swinging && !(c.t > 1.3f && CastNet.GradeOf(c.net.Needle) == CastNet.Grade.Perfect);   // บอทปล่อยแหตอนเข็มเข้าช่อง PERFECT (สาวแหทำใน NetThrow)
                 case FishState.Caught: if (c.hud.CatchCardOpen && t > 6f) c.hud.CloseCard(false); return false;
                 default: return false;
             }

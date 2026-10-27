@@ -14,7 +14,7 @@ namespace CozyFishing
         {
             var player = c.player; var State = c.State; float t = c.t, charge = c.cast.Charge, armSign = c.armSign;
             player.CanWalk = State == FishState.Free;
-            player.CanTurn = State == FishState.Free || State == FishState.Charging;
+            player.CanTurn = State == FishState.Free || State == FishState.Charging || (State == FishState.Netting && c.net.CanTurn);
             float now = WaterFx.Time;
             float a = State switch
             {
@@ -35,6 +35,7 @@ namespace CozyFishing
                 case FishState.Fight: case FishState.Retrieve: case FishState.Snapped:
                     player.Pose = 1; reelT += Time.deltaTime * (State == FishState.Fight && !GameInput.ActionHeld ? 0.03f : 0.11f);
                     player.CastT = 0.52f + Mathf.Repeat(reelT, 0.4f); break;
+                case FishState.Netting: player.Pose = 1; player.CastT = c.net.PoseT; break;   // ทอดแห: แกว่ง → สะบัด → สาวแห
                 case FishState.Free: player.Pose = 0; break;
                 default: player.Pose = 3; break;
             }

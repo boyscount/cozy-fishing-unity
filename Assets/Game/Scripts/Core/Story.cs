@@ -46,6 +46,8 @@ namespace CozyFishing
         public string tFloat = Tackle.DefFloat, tLine = Tackle.DefLine, tHook = Tackle.DefHook, tLure = Lures.None;
         // ต้นไม้ทักษะ (Skills.cs): ค่าประสบการณ์ในระดับนี้ · ระดับชาวประมง (เริ่ม 0) · แต้มที่ยังไม่ใช้ · ขั้นของแต่ละสาย
         public int xp, fLevel, skillPts, skCast, skRetrieve, skFight, skRead;
+        // แหทอด (CastNet.cs): ถือแหอยู่ไหม · วันที่ทอดล่าสุด + จำนวนครั้งที่ทอดไปแล้ววันนั้น
+        public bool useNet; public int netDay, netThrows;
     }
 
     public class EveningResult
