@@ -178,6 +178,7 @@ namespace CozyFishing
             if (sel != null && sel.cat == Shop.TackleCat && !Tackle.Unlocked(sel)) return $"ของชิ้นนี้ลุงสั่งไว้แล้ว อีกไม่กี่วันมาถึง (วันที่ {sel.day}) ไว้ลุงสอนวิธีใช้ให้";
             if (sel != null && sel.cat == Shop.TackleCat && sel.slot == Tackle.Float) return "ทุ่นดีช่วยให้เห็นปลากินเหยื่อเร็ว ดูให้เหมาะกับน้ำที่จะไปนะ";
             if (sel != null && sel.cat == Shop.TackleCat && sel.slot == Tackle.Line) return "สายใสเหมาะน้ำใส สายถักเหมาะสู้ปลาใหญ่ เลือกตามที่จะไป";
+            if (sel != null && sel.cat == Shop.TackleCat && sel.slot == Tackle.Lure) return "เหยื่อปลอมไม่ต้องรอทุ่นจม ลากให้ถูกจังหวะ ปลาจะไล่ฮุบเอง";
             if (sel != null && sel.cat == Shop.TackleCat) return "ตัวเบ็ดเล็กนิดเดียว แต่ได้ปลาหรือไม่ได้ก็อยู่ที่มัน";
             if (sel != null && sel.id == "merit") return "ทำบุญกรวดน้ำให้เขาเสียหน่อย คืนนี้จะได้ตกปลาสบายใจ";
             return cat switch
@@ -212,7 +213,7 @@ namespace CozyFishing
                 if (it.cat == Shop.TackleCat && it.slot != lastSlot)   // หัวข้อย่อย: ทุ่น / สาย / ตัวเบ็ด / รอก
                 {
                     lastSlot = it.slot;
-                    var hd = L(shopList, it.slot == Tackle.Float ? "ทุ่น" : it.slot == Tackle.Line ? "สาย" : it.slot == Tackle.Hook ? "ตัวเบ็ด" : "รอก", 17, ShopGold);
+                    var hd = L(shopList, it.slot == Tackle.Float ? "ทุ่น" : it.slot == Tackle.Line ? "สาย" : it.slot == Tackle.Hook ? "ตัวเบ็ด" : it.slot == Tackle.Lure ? "เหยื่อปลอม" : "รอก", 17, ShopGold);
                     hd.style.unityTextAlign = TextAnchor.MiddleLeft; hd.style.marginTop = 8;
                 }
                 var row = new Button(() => { shopSel = item; FillShop(); }) { text = "" }; StyleButton(row, Color.clear); GoldFrame(row, item == shopSel ? 2 : 1);

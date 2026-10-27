@@ -25,7 +25,8 @@ namespace CozyFishing
                 * (nearSpecial && s.stars >= 2 ? 1.4f : 1f)
                 * (s.time == "any" ? 1f : s.time == per ? 2.2f : 0.6f)
                 * (s.stars >= 3 ? 1f + haunt * (s.rare ? 6f : 3f) : 1f)
-                * (s.rare || s.stars >= 3 ? Shop.RareMul : 1f)).ToArray();   // เหยื่อกุ้งเป็น: ปลาหายาก/ดาวสูงเข้าบ่อยขึ้น
+                * (s.rare || s.stars >= 3 ? Shop.RareMul : 1f)
+                * Lures.Weight(s)).ToArray();   // เหยื่อปลอม: ปลาล่าเหยื่อ/ปลาใหญ่เข้าบ่อย ปลาเล็กกินไม่เข้า   // เหยื่อกุ้งเป็น: ปลาหายาก/ดาวสูงเข้าบ่อยขึ้น
             var r = rng.NextDouble() * w.Sum();
             var sp = pool[0];
             for (int i = 0; i < w.Length; i++) { r -= w[i]; if (r <= 0) { sp = pool[i]; break; } }

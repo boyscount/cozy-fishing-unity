@@ -10,7 +10,7 @@ namespace CozyFishing
 
     public static class Tackle
     {
-        public const string Float = "float", Line = "line", Hook = "hook", Drag = "drag";
+        public const string Float = "float", Line = "line", Hook = "hook", Drag = "drag", Lure = "lure";
         public const string DefFloat = "float_feather", DefLine = "line_mono", DefHook = "hook_std";
 
         // ด่านน้ำไหลแรง: ทุ่นเบาโดนกระแสลาก สัญญาณปลากินเห็นสั้นลง · ด่านน้ำใส: ปลาเห็นสายชัด ระแวง
@@ -26,19 +26,20 @@ namespace CozyFishing
         public static event Action Changed;
 
         // ---------- ที่มี / ที่ใช้อยู่ ----------
-        public static bool IsDefault(string id) => id == DefFloat || id == DefLine || id == DefHook;
+        public static bool IsDefault(string id) => id == DefFloat || id == DefLine || id == DefHook || id == Lures.None;
         public static bool Has(string id) => IsDefault(id) || (S.tackle != null && S.tackle.Contains(id));
         public static string Equipped(string slot) => slot switch
         {
             Float => Has(S.tFloat) ? S.tFloat : DefFloat,
             Line => Has(S.tLine) ? S.tLine : DefLine,
+            Lure => Has(S.tLure) ? S.tLure : Lures.None,
             _ => Has(S.tHook) ? S.tHook : DefHook,
         };
         public static bool IsEquipped(ShopItem it) => it.slot == Drag ? Has(it.id) : Equipped(it.slot) == it.id;
         public static void Equip(string id)
         {
             var it = Shop.Get(id); if (it == null || !Has(id)) return;
-            if (it.slot == Float) S.tFloat = id; else if (it.slot == Line) S.tLine = id; else if (it.slot == Hook) S.tHook = id;
+            if (it.slot == Float) S.tFloat = id; else if (it.slot == Line) S.tLine = id; else if (it.slot == Hook) S.tHook = id; else if (it.slot == Lure) S.tLure = id;
             Story.Save(); Changed?.Invoke();
         }
         public static void Give(string id)
@@ -106,6 +107,20 @@ namespace CozyFishing
                 "ลุงเห็นหลานสายขาดบ่อย มานี่ ลุงสอนเรื่องเบรกรอก",
                 "ใส่ชุดเบรกนี้แล้ว พอสายตึงจนจะขาด รอกจะคลายสายให้เอง ปลาได้ระยะคืนไปหน่อย แต่สายไม่ขาด",
                 "จำไว้ ปลาดึงแรงก็ผ่อนให้มัน อย่าฝืน" } },
+            new TackleTeach { id = "lure_frog", gift = true, lines = new[] {
+                "หลาน ลุงจะสอนของใหม่ เหยื่อปลอม! กบยางตัวนี้ไม่ต้องรอทุ่นจม หลานต้องทำให้มันดูเหมือนกบจริง",
+                "เหวี่ยงไปแล้ว แตะทีหนึ่งกบจะกระโดด รอสักอึดใจค่อยแตะอีกที ปลาช่อนปลาชะโดชอบนัก",
+                "ดูแถบ ปลาสนใจ บนจอ ลากถูกจังหวะแถบจะขึ้น เต็มเมื่อไหร่ปลาฮุบ ค่อยวัดเบ็ด",
+                "ตัวนี้ลุงให้ ใส่ไว้แล้ว อยากกลับไปใช้ไส้เดือนก็เลือก ไม่ใช้เหยื่อปลอม ในร้านได้" } },
+            new TackleTeach { id = "lure_spinner", lines = new[] {
+                "สปินเนอร์ใบหมุน กดค้างกรอไปเรื่อย ๆ อย่าหยุด ใบมันจะวาวล่อปลาว่องไว",
+                "หยุดกรอเมื่อไหร่ ปลาก็หมดความสนใจ" } },
+            new TackleTeach { id = "lure_spoon", lines = new[] {
+                "ช้อนโลหะนี่ต้องกรอเร็วสักพักแล้วปล่อยให้มันพลิ้วจม ปลาดาวสูงชอบนัก",
+                "กรอสั้นไปหรือนานไปมันไม่พลิ้ว จับจังหวะให้ดีนะหลาน" } },
+            new TackleTeach { id = "lure_swim", lines = new[] {
+                "ปลายางตัวนี้แตะถี่ ๆ สม่ำเสมอ หางมันจะส่ายเหมือนปลาจริง",
+                "ปลาตัวโต ๆ ชอบไล่กินปลาเล็ก ใช้ตอนอยากได้ปลาหนัก" } },
             new TackleTeach { id = "line_pe", lines = new[] {
                 "อยากสู้ปลาตัวโตต้องสายถัก PE เส้นเล็กแต่เหนียวกว่าเอ็นหลายเท่า",
                 "แต่มันหนาเห็นชัด ปลาน้ำใสจะระแวงหน่อย เลือกใช้ให้ถูกที่นะหลาน" } },
@@ -134,6 +149,6 @@ namespace CozyFishing
         }
 
         /// ข้อความสั้นใต้ชื่อสินค้า: บอกว่าเหมาะกับที่ไหน
-        public static string Summary => $"ทุ่น: {Shop.Get(Equipped(Float)).name} · สาย: {Shop.Get(Equipped(Line)).name} · เบ็ด: {Shop.Get(Equipped(Hook)).name}" + (HasDrag ? " · มีเบรกรอก" : "");
+        public static string Summary => $"ทุ่น: {Shop.Get(Equipped(Float)).name} · สาย: {Shop.Get(Equipped(Line)).name} · เบ็ด: {Shop.Get(Equipped(Hook)).name}" + (HasDrag ? " · มีเบรกรอก" : "") + (Equipped(Lure) != Lures.None ? $" · เหยื่อปลอม: {Shop.Get(Equipped(Lure)).name}" : "");
     }
 }

@@ -23,7 +23,7 @@ namespace CozyFishing
         Action<bool[]> onEveningDone;
         bool[] eveGrill;
         bool dialogNext;
-        public bool ModalOpen => Shown(ask) || Shown(fadeEl) || Shown(dialogEl) || Shown(morning) || Shown(evening) || Shown(bag) || Shown(casePanel) || Shown(cluePop) || Shown(title) || Shown(settings) || Shown(bed) || Shown(sneak) || Shown(shop) || Shown(daily) || Shown(wardrobe) || Shown(gear);
+        public bool ModalOpen => Shown(ask) || Shown(fadeEl) || Shown(dialogEl) || Shown(morning) || Shown(evening) || Shown(bag) || Shown(casePanel) || Shown(cluePop) || Shown(title) || Shown(settings) || Shown(bed) || Shown(sneak) || Shown(shop) || Shown(daily) || Shown(wardrobe) || Shown(gear) || Shown(skillsEl);
         VisualElement caseBtn, casePanel, caseBody, cluePop, clueBody;
         Label caseBtnTxt;
 
@@ -372,12 +372,14 @@ namespace CozyFishing
 
         // ---------- Quest Tracker (กระดาษเก่ามุมขวาบน · แตะเพื่อเปิดสมุดคดี) ----------
         VisualElement questChev;
-        bool testCase;
+        bool testCase, testSkills;
         void BuildQuest()
         {
             if (GameUrl.Value.Contains("opencase"))
                 root.schedule.Execute(() => { if (!testCase && Time.time > 6 && !CardOpen && !ModalOpen) { testCase = true; OpenCase(); } }).Every(500);
-            quest = new VisualElement { pickingMode = PickingMode.Position }; Abs(quest, null, 22, 136);
+            if (FishingController.Bot && GameUrl.Value.Contains("openskills"))   // ทดสอบ: เปิดหน้าต้นไม้ทักษะ (มีแต้มให้ลองเรียน)
+                root.schedule.Execute(() => { if (!testSkills && Time.time > 6 && !CardOpen) { testSkills = true; Story.S.skillPts = Mathf.Max(Story.S.skillPts, 4); ShowSkills(); } }).Every(500);
+            quest =new VisualElement { pickingMode = PickingMode.Position }; Abs(quest, null, 22, 136);
             quest.style.width = 250; Skin(quest, "parchment", 20); quest.style.paddingTop = 10; quest.style.paddingBottom = 12; quest.style.paddingLeft = 16; quest.style.paddingRight = 14;
             quest.style.opacity = 0.86f;
             root.Add(quest);
@@ -554,7 +556,7 @@ namespace CozyFishing
             var extra = new VisualElement { pickingMode = PickingMode.Ignore }; extra.style.flexDirection = FlexDirection.Row; extra.style.justifyContent = Justify.Center; extra.style.flexWrap = Wrap.Wrap; extra.style.marginTop = 6; morningBody.Add(extra);
             // สามปุ่มไม้เท่ากัน: ไอคอนด้านบน ชื่อด้านล่าง (เดิมไอคอนทับตัวหนังสือ ล้นปุ่มบนมือถือ)
             extra.style.flexWrap = Wrap.NoWrap; extra.style.alignSelf = Align.Center; extra.style.width = Length.Percent(Narrow ? 100 : 90);
-            foreach (var (label, icon, act) in new (string, string, System.Action)[] { ("อุปกรณ์ของฉัน", "reel", ShowGear), ("ตู้แต่งตัว", "star_on", OpenWardrobe), ("ท้าดวลเพื่อน", "trophy", StartDuelFromMorning) })
+            foreach (var (label, icon, act) in new (string, string, System.Action)[] { ("อุปกรณ์ของฉัน", "reel", ShowGear), ("ทักษะ" + (Story.S.skillPts > 0 ? $" (+{Story.S.skillPts})" : ""), "cast", ShowSkills), ("ตู้แต่งตัว", "star_on", OpenWardrobe), ("ท้าดวลเพื่อน", "trophy", StartDuelFromMorning) })
             {
                 var eb = new Button(act) { text = "" }; WoodButton(eb, true);
                 eb.style.flexGrow = 1; eb.style.flexBasis = 0; eb.style.minWidth = 0; eb.style.marginLeft = eb.style.marginRight = 4; eb.style.marginTop = 4;

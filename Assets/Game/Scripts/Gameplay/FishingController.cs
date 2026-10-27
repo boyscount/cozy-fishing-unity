@@ -66,17 +66,22 @@ namespace CozyFishing
             aimRenderer = aim.GetComponentInChildren<Renderer>();
             aimMpb = new MaterialPropertyBlock();
             aim.SetActive(false);
+            if (Bot)   // ทดสอบ: ?lure=frog ใส่เหยื่อปลอมให้บอทลาก
+            {
+                var u = GameUrl.Value; int li = u.IndexOf("lure=");
+                if (li >= 0) { var id = "lure_" + u.Substring(li + 5).Split('&')[0]; if (Shop.Get(id) != null) { Tackle.Give(id); Tackle.Equip(id); } }
+            }
             ApplyTackleLook(); Tackle.Changed += ApplyTackleLook;
             Set(FishState.Free);
         }
         void OnDestroy() => Tackle.Changed -= ApplyTackleLook;
 
-        float lineBase = 0.014f;
+        float lineBase = 0.014f, bubbleAt;
         /// ทุ่นที่ใส่อยู่ (ลูก V_<ชื่อ> ใต้ Bobber ที่ SceneBuilder สร้างไว้) + ความหนาสาย
         void ApplyTackleLook()
         {
             if (this == null || bobber == null) return;
-            string want = "V_" + Tackle.Equipped(Tackle.Float).Replace("float_", "");
+            string want = Lures.Active ? "V_" + Tackle.Equipped(Tackle.Lure) : "V_" + Tackle.Equipped(Tackle.Float).Replace("float_", "");
             bool found = false;
             foreach (Transform c in bobber.transform) if (c.name == want) found = true;
             foreach (Transform c in bobber.transform) if (c.name.StartsWith("V_")) c.gameObject.SetActive(found ? c.name == want : c.name == "V_feather");
@@ -126,7 +131,8 @@ namespace CozyFishing
         {
             switch (State)
             {
-                case FishState.Waiting:   // ทดสอบ: บอทไดหมึกตามจังหวะไฟ
+                case FishState.Waiting:   // ทดสอบ: บอทไดหมึกตามจังหวะไฟ · ลากเหยื่อปลอมตามจังหวะของเหยื่อ
+                    if (lureRun != null) return lureRun.BotHold(Time.time);
                     if (Jigging && JigPulse > 0.85f && Time.time > botNext) { botNext = Time.time + 0.8f; return true; }
                     return false;
                 case FishState.Free: return t > 1.2f && t < 1.2f + 0.9f;            // ง้าง ~0.9 วิ แล้วปล่อย
@@ -197,6 +203,7 @@ namespace CozyFishing
                     break;
                 case FishState.Waiting:
                     if (Jigging) { jigHeld = held ? jigHeld + dt : 0; if (jigHeld > 0.8f) { jigHeld = 0; StartRetrieve(); hud.Toast("เก็บสาย"); break; } }
+                    if (lureRun != null) { LureStep(dt, held); break; }
                     float y = world.WaterY + 0.02f + Mathf.Sin(now * 2.2f) * 0.015f;
                     if (nibbles.Count > 0 && t > nibbles[0])
                     {
@@ -214,7 +221,7 @@ namespace CozyFishing
                     break;
                 case FishState.Bite:
                     bob.y = world.WaterY - 0.2f + Mathf.Sin(t * 40) * 0.03f;
-                    if (t > biteEnd) { hud.Toast("ช้าไปนิด ปลากินเหยื่อหนีไป"); DuelLose(); Roll(); NewBite(); Set(FishState.Waiting); }
+                    if (t > biteEnd) { hud.Toast("ช้าไปนิด ปลากินเหยื่อหนีไป"); DuelLose(); Roll(); if (Lures.Active && !Jigging) { StartRetrieve(); break; } NewBite(); Set(FishState.Waiting); }   // เหยื่อปลอม: เก็บสายแล้วเหวี่ยงใหม่
                     break;
                 case FishState.Strike:
                     strike.Step(dt);
@@ -246,6 +253,12 @@ namespace CozyFishing
                     break;
             }
             if (State != FishState.Charging) aim.SetActive(false);
+            if (Skills.SeeBubbles && (State == FishState.Free || State == FishState.Waiting) && Time.time > bubbleAt)   // ทักษะตาเหยี่ยว: ฟองอากาศผุดตรงจุดปลาชุม
+            {
+                bubbleAt = Time.time + 1.6f + (float)rng.NextDouble();
+                var sp = world.Special; float a = (float)rng.NextDouble() * 6.28f, r = (float)rng.NextDouble() * world.SpecialRadius * 0.7f;
+                WaterFx.AddRipple(sp.x + Mathf.Cos(a) * r, sp.z + Mathf.Sin(a) * r, 0.35f);
+            }
             UpdateVisuals(tip);
             UpdatePose();
             UpdateHud();
@@ -257,7 +270,7 @@ namespace CozyFishing
             switch (State)
             {
                 case FishState.Free: charge = 0; Set(FishState.Charging); break;
-                case FishState.Waiting: if (Jigging) { Jig(); break; } StartRetrieve(); hud.Toast("เก็บสาย"); break;
+                case FishState.Waiting: if (lureRun != null) { lureTap = true; break; } if (Jigging) { Jig(); break; } StartRetrieve(); hud.Toast("เก็บสาย"); break;
                 case FishState.Bite:
                     if (!fish.IsJunk && fish.species.stars >= 3 && !Bot) Cloud.SubmitQuick(Mathf.RoundToInt(t * 1000));   // กระดานมือไว (มิลลิวินาที น้อย = ไว)
                     if (!fish.IsJunk && fish.species.stars >= 3) { strike = new StrikeModel(fish.species.stars, rng, Tackle.StrikeWidthMul); Set(FishState.Strike); hud.Toast(fish.species.stars >= 4 ? "ตัวนี้ไม่ธรรมดา! ตีเบ็ดให้ตรงจังหวะ 3 ครั้ง" : "ปลาใหญ่! ตีเบ็ดให้ตรงจังหวะ 2 ครั้ง"); }
@@ -273,7 +286,7 @@ namespace CozyFishing
 
         void OnUp() { if (State == FishState.Charging) Cast(); }
 
-        public static float MaxCast => Shop.CastDist;   // ง้างเต็มแรง: คันไม้ไผ่ 18 ม. · คันจากร้านไกลขึ้นถึง 30 ม.
+        public static float MaxCast => Shop.CastDist * Skills.CastMul;   // ทักษะตีเบ็ดเพิ่มระยะ   // ง้างเต็มแรง: คันไม้ไผ่ 18 ม. · คันจากร้านไกลขึ้นถึง 30 ม.
         Vector3 CastPoint(float c) { var f = player.Forward; float d = 1.3f + c * (MaxCast - 1.3f); return new Vector3(player.Pos.x + f.x * d, 0, player.Pos.z + f.z * d); }
 
         void Cast()
@@ -324,6 +337,13 @@ namespace CozyFishing
             Sfx.Plop();
             WaterFx.AddRipple(bob.x, bob.z, 1.2f);
             Roll(); NewBite();
+            lureRun = null;
+            if (Lures.Active && !Jigging)
+            {
+                lureRun = new RetrieveModel(Lures.Equipped, Skills.RetrieveWindow, Skills.RetrieveGain, Skills.RetrieveThreshold);
+                biteAt = float.MaxValue; nibbles.Clear();   // ไม่มีปลากินเองตามเวลา ต้องลากให้ปลาสนใจ
+                hud.Toast(Lures.Equipped.hint);
+            }
             Set(FishState.Waiting);
             if (NearSpecial) hud.Toast("จุดนี้ดูน่าสนใจ…");
         }
@@ -338,7 +358,35 @@ namespace CozyFishing
             nibbles.Sort();
         }
 
-        void StartRetrieve() { flight = 0; from = bob; Set(FishState.Retrieve); }
+        void StartRetrieve() { lureRun = null; flight = 0; from = bob; Set(FishState.Retrieve); }
+
+        // ---------- เหยื่อปลอม: มินิเกมลากเหยื่อ (ตรรกะอยู่ใน Lures.cs/RetrieveModel) ----------
+        RetrieveModel lureRun; bool lureTap; float lureRipple;
+        public RetrieveModel LureRun => lureRun;
+        void LureStep(float dt, bool held)
+        {
+            lureRun.Step(dt, held, lureTap); lureTap = false;
+            if (lureRun.Moved > 0)
+            {
+                var to = new Vector3(player.Pos.x - bob.x, 0, player.Pos.z - bob.z);
+                float dist = to.magnitude;
+                if (dist > 0.01f) bob += to / dist * Mathf.Min(dist, lureRun.Moved);
+                if (Time.time > lureRipple) { lureRipple = Time.time + 0.25f; WaterFx.AddRipple(bob.x, bob.z, 0.45f); }
+            }
+            bob.y = world.WaterY - 0.04f + Mathf.Sin(t * 6) * 0.02f;
+            if (lureRun.Struck)   // ปลาฮุบเหยื่อ → ช่วงวัดเบ็ดตามปกติ
+            {
+                lureRun = null; biteAt = t;
+                hud.Toast("ปลาฮุบเหยื่อแล้ว! กดเลย!");
+                return;
+            }
+            bool canCastHere = world.CanCast(bob.x, bob.z);
+            if (new Vector2(player.Pos.x - bob.x, player.Pos.z - bob.z).magnitude < 2.6f || !canCastHere)
+            {
+                hud.Toast("ลากถึงฝั่งแล้ว ไม่มีปลาตาม ลองจังหวะใหม่นะ");
+                StartRetrieve();
+            }
+        }
         bool slipTold;
 
         void StartFight()
@@ -356,7 +404,8 @@ namespace CozyFishing
                 else hud.Toast($"ได้{fish.junk} …เก็บไปทิ้งให้น้ำสะอาด");
                 Roll(); StartRetrieve(); return;
             }
-            fight = new FightModel(fish.species, false, rng, Shop.RodTension * Tackle.LineTensionMul, Shop.ReelSpeed) { Drag = Tackle.HasDrag };
+            fight = new FightModel(fish.species, false, rng, Shop.RodTension * Tackle.LineTensionMul, Shop.ReelSpeed) { Drag = Tackle.HasDrag, ReleaseMul = Skills.ReleaseMul, SkillProgMul = Skills.ReelMul };
+            dashWarnAt = 0;
             fight.OnDash += () => WaterFx.AddRipple(bob.x, bob.z, 1.2f);
             fight.OnSlip += () => { Sfx.Nibble(); if (!slipTold) { slipTold = true; hud.Toast("เบรกรอกคลายสายให้ สายไม่ขาด! ผ่อนนิ้วหน่อย"); } };
             from = bob;
@@ -388,8 +437,10 @@ namespace CozyFishing
             GaugeWobble = Mathf.Max(GaugeWobble, Boss.Prayed ? 0 : 0.5f);
         }
 
+        float dashWarnAt;
         void FightStep(float dt, bool held)
         {
+            if (Skills.DashWarning && fight.DashSoon && Time.time > dashWarnAt) { dashWarnAt = Time.time + 2.5f; hud.Toast("ระวัง! ปลากำลังจะพุ่ง ผ่อนนิ้วก่อน"); }   // ทักษะอ่านทางปลา
             if (BossHooked) BossFight(dt, held);
             var r = fight.Step(dt, held);
             if (GhostPull > 0) fight.Tension = Mathf.Clamp01(fight.Tension + GhostPull * dt * (0.6f + Mathf.PerlinNoise(Time.time * 3, 0.5f)));   // มีอะไรดึงสายอยู่ใต้น้ำ
@@ -419,6 +470,8 @@ namespace CozyFishing
             if (BossHooked) { Boss.MarkCaught(); bossPhase = 0; }
             if (Duel.Active && !Duel.Done) { var dm = Duel.Resolve(true, fish.kg, fish.species.name); if (dm.Length > 0) hud.Toast(dm); }
             caughtIsNew = FishDex.Record(fish.species.id, fish.kg);
+            int lvUp = Skills.AddXp(Skills.XpForCatch(fish.species.stars, Lures.Active));   // ต้นไม้ทักษะ: ได้แต้มเมื่อเลเวลอัป
+            if (lvUp > 0) hud.Toast($"ระดับชาวประมง {Skills.FisherLevel}! ได้แต้มทักษะ (ดูที่หน้าเช้า ปุ่มทักษะ)");
             Cloud.SubmitFish(world.StageId, fish.species.id, fish.kg);   // กระดานปลาใหญ่ประจำสัปดาห์ของด่านนี้ (ออนไลน์เท่านั้น)
             if (Shop.ActiveBait != "worm" && Shop.UseBait()) hud.Toast("เหยื่อหมดแล้ว กลับไปใช้ไส้เดือน");
             caughtClue = Mystery.OnCatch(world.StageId, fish.species.id, Story.S.time, NearSpecial, NearDock, rng);
@@ -561,6 +614,7 @@ namespace CozyFishing
                 case FishState.Casting: case FishState.Landed: case FishState.Retrieve: hud.Hint(""); hud.ActionLabel("", false, "wait"); break;
                 case FishState.Waiting:
                     if (Jigging) { hud.Hint("แตะตอนไฟเขียวสว่าง ล่อหมึกเข้าวงแสง · กดค้างเก็บสาย"); hud.ActionLabel("", JigPulse > 0.5f, "reelin"); }   // วงปุ่มสว่างตามจังหวะไฟ
+                    else if (lureRun != null) { hud.Hint(lureRun.def.hint); hud.ActionLabel("", false, "reel"); }   // ไม่โชว์ป้าย วัดเบ็ด! ระหว่างลาก (จังหวะดูที่จุดในแถบลากเหยื่อ)
                     else { hud.Hint("รอให้ทุ่นจม… (กดเพื่อเก็บสาย)"); hud.ActionLabel("", false, "reelin"); }
                     break;
                 case FishState.Bite: hud.Hint("ทุ่นจม! กดเลย!"); hud.ActionLabel("ดึง!", true, "hook"); break;
@@ -569,6 +623,7 @@ namespace CozyFishing
                 default: hud.Hint(""); break;
             }
             hud.Power(State == FishState.Charging ? charge : -1);
+            hud.Lure(State == FishState.Waiting && lureRun != null, lureRun);
             hud.LineDistance(LineOut || State == FishState.Bite ? Vector2.Distance(new Vector2(player.Pos.x, player.Pos.z), new Vector2(bob.x, bob.z)) : -1);
             hud.Tension(State == FishState.Fight, Mathf.Clamp01((fight?.Tension ?? 0) + GaugeWobble * 0.18f * Mathf.Sin(Time.time * 11) * Mathf.PerlinNoise(Time.time * 4, 2)), fight?.Progress ?? 0, fight?.ZoneCenter ?? 0.5f, fight?.ZoneWidth ?? 0.6f, State == FishState.Fight && fight.Tension > 0.85f);
             hud.Strike(State == FishState.Strike, strike?.Pos ?? 0, strike?.Center ?? 0, strike?.Width ?? 0, strike?.Hits ?? 0, strike?.Need ?? 0, strike?.Misses ?? 0);
