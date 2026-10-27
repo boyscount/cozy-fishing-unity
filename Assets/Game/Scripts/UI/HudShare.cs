@@ -2,6 +2,7 @@ using System.Collections;
 using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEngine.UIElements;
+using static CozyFishing.HudKit;
 
 namespace CozyFishing
 {

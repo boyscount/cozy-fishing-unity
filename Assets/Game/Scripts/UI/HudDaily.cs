@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UIElements;
+using static CozyFishing.HudKit;
 
 namespace CozyFishing
 {

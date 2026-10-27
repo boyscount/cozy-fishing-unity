@@ -1,20 +1,30 @@
 using UnityEngine;
 using UnityEngine.UIElements;
+using static CozyFishing.HudKit;
 
 namespace CozyFishing
 {
     // ตู้แต่งตัว: ซ้าย = หุ่นจำลองใส่ของที่เลือก (หมวก เสื้อ) + ทุ่น สายเบ็ด กรอบการ์ด · ขวา = แท็บตามช่อง แต่ละชิ้นมีรูปตัวอย่าง
     //   แตะรายการ = ลองใส่ดูบนหุ่นก่อน · ปุ่มขวา = ซื้อ/ใส่
-    public partial class Hud
+    sealed class WardrobePanel
     {
+        readonly Hud hud;
+        readonly HudKit kit;
         VisualElement wardrobe, wardList, wardTabs, wardPanel, wardBody, wardPreview; Label wardScales, wardPreviewName; string wardSlot = Cosmetics.Hat;
         Cosmetics.Item wardTry;   // ชิ้นที่กำลังลองดู (ยังไม่ได้ซื้อก็ลองได้)
+
+        public WardrobePanel(Hud hud, HudKit kit) { this.hud = hud; this.kit = kit; }
+
+        public bool Open => wardrobe != null && wardrobe.style.display == DisplayStyle.Flex;
+
+        Label L(VisualElement parent, string text, int size, Color color, bool bold = true) => kit.L(parent, text, size, color, bold);
+        void StyleButton(Button b, Color bg) => kit.StyleButton(b, bg);
 
         static Texture2D WTex(string n) => Resources.Load<Texture2D>("UI/Wardrobe/" + n);
         static Color ShirtShow(Cosmetics.Item it) => it.color == Color.white ? new Color(0.37f, 0.53f, 0.77f) : it.color;   // เสื้อตัวเดิม (ไม่ย้อมในเกม) แสดงสีน้ำเงินตามโมเดล
 
         /// รูปไอคอนของแต่ละชิ้น (ชั้นภาพย้อมสี)
-        VisualElement ItemIcon(Cosmetics.Item it, float size)
+        static VisualElement ItemIcon(Cosmetics.Item it, float size)
         {
             var box = new VisualElement { pickingMode = PickingMode.Ignore }; box.style.width = box.style.height = size; box.style.flexShrink = 0;
             void Layer(string tex, Color c, float scale = 1f, float dy = 0)
@@ -35,18 +45,18 @@ namespace CozyFishing
             return box;
         }
 
-        void BuildWardrobe()
+        void Build()
         {
-            wardrobe = new VisualElement { pickingMode = PickingMode.Position }; Abs(wardrobe, 0, 0, 0, 0); root.Add(wardrobe);
+            wardrobe = new VisualElement { pickingMode = PickingMode.Position }; Abs(wardrobe, 0, 0, 0, 0); hud.root.Add(wardrobe);
             wardrobe.style.backgroundColor = new Color(0.03f, 0.02f, 0.01f, 0.85f); wardrobe.style.alignItems = Align.Center; wardrobe.style.justifyContent = Justify.Center;
             wardrobe.style.display = DisplayStyle.None;
             var panel = wardPanel = new VisualElement { pickingMode = PickingMode.Position }; GoldFrame(panel, 3); panel.style.backgroundColor = new Color(0.12f, 0.08f, 0.04f, 0.97f);
             panel.style.maxWidth = 1000; panel.style.maxHeight = Length.Percent(94); Pad(panel, 12, 16); wardrobe.Add(panel);
             var head = new VisualElement(); head.style.flexDirection = FlexDirection.Row; head.style.alignItems = Align.Center; head.style.justifyContent = Justify.SpaceBetween; panel.Add(head);
-            var t = L(head, "ตู้แต่งตัว", 30, ShopGold); t.style.unityFontDefinition = fontTitle;
+            var t = L(head, "ตู้แต่งตัว", 30, ShopGold); t.style.unityFontDefinition = kit.FontTitle;
             var sc = new VisualElement(); sc.style.flexDirection = FlexDirection.Row; sc.style.alignItems = Align.Center; head.Add(sc);
             Ico(sc, "star_on", 26).style.marginRight = 6; wardScales = L(sc, "", 22, new Color(1f, 0.86f, 0.45f));
-            var close = new Button(() => { wardrobe.style.display = DisplayStyle.None; GameInput.Blocked = ModalOpen || CardOpen; }) { text = "ปิด" };
+            var close = new Button(() => { wardrobe.style.display = DisplayStyle.None; GameInput.Blocked = hud.ModalOpen || hud.CardOpen; }) { text = "ปิด" };
             StyleButton(close, Color.clear); GoldFrame(close, 2); close.style.fontSize = 20; close.style.color = new Color(1f, 0.9f, 0.75f); Pad(close, 4, 18); close.style.marginLeft = 12;
             Hoverable(close, new Color(0.3f, 0.22f, 0.08f, 0.9f)); sc.Add(close);
             wardBody = new VisualElement(); wardBody.style.flexGrow = 1; wardBody.style.flexShrink = 1; wardBody.style.marginTop = 8; panel.Add(wardBody);
@@ -61,7 +71,7 @@ namespace CozyFishing
             foreach (var slot in Cosmetics.Slots)
             {
                 var sl = slot;
-                var tb = new Button(() => { wardSlot = sl; wardTry = null; FillWardrobe(); }) { text = Cosmetics.SlotName(slot) }; tb.name = slot; StyleButton(tb, Color.clear); GoldFrame(tb, 1);
+                var tb = new Button(() => { wardSlot = sl; wardTry = null; Fill(); }) { text = Cosmetics.SlotName(slot) }; tb.name = slot; StyleButton(tb, Color.clear); GoldFrame(tb, 1);
                 tb.style.fontSize = 17; tb.style.color = new Color(0.95f, 0.88f, 0.72f); Pad(tb, 5, 12); tb.style.marginRight = 5; tb.style.marginBottom = 5;
                 Hoverable(tb, new Color(0.38f, 0.28f, 0.1f, 0.95f)); wardTabs.Add(tb);
             }
@@ -70,11 +80,11 @@ namespace CozyFishing
             var note = L(panel, "สวยอย่างเดียว ไม่เพิ่มพลัง · เกล็ดทองได้จากภารกิจรายวัน ปลาเด่น เทศกาล บอส และการดวล", 14, new Color(0.82f, 0.76f, 0.64f), false); note.style.whiteSpace = WhiteSpace.Normal; note.style.marginTop = 6;
         }
 
-        public void OpenWardrobe()
+        public void Show()
         {
-            if (wardrobe == null) BuildWardrobe();
+            if (wardrobe == null) Build();
             wardrobe.style.display = DisplayStyle.Flex; wardrobe.BringToFront(); GameInput.Blocked = true; wardTry = null;
-            FillWardrobe();
+            Fill();
         }
 
         // หุ่นจำลอง: หมวก/เสื้อตามที่ใส่อยู่ (หรือชิ้นที่กำลังลอง) · ใต้หุ่นมีทุ่น สายเบ็ด กรอบการ์ดที่ใช้อยู่
@@ -92,10 +102,11 @@ namespace CozyFishing
             wardPreviewName.text = wardTry != null ? $"กำลังลอง: {wardTry.name}" + (Cosmetics.Owns(wardTry) ? "" : $" ({wardTry.price} เกล็ด)") : "ชุดที่ใส่อยู่";
         }
 
-        void FillWardrobe()
+        void Fill()
         {
+            var root = hud.root; bool narrow = hud.Narrow;
             bool portrait = root.layout.height > root.layout.width && root.layout.width > 0;
-            wardPanel.style.width = Length.Percent(Narrow ? 96 : 80);
+            wardPanel.style.width = Length.Percent(narrow ? 96 : 80);
             wardBody.style.flexDirection = portrait ? FlexDirection.Column : FlexDirection.Row;
             wardBody.ElementAt(0).style.marginRight = portrait ? 0 : 12; wardBody.ElementAt(0).style.marginBottom = portrait ? 8 : 0;
             wardScales.text = $"เกล็ดทอง {Cosmetics.Scales}";
@@ -114,21 +125,21 @@ namespace CozyFishing
                 bool own = Cosmetics.Owns(it), wearing = eq.id == it.id, canBuy = own || Cosmetics.Scales >= it.price, trying = wardTry == it;
                 var row = new VisualElement { pickingMode = PickingMode.Position }; row.style.flexDirection = FlexDirection.Row; row.style.alignItems = Align.Center; row.style.marginBottom = 6; Pad(row, 6, 10); Radius(row, 8);
                 row.style.backgroundColor = trying ? new Color(0.42f, 0.3f, 0.1f, 0.95f) : wearing ? new Color(0.22f, 0.32f, 0.12f, 0.9f) : new Color(0f, 0f, 0f, 0.3f);
-                row.RegisterCallback<PointerDownEvent>(e => { wardTry = item; FillWardrobe(); });   // แตะ = ลองใส่บนหุ่น
+                row.RegisterCallback<PointerDownEvent>(e => { wardTry = item; Fill(); });   // แตะ = ลองใส่บนหุ่น
                 wardList.Add(row);
-                var ic = ItemIcon(it, Narrow ? 52 : 60); ic.style.marginRight = 10; Radius(ic, 8); ic.style.backgroundColor = new Color(0.32f, 0.24f, 0.14f, 0.9f); row.Add(ic);
+                var ic = ItemIcon(it, narrow ? 52 : 60); ic.style.marginRight = 10; Radius(ic, 8); ic.style.backgroundColor = new Color(0.32f, 0.24f, 0.14f, 0.9f); row.Add(ic);
                 var col = new VisualElement { pickingMode = PickingMode.Ignore }; col.style.flexGrow = 1; col.style.flexShrink = 1; col.style.minWidth = 0; row.Add(col);
-                var nm = L(col, it.name, Narrow ? 18 : 20, new Color(0.97f, 0.92f, 0.82f)); nm.style.unityTextAlign = TextAnchor.MiddleLeft; nm.style.whiteSpace = WhiteSpace.Normal;
+                var nm = L(col, it.name, narrow ? 18 : 20, new Color(0.97f, 0.92f, 0.82f)); nm.style.unityTextAlign = TextAnchor.MiddleLeft; nm.style.whiteSpace = WhiteSpace.Normal;
                 var ds = L(col, it.desc, 14, new Color(0.85f, 0.8f, 0.68f), false); ds.style.unityTextAlign = TextAnchor.MiddleLeft; ds.style.whiteSpace = WhiteSpace.Normal;
                 var b = new Button(() =>
                 {
                     if (Cosmetics.Owns(item)) Cosmetics.Equip(item);
-                    else if (!Cosmetics.Buy(item)) { Toast("เกล็ดทองไม่พอ · ทำภารกิจรายวันหรือไปเทศกาลปลาใหญ่เพื่อสะสม"); return; }
-                    else { Sfx.Coin(); Toast($"ได้{item.name}แล้ว!"); }
-                    wardTry = null; FillWardrobe();
+                    else if (!Cosmetics.Buy(item)) { hud.Toast("เกล็ดทองไม่พอ · ทำภารกิจรายวันหรือไปเทศกาลปลาใหญ่เพื่อสะสม"); return; }
+                    else { Sfx.Coin(); hud.Toast($"ได้{item.name}แล้ว!"); }
+                    wardTry = null; Fill();
                 }) { text = wearing ? "ใส่อยู่" : own ? "ใส่" : canBuy ? $"ซื้อ {it.price}" : $"{it.price} เกล็ด" };
                 StyleButton(b, wearing ? new Color(0.25f, 0.42f, 0.12f) : own ? new Color(0.62f, 0.44f, 0.12f) : canBuy ? new Color(0.72f, 0.36f, 0.1f) : new Color(0.3f, 0.26f, 0.22f));
-                b.style.color = canBuy || wearing ? Color.white : new Color(0.78f, 0.72f, 0.66f); b.style.fontSize = Narrow ? 16 : 18; Pad(b, 8, 12); b.style.flexShrink = 0; b.style.marginLeft = 8; b.style.minWidth = Narrow ? 84 : 110; Radius(b, 8);
+                b.style.color = canBuy || wearing ? Color.white : new Color(0.78f, 0.72f, 0.66f); b.style.fontSize = narrow ? 16 : 18; Pad(b, 8, 12); b.style.flexShrink = 0; b.style.marginLeft = 8; b.style.minWidth = narrow ? 84 : 110; Radius(b, 8);
                 b.SetEnabled(!wearing && canBuy); b.style.opacity = 1;
                 row.Add(b);
             }
