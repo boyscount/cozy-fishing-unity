@@ -28,6 +28,7 @@ jobs:
         env:
           UGS_KEY_ID: ${{ secrets.UGS_KEY_ID }}
           UGS_SECRET_KEY: ${{ secrets.UGS_SECRET_KEY }}
+          UGS_ENV_ID: ${{ vars.UGS_ENV_ID }}
           OUT: site/leaderboard.json
         run: python3 Tools/leaderboard_snapshot.py
       - name: Publish to gh-pages

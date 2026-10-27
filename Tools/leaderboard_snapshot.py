@@ -26,8 +26,13 @@ def basic():
 
 def get(url, auth):
     req = urllib.request.Request(url, headers={"Authorization": auth, "Accept": "application/json"})
-    with urllib.request.urlopen(req, timeout=30) as r:
-        return json.loads(r.read().decode())
+    try:
+        with urllib.request.urlopen(req, timeout=30) as r:
+            return json.loads(r.read().decode())
+    except urllib.error.HTTPError as e:   # พิมพ์สาเหตุให้อ่านใน log ของ Actions (ไม่มีรหัสในข้อความนี้)
+        body = e.read().decode(errors="replace")[:300]
+        print(f"HTTP {e.code} {url.split('?')[0].replace(PROJECT, '<project>')}: {body}", file=sys.stderr)
+        raise
 
 
 def fish_names():
@@ -42,10 +47,15 @@ def fish_names():
 
 def main():
     auth = basic()
-    envs = get(f"{API}/unity/v1/projects/{PROJECT}/environments", auth).get("results", [])
-    env = next((e for e in envs if e.get("name") == "production"), envs[0] if envs else None)
-    if env is None:
-        sys.exit("no environment")
+    # Environment ID ของ production: ใส่เป็น repository variable UGS_ENV_ID (ไม่ใช่ความลับ) · ไม่มีก็ลองถามจาก API (ต้องมีสิทธิ์ดูโปรเจกต์)
+    env_id = os.environ.get("UGS_ENV_ID", "").strip()
+    if not env_id:
+        envs = get(f"{API}/unity/v1/projects/{PROJECT}/environments", auth).get("results", [])
+        env = next((e for e in envs if e.get("name") == "production"), envs[0] if envs else None)
+        if env is None:
+            sys.exit("no environment")
+        env_id = env["id"]
+    env = {"id": env_id}
     names = fish_names()
     rows = []
     for stage, stage_name in STAGES.items():
