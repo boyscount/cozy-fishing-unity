@@ -60,6 +60,32 @@ namespace CozyFishing
             Pad(b, 14, 30); b.style.fontSize = 26;
         }
 
+        // แถบเลื่อนแบบเกม: รางไม้บาง ๆ + ตัวจับสีทองเหลือง ไม่มีปุ่มลูกศร (แทนแถบเทาของ Unity)
+        public static void StyleScroller(ScrollView sv)
+        {
+            var vs = sv.verticalScroller;
+            vs.style.width = 12; vs.style.backgroundColor = Color.clear; vs.style.marginLeft = 6;
+            vs.style.borderLeftWidth = vs.style.borderRightWidth = vs.style.borderTopWidth = vs.style.borderBottomWidth = 0;
+            vs.lowButton.style.display = DisplayStyle.None; vs.highButton.style.display = DisplayStyle.None;
+            var sl = vs.slider; sl.style.marginTop = sl.style.marginBottom = sl.style.marginLeft = sl.style.marginRight = 0; sl.style.flexGrow = 1;
+            var tracker = sl.Q(className: "unity-base-slider__tracker") ?? sl.Q("unity-tracker");
+            if (tracker != null)
+            {
+                tracker.style.backgroundColor = new Color(0.36f, 0.24f, 0.12f, 0.22f); Radius(tracker, 6);
+                tracker.style.borderLeftWidth = tracker.style.borderRightWidth = tracker.style.borderTopWidth = tracker.style.borderBottomWidth = 0;
+                tracker.style.left = 3; tracker.style.right = 3; tracker.style.width = StyleKeyword.Auto;
+            }
+            var dragger = sl.Q(className: "unity-base-slider__dragger") ?? sl.Q("unity-dragger");
+            if (dragger != null)
+            {
+                dragger.style.backgroundColor = new Color(0.72f, 0.5f, 0.2f); Radius(dragger, 6);
+                dragger.style.borderLeftWidth = dragger.style.borderRightWidth = dragger.style.borderTopWidth = dragger.style.borderBottomWidth = 1.5f;
+                dragger.style.borderLeftColor = dragger.style.borderRightColor = dragger.style.borderTopColor = dragger.style.borderBottomColor = new Color(0.36f, 0.2f, 0.06f);
+                dragger.style.left = 0; dragger.style.width = 12; dragger.style.minHeight = 30;
+            }
+            var dborder = sl.Q("unity-dragger-border"); if (dborder != null) dborder.style.display = DisplayStyle.None;
+        }
+
         public static void Radius(VisualElement e, float r) { e.style.borderTopLeftRadius = e.style.borderTopRightRadius = e.style.borderBottomLeftRadius = e.style.borderBottomRightRadius = r; }
         public static void Abs(VisualElement e, float? left = null, float? right = null, float? top = null, float? bottom = null)
         {

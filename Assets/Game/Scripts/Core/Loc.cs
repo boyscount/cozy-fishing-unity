@@ -39,7 +39,7 @@ namespace CozyFishing
         [Serializable] class Item { public string th, en; }
         [Serializable] class Table { public Item[] items; }
         static Dictionary<string, string> exact;
-        static List<(string prefix, Regex rx, string en)> templates;
+        static List<(string prefix, Regex rx, string en, int lit)> templates;
         static readonly Dictionary<string, string> cache = new Dictionary<string, string>();
         static readonly Regex Thai = new Regex("[฀-๿]");
         static readonly Regex Tag = new Regex("(<[^>]+>)");
@@ -47,7 +47,7 @@ namespace CozyFishing
 
         static void Load()
         {
-            exact = new Dictionary<string, string>(); templates = new List<(string, Regex, string)>();
+            exact = new Dictionary<string, string>(); templates = new List<(string, Regex, string, int)>();
             var ta = Resources.Load<TextAsset>("Data/lang_en");
             if (ta == null) return;
             var t = JsonUtility.FromJson<Table>(ta.text);
@@ -67,10 +67,10 @@ namespace CozyFishing
                 }
                 sb.Append(Regex.Escape(it.th.Substring(last))).Append("$");
                 int first = it.th.IndexOf('{');
-                templates.Add((it.th.Substring(0, first), new Regex(sb.ToString(), RegexOptions.Singleline), it.en));
+                templates.Add((it.th.Substring(0, first), new Regex(sb.ToString(), RegexOptions.Singleline), it.en, Slot.Replace(it.th, "").Length));
             }
-            // แม่แบบที่มีข้อความคงที่ยาวกว่าลองก่อน (เจาะจงกว่า)
-            templates.Sort((a, b) => Slot.Replace(b.rx.ToString(), "").Length.CompareTo(Slot.Replace(a.rx.ToString(), "").Length));
+            // แม่แบบที่มีข้อความคงที่ยาวกว่าลองก่อน (เจาะจงกว่า) · นับจากข้อความไทยที่ตัดช่อง {n} ออก (เดิมนับจาก regex ช่องเยอะ = ยาว → "{0} {1} กก." แซง "นน. {0} กก.")
+            templates.Sort((a, b) => b.lit.CompareTo(a.lit));
         }
 
         /// แปลข้อความที่จะแสดง (ภาษาไทย = คืนค่าเดิม)
@@ -91,7 +91,7 @@ namespace CozyFishing
             if (exact.TryGetValue(s, out var e)) return e;
             var trimmed = s.Trim();
             if (trimmed != s && exact.TryGetValue(trimmed, out e)) return s.Replace(trimmed, e);
-            foreach (var (prefix, rx, en) in templates)
+            foreach (var (prefix, rx, en, _) in templates)
             {
                 if (prefix.Length > 0 && !s.StartsWith(prefix, StringComparison.Ordinal)) continue;
                 var m = rx.Match(s);

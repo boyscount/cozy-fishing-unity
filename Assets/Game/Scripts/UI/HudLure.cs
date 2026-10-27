@@ -5,9 +5,10 @@ using static CozyFishing.HudKit;
 namespace CozyFishing
 {
     // แถบลากเหยื่อปลอม (บนจอระหว่างลาก): ชื่อเหยื่อ · แถบ "ปลาสนใจ" · จุดจังหวะ (โตเต็มวง = แตะได้) · คำติชมล่าสุด (ดี! / เร็วไป / ช้าไป)
+    //   เหยื่อนิ่ง (ยังไม่ลาก/หยุดลาก) → ป้ายกะพริบบอกวิธีลากของเหยื่อตัวนั้น พร้อมปุ่มที่ต้องกด (เดิมเหยื่อตกน้ำแล้วนิ่ง ผู้เล่นไม่รู้ต้องทำอะไร)
     public partial class Hud
     {
-        VisualElement lureRow, lureBox, lureFill, lureBeat; Label lureName, lureSay;
+        VisualElement lureRow, lureBox, lureFill, lureBeat; Label lureName, lureSay, lureHow; float lureMovedAt;
 
         void BuildLure()
         {
@@ -25,7 +26,21 @@ namespace CozyFishing
             ring.style.borderTopColor = ring.style.borderBottomColor = ring.style.borderLeftColor = ring.style.borderRightColor = new Color(1, 1, 1, 0.6f);
             Radius(ring, 17); ring.style.alignItems = Align.Center; ring.style.justifyContent = Justify.Center; row.Add(ring);
             lureBeat = new VisualElement { pickingMode = PickingMode.Ignore }; Radius(lureBeat, 14); ring.Add(lureBeat);
+            lureHow = L(lureBox, "", 21, new Color(1f, 0.86f, 0.45f)); lureHow.style.marginTop = 8; Shadow(lureHow); lureHow.AddToClassList(TextLocalizer.NoLoc);   // ตั้งทุกเฟรม → แปลเองด้วย Loc.T (ไม่ให้ตัวแปลอัตโนมัติแย่งจนกะพริบ)
             lureRow.style.display = DisplayStyle.None;
+        }
+
+        // วิธีลากของเหยื่อแต่ละแบบ + ปุ่มที่ใช้ (จอสัมผัส = ปุ่มหลัก · คอม = E / Enter / คลิกค้างบนฉาก)
+        string LureHow(LureStyle st)
+        {
+            string key = TouchUi ? "ปุ่มหลัก" : "E / Enter";
+            switch (st)
+            {
+                case LureStyle.TapPause: return $"แตะ {key} … รอ … แตะอีกที ให้กบกระโดด";
+                case LureStyle.Hold: return $"กดค้าง {key} กรอสายไปเรื่อย ๆ";
+                case LureStyle.HoldRelease: return $"กดค้าง {key} กรอเร็ว แล้วปล่อยให้ช้อนจม";
+                default: return $"แตะ {key} ถี่ ๆ ให้ปลายางส่ายหาง";
+            }
         }
 
         /// เรียกทุกเฟรมจาก FishingController
@@ -43,6 +58,10 @@ namespace CozyFishing
             lureBeat.style.backgroundColor = r >= 1 ? new Color(1f, 0.85f, 0.3f) : new Color(1, 1, 1, 0.5f);
             bool fresh = run.Time - run.FeedbackAt < 1.2f;
             lureSay.text = fresh ? run.Feedback : "";
+            if (run.Moved > 0 || run.Time < 0.05f) lureMovedAt = run.Time;
+            bool idle = run.Time - lureMovedAt > 1.2f || run.Time < 3f;   // เพิ่งตกน้ำ หรือเหยื่อนิ่งเกิน 1.2 วิ
+            lureHow.style.display = idle ? DisplayStyle.Flex : DisplayStyle.None;
+            if (idle) { lureHow.text = "▶ " + Loc.T(LureHow(run.def.style)); lureHow.style.opacity = 0.55f + 0.45f * Mathf.Abs(Mathf.Sin(Time.time * 3f)); }
         }
     }
 }

@@ -24,7 +24,7 @@ namespace CozyFishing
         UIDocument doc;
         internal VisualElement root;
         VisualElement hintRow, toastRow, fightRow, strikeRow, jumpBtn, hintBox, toastBox, powerBox, powerFill, fightBox, needle, zone, progFill, strikeBox, sMark, sZone, card, joy, knob, actBtn, alertBg;
-        VisualElement cardImg, cardNew, dex, dexGrid, dexBtn; Label dexCount, dexTitle; string dexStage = "paddy";
+        VisualElement cardImg, cardNew;
         Label count, hint, toast, alert, sHits, cardName, cardStars, cardKg, cardPrice, cardDesc, actTxt, actKey;
         FontDefinition font, fontBold, fontTitle;
         HudKit kit;   // ตัวช่วยสร้างหน้าจอที่ใช้ร่วมกับแผงแยก
@@ -74,8 +74,7 @@ namespace CozyFishing
             {
                 bool pt = Portrait; if (pt != lastPortrait) { lastPortrait = pt; LayoutCard(Narrow); }   // หมุนจอ: จัดปุ่มการ์ดปลาใหม่
                 bool n = Narrow; if (n == lastNarrow) return; lastNarrow = n;
-                // สมุดปลา: จอแคบปุ่มด่านเล็กลง เรียงได้หลายปุ่มต่อแถว (เดิมแถวละปุ่ม กินครึ่งจอ)
-                if (dexTabs != null) foreach (var tb in dexTabs.Children()) { tb.style.fontSize = n ? 18 : 24; Pad(tb, n ? 6 : 10, n ? 14 : 30); tb.style.marginRight = n ? 5 : 8; tb.style.marginBottom = n ? 5 : 6; tb.style.minHeight = n ? 38 : 0; }
+                if (dex != null && dex.style.display == DisplayStyle.Flex) FillDex();   // สมุดปลา: จัดหน้าใหม่ (จอแคบ = สารบัญย่อด้านบน)
                 if (iconBar != null)
                 {   // จอแคบ: จอสัมผัสไม่ย่อปุ่ม (นิ้วกดยาก) แต่ขึ้นแถวใหม่แทน · เมาส์ย่อลงนิดหน่อยเหมือนเดิม
                     iconBar.style.scale = new Scale(Vector3.one * (n && !TouchUi ? 0.78f : 1f)); iconBar.style.transformOrigin = new TransformOrigin(Length.Percent(100), 0);
@@ -413,8 +412,6 @@ namespace CozyFishing
         }
 
         // ---------- สมุดสะสมปลา: แท็บตามด่าน · ตกได้แล้วเห็นรูป/ชื่อ/ตัวหนักสุด · ยังไม่เคยตก = เงาดำ "???" ----------
-        static (string id, string name)[] DexStages => System.Linq.Enumerable.ToArray(System.Linq.Enumerable.Select(CozyFishing.Stages.All, s => (s.id, s.name)));
-        static int DexTotal => System.Linq.Enumerable.Count(FishDatabase.All, sp => System.Linq.Enumerable.Any(CozyFishing.Stages.All, st => st.id == sp.stage));
 
         // แถบปุ่มไอคอนมุมขวาบน (สมุดปลา · สมุดคดี · กลับบ้าน) เรียงจากขวาไปซ้าย ปุ่มที่ซ่อนอยู่ไม่เว้นช่อง
         VisualElement iconBar;
@@ -447,87 +444,7 @@ namespace CozyFishing
             return col;
         }
 
-        void BuildDex()
-        {
-            dexBtn = IconButton("fishbook", new Color(0.85f, 0.7f, 0.38f), OpenDex, out dexCount);
-            dexCount.text = $"{FishDex.Discovered}/{DexTotal}";
-
-            dex = new VisualElement(); Abs(dex, 0, 0, 0, 0); dex.style.backgroundColor = new Color(0.1f, 0.16f, 0.13f, 0.6f);
-            dex.style.justifyContent = Justify.Center; dex.style.alignItems = Align.Center; root.Add(dex);
-            var book = Box(dex, Paper, 40); MaxW(book, 1040); book.style.maxHeight = Length.Percent(94); book.pickingMode = PickingMode.Position;
-            Skin(book, "book", 40); book.style.paddingTop = 34; book.style.paddingBottom = 34; book.style.paddingLeft = 52; book.style.paddingRight = 52;
-            var head = new VisualElement { pickingMode = PickingMode.Ignore }; head.style.flexDirection = FlexDirection.Row; head.style.alignItems = Align.Center; head.style.flexShrink = 0; book.Add(head);
-            dexTitle = L(head, "สมุดสะสมปลา", 42, new Color(0.22f, 0.12f, 0.05f)); dexTitle.style.flexGrow = 1; dexTitle.style.unityTextAlign = TextAnchor.MiddleLeft; dexTitle.style.unityFontDefinition = fontTitle;
-            var close = new VisualElement { pickingMode = PickingMode.Position }; close.style.width = close.style.height = 84;   // ตราครั่งแดง "ปิด"
-            close.style.backgroundImage = Resources.Load<Texture2D>("UI/Icons/seal"); head.Add(close);
-            close.RegisterCallback<PointerUpEvent>(e => { dex.style.display = DisplayStyle.None; GameInput.Blocked = false; });
-            var tabs = dexTabs = new VisualElement { pickingMode = PickingMode.Ignore }; tabs.style.flexDirection = FlexDirection.Row; tabs.style.flexWrap = Wrap.Wrap; tabs.style.marginTop = 10; tabs.style.flexShrink = 0; book.Add(tabs);
-            foreach (var (id, name) in DexStages)
-            {
-                var tab = new Button(() => { dexStage = id; FillDex(); }) { text = name, name = "tab-" + id };
-                StyleButton(tab, Green); tab.style.fontSize = 24; Pad(tab, 10, 30); tab.style.marginRight = 8; tab.style.marginBottom = 6;
-                Skin(tab, "tab_bamboo", 8); tab.style.color = new Color(0.24f, 0.15f, 0.06f);
-                tabs.Add(tab);
-            }
-            var scroll = new ScrollView(ScrollViewMode.Vertical); scroll.horizontalScrollerVisibility = ScrollerVisibility.Hidden; scroll.style.flexGrow = 1; scroll.style.flexShrink = 1; scroll.style.marginTop = 8; book.Add(scroll);
-            dexGrid = new VisualElement(); dexGrid.style.flexDirection = FlexDirection.Row; dexGrid.style.flexWrap = Wrap.Wrap; dexGrid.style.justifyContent = Justify.Center;
-            scroll.Add(dexGrid);
-            dex.style.display = DisplayStyle.None;
-        }
-
-        VisualElement dexTabs;
         void StyleButton(Button b, Color bg) => kit.StyleButton(b, bg);
-
-        void OpenDex()
-        {
-            if (CardOpen) return;
-            GameInput.Blocked = true;
-            dex.style.display = DisplayStyle.Flex;
-            FillDex();
-        }
-
-        void FillDex()
-        {
-            dexGrid.Clear();
-            int got = 0, total = 0;
-            foreach (var (id, name) in DexStages)
-            {
-                var tab = dex.Q<Button>("tab-" + id);
-                if (tab != null) tab.style.unityBackgroundImageTintColor = id == dexStage ? new Color(1f, 0.6f, 0.3f) : Color.white;
-            }
-            foreach (var sp in FishDatabase.ForStage(dexStage))
-            {
-                total++;
-                bool has = FishDex.Has(sp.id); if (has) got++;
-                var cell = new VisualElement { pickingMode = PickingMode.Ignore }; dexGrid.Add(cell); Skin(cell, "parchment", 18); Pad(cell, 14, 14);
-                cell.style.width = 290; cell.style.marginLeft = cell.style.marginRight = 8; cell.style.marginBottom = 16;
-                var photo = new VisualElement { pickingMode = PickingMode.Ignore }; photo.style.backgroundColor = new Color(0.96f, 0.94f, 0.88f); Pad(photo, 8, 8); photo.style.flexShrink = 0; cell.Add(photo);
-                var clip = Ico(cell, "paperclip", 34); Abs(clip, 14, null, -8); clip.style.height = 74;
-                var img = new VisualElement { pickingMode = PickingMode.Ignore }; img.style.height = 120; img.style.flexShrink = 0;
-                img.style.unityBackgroundScaleMode = ScaleMode.ScaleToFit;
-                if (sp.Photo != null) { img.style.backgroundImage = Background.FromTexture2D(sp.Photo); img.style.unityBackgroundImageTintColor = has ? Color.white : new Color(0, 0, 0, 0.85f); }   // ยังไม่เคยตก = เงาดำ
-                else if (preview != null) img.style.backgroundImage = Background.FromRenderTexture(preview.Icon(sp, !has));
-                photo.Add(img);
-                if (!has) { var lk = Ico(cell, "lock", 44); Abs(lk, null, 10, 96); lk.style.height = 56; }
-                var ink = new Color(0.24f, 0.14f, 0.06f);
-                var nm = L(cell, has ? sp.name : "???", 32, ink); nm.style.unityFontDefinition = fontTitle; nm.style.marginTop = 6; nm.style.whiteSpace = WhiteSpace.NoWrap;
-                var rr = new VisualElement { pickingMode = PickingMode.Ignore }; rr.style.flexDirection = FlexDirection.Row; rr.style.justifyContent = Justify.Center; rr.style.alignItems = Align.Center; cell.Add(rr);
-                L(rr, FishDatabase.Rarity[sp.stars], 20, new Color(0.6f, 0.32f, 0.08f)).style.marginRight = 6;
-                for (int k = 0; k < 4; k++) Ico(rr, k < sp.stars ? "star_on" : "star_off", 20);
-                L(cell, has ? $"ได้ {FishDex.Count(sp.id)} ตัว · หนักสุด {FishDex.BestKg(sp.id):0.00} กก." : (CozyFishing.Stages.Unlocked(sp.stage) ? "ยังไม่เคยตกได้" : "ด่านนี้ยังไม่เปิด"), 20, new Color(0.35f, 0.24f, 0.12f), false);
-                if (has && sp.Credit != null) L(cell, sp.Credit, 14, new Color(0.45f, 0.36f, 0.26f), false).style.marginTop = 2;   // เครดิตภาพถ่าย (CC BY / BY-SA ต้องให้เครดิต)
-                // ความลับของปลา: ปลดล็อกแล้วเห็นข้อความ · ยังไม่ปลดล็อกเห็นเงื่อนไข
-                var sec = Mystery.SecretOf(sp.id);
-                if (sec != null)
-                {
-                    bool known = Mystery.SecretKnown(sp.id);
-                    var sb = Box(cell, known ? new Color(0.3f, 0.16f, 0.1f, 0.9f) : new Color(0.22f, 0.17f, 0.12f, 0.82f), 12, false); Pad(sb, 6, 10); sb.style.marginTop = 6;
-                    L(sb, known ? "ความลับ: " + sec.text : "ความลับ: ??? (" + sec.hint + ")", 18, known ? new Color(1f, 0.85f, 0.6f) : new Color(0.9f, 0.84f, 0.74f), false);
-                }
-            }
-            dexTitle.text = $"สมุดสะสมปลา · {got}/{total}";
-            dexCount.text = $"{FishDex.Discovered}/{DexTotal}";
-        }
 
         // ---------- API ให้ระบบตกปลาเรียก ----------
         public bool CatchCardOpen => card.style.display == DisplayStyle.Flex;

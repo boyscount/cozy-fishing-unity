@@ -17,6 +17,15 @@ namespace CozyFishing
         {
             if (map != null) return;
             map = new Dictionary<string, Entry>();
+            try
+            {   // ทดสอบหน้าสมุดปลา (?dexdemo): ได้ปลามาแล้วราวครึ่งหนึ่ง เฉพาะในหน่วยความจำ ไม่บันทึกทับเซฟ
+                if ((GameUrl.Value ?? "").Contains("dexdemo"))
+                {
+                    int i = 0; foreach (var sp in FishDatabase.All) if (i++ % 3 != 2) map[sp.id] = new Entry { id = sp.id, count = 1 + i % 5, bestKg = Mathf.Lerp(sp.kgMin, sp.kgMax, 0.7f) };
+                    return;
+                }
+            }
+            catch (Exception) { }
             var json = PlayerPrefs.GetString(Key, "");
             if (string.IsNullOrEmpty(json)) return;
             try { foreach (var e in JsonUtility.FromJson<Save>(json).fish) map[e.id] = e; }

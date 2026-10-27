@@ -74,7 +74,9 @@ namespace CozyFishing
                 var sLang = MakeSign("English", null, "plank_s", () => Loc.Lang = Loc.English ? "th" : "en", true);
                 sLang.b.AddToClassList("small"); grid.Add(sLang.b);
                 sLang.icon = Prop(sLang, "icon_seal", 0, 0, 1).e; sLang.props.RemoveAt(sLang.props.Count - 1);
-                sLang.main.schedule.Execute(() => sLang.main.text = Loc.English ? "ไทย" : "English").Every(200);
+                sLang.main.AddToClassList(TextLocalizer.NoLoc);   // ป้ายบอกภาษาที่จะเปลี่ยนไป เขียนเป็นภาษานั้นเลย ("ไทย" / "English") ไม่ต้องแปล
+                void LangSign() => sLang.main.text = Loc.English ? "ไทย" : "English";
+                LangSign(); Loc.Changed += LangSign;
                 title.schedule.Execute(TickSigns).Every(33);
             }
             title.style.display = DisplayStyle.None;
@@ -162,20 +164,21 @@ namespace CozyFishing
             void Toggle(string name, Func<bool> get, Action<bool> set)
             {
                 var b = new Button(); b.text = $"{name}: {(get() ? "เปิด" : "ปิด")}";
-                b.clicked += () => { set(!get()); b.text = $"{name}: {(get() ? "เปิด" : "ปิด")}"; };
-                WoodButton(b, true); b.style.marginTop = 10; b.style.alignSelf = Align.Stretch; settingsBody.Add(b);
+                b.clicked += () => { set(!get()); b.text = $"{name}: {(get() ? "เปิด" : "ปิด")}"; TextLocalizer.Now(); };
+                WoodButton(b, true); b.style.marginTop = 10; b.style.alignSelf = Align.Stretch; b.style.fontSize = 23; b.style.whiteSpace = WhiteSpace.Normal; settingsBody.Add(b);   // ชื่อยาว (มุมมองบุคคลที่หนึ่ง…) ไม่ล้นป้าย
             }
             Toggle("มุมมองบุคคลที่หนึ่ง (เห็นมือถือคันเบ็ด)", () => FirstPersonView.Enabled, v => FirstPersonView.Enabled = v);
             Toggle("ภาพใต้น้ำตอนรอปลา", () => UnderwaterView.Enabled, v => UnderwaterView.Enabled = v);
             string BrightName(int v) => v < 0 ? "มืดลง" : v == 0 ? "ปกติ" : v == 1 ? "สว่าง" : "สว่างมาก";
             var bb = new Button(); bb.text = $"ความสว่างหน้าจอ: {BrightName(Atmosphere.Brightness)}";
-            bb.clicked += () => { int v = Atmosphere.Brightness + 1; if (v > 2) v = -1; Atmosphere.Brightness = v; bb.text = $"ความสว่างหน้าจอ: {BrightName(v)}"; };
+            bb.clicked += () => { int v = Atmosphere.Brightness + 1; if (v > 2) v = -1; Atmosphere.Brightness = v; bb.text = $"ความสว่างหน้าจอ: {BrightName(v)}"; TextLocalizer.Now(); };
             WoodButton(bb, true); bb.style.marginTop = 10; bb.style.alignSelf = Align.Stretch; settingsBody.Add(bb);
             var lb = new Button(); lb.text = Loc.English ? "Language: English" : "ภาษา: ไทย";
-            lb.clicked += () => { Loc.Lang = Loc.English ? "th" : "en"; lb.text = Loc.English ? "Language: English" : "ภาษา: ไทย"; };
+            lb.AddToClassList(TextLocalizer.NoLoc);
+            lb.clicked += () => { Loc.Lang = Loc.English ? "th" : "en"; ShowSettings(); };   // สร้างหน้าตั้งค่าใหม่ทั้งหน้าในภาษาใหม่
             WoodButton(lb, true); lb.style.marginTop = 10; lb.style.alignSelf = Align.Stretch; settingsBody.Add(lb);
             Toggle("แสดงบันทึกภารกิจ", () => !questFolded, v => { questFolded = !v; try { PlayerPrefs.SetInt("abot.questFold", questFolded ? 1 : 0); } catch (Exception) { } lastQuest = null; });
-            Show(settings); settings.BringToFront();
+            Show(settings); settings.BringToFront(); TextLocalizer.Now();
         }
     }
 }
