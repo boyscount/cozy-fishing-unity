@@ -367,7 +367,7 @@ namespace CozyFishing
 
         static string PortraitKey(string who) => who switch
         {
-            "แม่" => "mae", "พ่อ" => "pho", "ลูก" => "luk", "ลุงเปี๊ยก" => "lungpiak", "ยายอิ่ม" => "yai_im", "ผู้ใหญ่ทอง" => "phuyai_thong", _ => "",
+            "แม่" => "mae", "พ่อ" => "pho", "ลูก" => "luk", "ลุงเปี๊ยก" => "lungpiak", "ยายอิ่ม" => "yai_im", "ผู้ใหญ่ทอง" => "phuyai_thong", "ลุงส้ม" => "lungsom", _ => "",
         };
 
         // ---------- Quest Tracker (กระดาษเก่ามุมขวาบน · แตะเพื่อเปิดสมุดคดี) ----------
@@ -462,7 +462,8 @@ namespace CozyFishing
             RefreshMorning();
             if (!FishingController.Bot) StageLoader.Prefetch(Stages.Get(Story.S.stage).scene);   // โหลดด่านที่ไปล่าสุดไว้ก่อน ระหว่างอ่านหน้าเช้า
             Show(morning);
-            if (FishingController.Bot && GameUrl.Value.Contains("openshop")) { Story.S.money = Mathf.Max(Story.S.money, 6000); RefreshMorning(); ShowShop(); return; }   // ทดสอบ: เปิดร้านโชห่วยทันที
+            if (FishingController.Bot && GameUrl.Value.Contains("openshop")) { Story.S.money = Mathf.Max(Story.S.money, 6000); if (GameUrl.Value.Contains("tackleday")) Story.S.day = Mathf.Max(Story.S.day, 8);   // ทดสอบ: ของปลายสายปลดล็อกครบ ลุงส้มสอนทุกชิ้น
+ RefreshMorning(); ShowShop(); return; }   // ทดสอบ: เปิดร้านโชห่วยทันที
             if (FishingController.Bot && GameUrl.Value.Contains("shopdemo") && !shopDemoDone) { shopDemoDone = true; StartCoroutine(ShopDemo(() => StartCoroutine(BotClick(morning, 1.2f, () => { Hide(morning); onMorningGo?.Invoke(BotStage()); })))); return; }   // ถ่ายคลิป: โชว์ร้านค้า
             if (FishingController.Bot && GameUrl.Value.Contains("morningdemo")) { Story.S.money = Mathf.Max(Story.S.money, 9614); RefreshMorning(); return; }   // ทดสอบ: ค้างหน้าเช้าไว้ดูหน้าตา
             if (FishingController.Bot) StartCoroutine(BotClick(morning, 2.5f, () => { Hide(morning); onMorningGo?.Invoke(BotStage()); }));
@@ -533,7 +534,9 @@ namespace CozyFishing
             sart.style.backgroundImage = Resources.Load<Texture2D>("UI/Shop/reel2"); sart.style.backgroundSize = new BackgroundSize(BackgroundSizeType.Contain); shopBtn.Add(sart);
             var scol = new VisualElement { pickingMode = PickingMode.Ignore }; shopBtn.Add(scol);
             var st1 = L(scol, "ร้านลุงส้ม", Narrow ? 28 : 32, new Color(1f, 0.96f, 0.86f)); st1.style.unityTextAlign = TextAnchor.MiddleLeft; st1.style.unityFontDefinition = fontTitle; Shadow(st1);   // ตัวสว่างบนไม้ส้ม (เดิมน้ำตาลเข้มบนส้ม อ่านแทบไม่ออก)
-            var st2 = L(scol, "คันเบ็ด · รอก · เหยื่อ · ของกันผี · ของในบ้าน", Narrow ? 16 : 19, new Color(1f, 0.9f, 0.72f), false); st2.style.unityTextAlign = TextAnchor.MiddleLeft; Shadow(st2);
+            var news = Tackle.PendingTeach();   // ของใหม่มาถึงร้าน: บอกบนป้าย ให้รู้ว่าลุงมีอะไรจะสอน
+            var st2 = L(scol, news.Count > 0 ? $"ลุงส้มมีของใหม่มาให้ลอง: {Shop.Get(news[0].id).name}!" : "คันเบ็ด · รอก · ทุ่น สาย เบ็ด · เหยื่อ · ของกันผี · ของในบ้าน", Narrow ? 16 : 19,
+                news.Count > 0 ? new Color(1f, 1f, 0.6f) : new Color(1f, 0.9f, 0.72f), false); st2.style.unityTextAlign = TextAnchor.MiddleLeft; Shadow(st2); st2.style.whiteSpace = WhiteSpace.Normal;
             morningBody.Add(shopBtn); shopBtn.style.overflow = Overflow.Visible; shopBtn.style.marginTop = 22;
             var stamp = new VisualElement { pickingMode = PickingMode.Ignore }; Abs(stamp, null, 10, -14); stamp.style.width = Narrow ? 96 : 120; stamp.style.height = Narrow ? 50 : 62;   // ตราปั๊มแดง "ร้านลุงส้ม"
             stamp.style.backgroundImage = JTex("stamp_shop"); stamp.style.backgroundSize = new BackgroundSize(BackgroundSizeType.Contain); stamp.style.alignItems = Align.Center; stamp.style.justifyContent = Justify.Center; stamp.style.rotate = new Rotate(-8); shopBtn.Add(stamp);

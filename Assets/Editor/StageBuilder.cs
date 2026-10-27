@@ -126,13 +126,35 @@ public static partial class SceneBuilder
         fishing.preview = preview; hud.preview = preview;
         cam.cullingMask &= ~(1 << FishPreview.Layer);
         var bobber = new GameObject("Bobber");
+        // ทุ่น 4 แบบ (Tackle.cs) สร้างไว้ทั้งหมด เปิดเฉพาะอันที่ผู้เล่นใส่ · ชิ้นชื่อ Stick/Glow ให้ตู้แต่งตัวย้อมสีได้ทุกแบบ
+        Transform V(string n) { var g = new GameObject("V_" + n).transform; g.SetParent(bobber.transform, false); return g; }
+        void Part(Transform v, PrimitiveType t, string n, Vector3 p, Vector3 sc, Material m, float rz = 0) { var g = Prim(t, n, p, sc, m); g.transform.SetParent(v, false); g.transform.localRotation = Quaternion.Euler(0, 0, rz); }
         var bambooFloat = SurfMat("BobberBamboo", Hex("#d8b870"), smooth: 0.45f);
-        Prim(PrimitiveType.Cylinder, "Top", new Vector3(0, 0.04f, 0), new Vector3(0.07f, 0.13f, 0.07f), bambooFloat).transform.SetParent(bobber.transform, false);
-        Prim(PrimitiveType.Cylinder, "Bottom", new Vector3(0, -0.04f, 0), new Vector3(0.18f, 0.025f, 0.05f), bambooFloat).transform.SetParent(bobber.transform, false);   // ไม้ขวางกันพลิก
-        Prim(PrimitiveType.Cylinder, "Stick", new Vector3(0, 0.17f, 0), new Vector3(0.05f, 0.02f, 0.05f), SurfMat("BobberRed", Hex("#d23a2c"), smooth: 0.6f)).transform.SetParent(bobber.transform, false);
-        var feather = Prim(PrimitiveType.Cube, "Feather", new Vector3(0.02f, 0.25f, 0), new Vector3(0.012f, 0.13f, 0.045f), SurfMat("BobberFeather", Hex("#f2efe6"), smooth: 0.2f));
-        feather.transform.SetParent(bobber.transform, false); feather.transform.localRotation = Quaternion.Euler(0, 0, -14);
-        Prim(PrimitiveType.Sphere, "Glow", new Vector3(0, 0.26f, 0), Vector3.one * 0.056f, UnlitMat("BobberGlow", Hex("#c8ff5a"))).transform.SetParent(bobber.transform, false);
+        var red = SurfMat("BobberRed", Hex("#d23a2c"), smooth: 0.6f); var featherMat = SurfMat("BobberFeather", Hex("#f2efe6"), smooth: 0.2f);
+        var glowMat = UnlitMat("BobberGlow", Hex("#c8ff5a"));
+        var vf = V("feather");   // ทุ่นขนไก่ของพ่อ (แบบเดิม)
+        Part(vf, PrimitiveType.Cylinder, "Top", new Vector3(0, 0.04f, 0), new Vector3(0.07f, 0.13f, 0.07f), bambooFloat);
+        Part(vf, PrimitiveType.Cylinder, "Bottom", new Vector3(0, -0.04f, 0), new Vector3(0.18f, 0.025f, 0.05f), bambooFloat);   // ไม้ขวางกันพลิก
+        Part(vf, PrimitiveType.Cylinder, "Stick", new Vector3(0, 0.17f, 0), new Vector3(0.05f, 0.02f, 0.05f), red);
+        Part(vf, PrimitiveType.Cube, "Feather", new Vector3(0.02f, 0.25f, 0), new Vector3(0.012f, 0.13f, 0.045f), featherMat, -14);
+        Part(vf, PrimitiveType.Sphere, "Glow", new Vector3(0, 0.26f, 0), Vector3.one * 0.056f, glowMat);
+        var vq = V("quill");     // ทุ่นปากกาขนห่าน: ก้านยาวเรียว ปลายแดง
+        Part(vq, PrimitiveType.Cylinder, "Top", new Vector3(0, 0.08f, 0), new Vector3(0.028f, 0.17f, 0.028f), featherMat);
+        Part(vq, PrimitiveType.Cylinder, "Body", new Vector3(0, 0.0f, 0), new Vector3(0.05f, 0.06f, 0.05f), SurfMat("BobberQuillBody", Hex("#3a2a1c"), smooth: 0.5f));
+        Part(vq, PrimitiveType.Cylinder, "Stick", new Vector3(0, 0.28f, 0), new Vector3(0.03f, 0.04f, 0.03f), red);
+        Part(vq, PrimitiveType.Sphere, "Glow", new Vector3(0, 0.33f, 0), Vector3.one * 0.034f, glowMat);
+        var vo = V("foam");      // ทุ่นโฟมลูกกลม: ครึ่งบนแดง ครึ่งล่างขาว มีเสาอากาศสั้น
+        Part(vo, PrimitiveType.Sphere, "Top", new Vector3(0, 0.0f, 0), new Vector3(0.15f, 0.12f, 0.15f), featherMat);
+        Part(vo, PrimitiveType.Sphere, "Stick", new Vector3(0, 0.035f, 0), new Vector3(0.14f, 0.08f, 0.14f), red);
+        Part(vo, PrimitiveType.Cylinder, "Antenna", new Vector3(0, 0.12f, 0), new Vector3(0.018f, 0.06f, 0.018f), SurfMat("BobberQuillBody", Hex("#3a2a1c"), smooth: 0.5f));
+        Part(vo, PrimitiveType.Sphere, "Glow", new Vector3(0, 0.19f, 0), Vector3.one * 0.04f, glowMat);
+        var vg = V("glow");      // ทุ่นไฟเรืองแสง: ลำตัวดำ ปลายเรืองใหญ่ + วงแสงจาง ๆ
+        Part(vg, PrimitiveType.Cylinder, "Top", new Vector3(0, 0.06f, 0), new Vector3(0.05f, 0.14f, 0.05f), SurfMat("BobberGlowBody", Hex("#1c1c22"), smooth: 0.6f));
+        Part(vg, PrimitiveType.Cylinder, "Stick", new Vector3(0, 0.22f, 0), new Vector3(0.035f, 0.03f, 0.035f), red);
+        Part(vg, PrimitiveType.Capsule, "Glow", new Vector3(0, 0.3f, 0), new Vector3(0.05f, 0.06f, 0.05f), glowMat);
+        Part(vg, PrimitiveType.Sphere, "Halo", new Vector3(0, 0.3f, 0), Vector3.one * 0.16f, ParticleMat("BobberHalo", new Color(0.7f, 1f, 0.4f, 0.22f)));
+        foreach (var br in bobber.GetComponentsInChildren<Renderer>()) br.shadowCastingMode = ShadowCastingMode.Off;
+        vq.gameObject.SetActive(false); vo.gameObject.SetActive(false); vg.gameObject.SetActive(false);
         var aim = Prim(PrimitiveType.Cylinder, "AimRing", new Vector3(0, -50, 0), new Vector3(0.8f, 0.005f, 0.8f), UnlitMat("Aim", Color.white));
         aim.GetComponent<Renderer>().shadowCastingMode = ShadowCastingMode.Off;
         var line = new GameObject("FishingLine").AddComponent<LineRenderer>();

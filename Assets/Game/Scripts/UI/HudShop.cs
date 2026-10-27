@@ -65,7 +65,7 @@ namespace CozyFishing
             var fl = L(mrow, "เงินเก็บ", 22, new Color(0.95f, 0.9f, 0.8f)); fl.style.unityTextAlign = TextAnchor.MiddleLeft;
             shopMoney = L(mrow, "", 22, ShopGold);
             shopTabs = new VisualElement(); shopTabs.style.flexDirection = FlexDirection.Row; shopTabs.style.flexWrap = Wrap.Wrap; shopTabs.style.marginTop = 8; shopPanel.Add(shopTabs);
-            foreach (var (cat, label) in new[] { (Shop.Rods, "เบ็ดและรอก"), (Shop.Bait, "เหยื่อ"), (Shop.Ghost, "กันผี"), (Shop.Home, "ของในบ้าน") })
+            foreach (var (cat, label) in new[] { (Shop.Rods, "เบ็ดและรอก"), (Shop.TackleCat, "ทุ่น สาย เบ็ด"), (Shop.Bait, "เหยื่อ"), (Shop.Ghost, "กันผี"), (Shop.Home, "ของในบ้าน") })
             {
                 string c = cat;
                 var tb = new Button(() => { shopCat = c; shopSel = null; FillShop(); }) { text = label }; StyleButton(tb, Color.clear); GoldFrame(tb, 1);
@@ -132,6 +132,34 @@ namespace CozyFishing
         {
             if (shop == null) BuildShop();
             FillShop(); shop.style.display = DisplayStyle.Flex; shop.BringToFront(); GameInput.Blocked = true; LayoutShop();
+            TeachTackle();
+        }
+
+        // ของใหม่ปลดล็อกแล้ว: ลุงส้มเรียกมาสอนทีละชิ้น (บทพูดมีรูปหน้า) แล้วเปิดแท็บให้เห็นของชิ้นนั้น · ทุ่นปากกาแถมให้ลองฟรี
+        bool teaching;
+        void TeachTackle()
+        {
+            var list = Tackle.PendingTeach();
+            if (list.Count == 0 || teaching) return;
+            StartCoroutine(TeachRoutine(list));
+        }
+        System.Collections.IEnumerator TeachRoutine(System.Collections.Generic.List<TackleTeach> list)
+        {
+            teaching = true;
+            yield return new WaitForSeconds(0.4f);
+            foreach (var t in list)
+            {
+                var it = Shop.Get(t.id);
+                shopCat = Shop.TackleCat; shopSel = it; FillShop();
+                var lines = new (string who, string say)[t.lines.Length];
+                for (int i = 0; i < lines.Length; i++) lines[i] = ("ลุงส้ม", t.lines[i]);
+                dialogEl.BringToFront();
+                yield return Dialog(lines);
+                Tackle.MarkTaught(t);
+                if (t.gift) { Sfx.Coin(); Toast($"ได้{it.name}ฟรี! ลุงส้มใส่ให้แล้ว"); }
+                FillShop();
+            }
+            teaching = false;
         }
 
         VisualElement dArt;
@@ -139,7 +167,7 @@ namespace CozyFishing
         static Texture2D ShopArt(ShopItem it) => Resources.Load<Texture2D>("UI/Shop/" + it.id) ?? Resources.Load<Texture2D>("UI/Icons/" + ShopIcon(it));
         static string ShopIcon(ShopItem it) => it.id switch
         {
-            _ when it.id.StartsWith("rod") => "cast", _ when it.id.StartsWith("reel") => "reel",
+            _ when it.id.StartsWith("rod") => "cast", _ when it.id.StartsWith("reel") => "reel", _ when it.cat == Shop.TackleCat => "hook",
             "lamp" => "fire", "torch" => "flashlight", "amulet" => "seal", "merit" => "incense", "uwlight" => "eye",
             _ => it.cat == Shop.Bait ? "hook" : "home",
         };
@@ -147,6 +175,10 @@ namespace CozyFishing
         static string ShopLine(string cat, ShopItem sel)
         {
             if (sel != null && sel.id == "amulet") return "จะไปน้ำลึกตอนกลางคืนรึ? เอาสายสิญจน์ติดตัวไป ผีจะไม่กล้าเข้าใกล้";
+            if (sel != null && sel.cat == Shop.TackleCat && !Tackle.Unlocked(sel)) return $"ของชิ้นนี้ลุงสั่งไว้แล้ว อีกไม่กี่วันมาถึง (วันที่ {sel.day}) ไว้ลุงสอนวิธีใช้ให้";
+            if (sel != null && sel.cat == Shop.TackleCat && sel.slot == Tackle.Float) return "ทุ่นดีช่วยให้เห็นปลากินเหยื่อเร็ว ดูให้เหมาะกับน้ำที่จะไปนะ";
+            if (sel != null && sel.cat == Shop.TackleCat && sel.slot == Tackle.Line) return "สายใสเหมาะน้ำใส สายถักเหมาะสู้ปลาใหญ่ เลือกตามที่จะไป";
+            if (sel != null && sel.cat == Shop.TackleCat) return "ตัวเบ็ดเล็กนิดเดียว แต่ได้ปลาหรือไม่ได้ก็อยู่ที่มัน";
             if (sel != null && sel.id == "merit") return "ทำบุญกรวดน้ำให้เขาเสียหน่อย คืนนี้จะได้ตกปลาสบายใจ";
             return cat switch
             {
@@ -164,14 +196,25 @@ namespace CozyFishing
             foreach (var tb in shopTabs.Children()) { tb.style.backgroundColor = tb.name == shopCat ? new Color(0.45f, 0.33f, 0.12f, 0.95f) : PanelBg; }
             shopList.Clear();
             if (shopSel == null || shopSel.cat != shopCat) shopSel = System.Array.Find(Shop.Items, i => i.cat == shopCat);
+            if (shopCat == Shop.TackleCat)
+            {
+                var cur = L(shopList, "ใช้อยู่: " + Tackle.Summary, 16, new Color(0.9f, 0.85f, 0.7f), false); cur.style.unityTextAlign = TextAnchor.MiddleLeft; cur.style.marginBottom = 4; cur.style.whiteSpace = WhiteSpace.Normal;
+            }
             if (shopCat == Shop.Bait)
             {
                 var cur = L(shopList, $"เหยื่อที่ใช้อยู่: {Shop.BaitName(Shop.ActiveBait)}", 18, new Color(0.9f, 0.85f, 0.7f), false); cur.style.unityTextAlign = TextAnchor.MiddleLeft; cur.style.marginBottom = 4;
             }
+            string lastSlot = null;
             foreach (var it in Shop.Items)
             {
                 if (it.cat != shopCat) continue;
                 var item = it;
+                if (it.cat == Shop.TackleCat && it.slot != lastSlot)   // หัวข้อย่อย: ทุ่น / สาย / ตัวเบ็ด / รอก
+                {
+                    lastSlot = it.slot;
+                    var hd = L(shopList, it.slot == Tackle.Float ? "ทุ่น" : it.slot == Tackle.Line ? "สาย" : it.slot == Tackle.Hook ? "ตัวเบ็ด" : "รอก", 17, ShopGold);
+                    hd.style.unityTextAlign = TextAnchor.MiddleLeft; hd.style.marginTop = 8;
+                }
                 var row = new Button(() => { shopSel = item; FillShop(); }) { text = "" }; StyleButton(row, Color.clear); GoldFrame(row, item == shopSel ? 2 : 1);
                 if (item == shopSel) { row.style.borderTopColor = row.style.borderBottomColor = row.style.borderLeftColor = row.style.borderRightColor = new Color(1f, 0.85f, 0.4f); row.style.backgroundColor = new Color(0.25f, 0.18f, 0.06f, 0.95f); }
                 row.style.flexDirection = FlexDirection.Row; row.style.alignItems = Align.Center; row.style.marginTop = 5; Pad(row, 7, 10);
@@ -179,7 +222,11 @@ namespace CozyFishing
                 ic.style.backgroundImage = ShopArt(item); ic.style.backgroundSize = new BackgroundSize(BackgroundSizeType.Contain); row.Add(ic);
                 var nm = L(row, item.name, 20, new Color(0.97f, 0.92f, 0.82f), false); nm.style.flexGrow = 1; nm.style.flexShrink = 1; nm.style.unityTextAlign = TextAnchor.MiddleLeft;
                 bool owned = !Shop.CanBuy(item, out var why) && (why == "มีแล้ว" || why == "ทำบุญวันนี้แล้ว");
-                var pr = L(row, owned ? "มีแล้ว" : Story.Baht(item.price), 19, owned ? new Color(0.6f, 0.9f, 0.6f) : ShopGold); pr.style.flexShrink = 0; pr.style.marginLeft = 8;
+                bool locked = item.cat == Shop.TackleCat && !Tackle.Unlocked(item);
+                bool using_ = item.cat == Shop.TackleCat && Tackle.IsEquipped(item) && item.slot != Tackle.Drag;
+                var pr = L(row, using_ ? "ใช้อยู่" : owned ? "มีแล้ว" : locked ? $"วันที่ {item.day}" : Story.Baht(item.price), 19,
+                    using_ ? new Color(0.45f, 0.95f, 0.5f) : owned ? new Color(0.6f, 0.9f, 0.6f) : locked ? new Color(0.65f, 0.6f, 0.55f) : ShopGold); pr.style.flexShrink = 0; pr.style.marginLeft = 8;
+                if (locked) { ic.style.opacity = 0.35f; nm.style.color = new Color(0.7f, 0.65f, 0.58f); }
                 Hoverable(row, new Color(0.3f, 0.22f, 0.08f, 0.95f));
                 shopList.Add(row);
             }
@@ -197,6 +244,12 @@ namespace CozyFishing
                 dBuy.style.opacity = ok ? 1 : 0.45f;
                 var useB = shopDetail.Q<Button>("use");
                 if (useB != null) useB.RemoveFromHierarchy();
+                if (sel.cat == Shop.TackleCat && Tackle.Has(sel.id) && !Tackle.IsEquipped(sel))
+                {
+                    var u = new Button(() => { Tackle.Equip(sel.id); Sfx.Plop(); Toast($"ใส่{sel.name}แล้ว"); FillShop(); }) { text = "ใช้อันนี้" }; u.name = "use"; StyleButton(u, new Color(0.35f, 0.28f, 0.14f)); u.style.marginTop = 6; u.style.fontSize = 18; Pad(u, 6, 16);
+                    Hoverable(u, new Color(0.48f, 0.38f, 0.18f));
+                    shopDetail.Add(u);
+                }
                 if (sel.cat == Shop.Bait && Shop.Owned(sel) > 0 && Shop.ActiveBait != sel.id)
                 {
                     var u = new Button(() => { Shop.SelectBait(sel.id); FillShop(); }) { text = "ใช้เหยื่อนี้" }; u.name = "use"; StyleButton(u, new Color(0.35f, 0.28f, 0.14f)); u.style.marginTop = 6; u.style.fontSize = 18; Pad(u, 6, 16);

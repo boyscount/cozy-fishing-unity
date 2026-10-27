@@ -12,6 +12,9 @@ namespace CozyFishing
         public float ZoneCenter = 0.5f, ZoneWidth = 0.6f;
         public bool Dashing { get; private set; }
         public float PullBoost, ReelTensionMul = 1f, ReelProgMul = 1f;   // บอส: ตั้งทุกเฟรมตามช่วงการสู้
+        public bool Drag;                 // เบรกรอก (Tackle): สายตึงเกือบขาด รอกคลายสายให้ แลกกับปลาได้ระยะคืน
+        public bool Slipping { get; private set; }
+        public event Action OnSlip;
         readonly FishSpecies sp;
         readonly float rodK;
         readonly Random rng;
@@ -56,6 +59,9 @@ namespace CozyFishing
                 Progress -= pull * 0.03f * dt;
             }
             Tension = Math.Max(0, Tension);
+            bool slip = Drag && Tension > 0.9f;
+            if (slip) { Tension = Math.Max(0.86f, Tension - 1.4f * dt); Progress -= 0.05f * dt; if (!Slipping) OnSlip?.Invoke(); }
+            Slipping = slip;
             Slack = Tension < 0.1f ? Slack + dt : 0;
             if (Tension >= 1) return FightResult.Snapped;
             if (Slack > 2f) return FightResult.Slack;
@@ -73,11 +79,11 @@ namespace CozyFishing
         int dir = 1;
         readonly Random rng;
 
-        public StrikeModel(int stars, Random rng)
+        public StrikeModel(int stars, Random rng, float widthMul = 1f)
         {
             this.rng = rng;
             Speed = stars >= 4 ? 1.35f : 0.95f;
-            Width = stars >= 4 ? 0.15f : 0.22f;
+            Width = (stars >= 4 ? 0.15f : 0.22f) * widthMul;
             Need = stars >= 4 ? 3 : 2;
             Center = 0.3f + (float)rng.NextDouble() * 0.4f;
         }

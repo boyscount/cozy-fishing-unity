@@ -10,11 +10,13 @@ namespace CozyFishing
         public string id, cat, name, desc;
         public int price, level;          // level: อัปเกรดขั้นที่เท่าไร (คัน/รอก) · 0 = ไม่ใช่ขั้น
         public int pack;                  // เหยื่อ: ได้กี่ตัวต่อห่อ · สายสิญจน์: 1
+        public string slot;               // ทุ่น สาย เบ็ด (Tackle.cs): ช่องที่ใส่
+        public int day = 1;               // ปลดล็อกในร้านตั้งแต่วันที่เท่าไรของเนื้อเรื่อง
     }
 
     public static class Shop
     {
-        public const string Rods = "rod", Bait = "bait", Ghost = "ghost", Home = "home";
+        public const string Rods = "rod", Bait = "bait", Ghost = "ghost", Home = "home", TackleCat = "tackle";
 
         public static readonly ShopItem[] Items =
         {
@@ -27,6 +29,18 @@ namespace CozyFishing
             new ShopItem { id = "shrimp", cat = Bait, pack = 10, price = 40, name = "กุ้งเป็น (10 ตัว)", desc = "ปลาหายากและปลาดาวสูงชอบ โอกาสเจอสูงขึ้น" },
             new ShopItem { id = "bran", cat = Bait, pack = 10, price = 20, name = "รำข้าวปั้น (10 ก้อน)", desc = "ปลากินเหยื่อเร็วขึ้นราวหนึ่งในสาม" },
             new ShopItem { id = "frog", cat = Bait, pack = 10, price = 60, name = "กบน้อย (10 ตัว)", desc = "ล่อปลาตัวใหญ่ น้ำหนักเฉลี่ยมากขึ้น" },
+            // ทุ่น สาย เบ็ด (ใส่ได้อย่างละชิ้น · ชิ้นแรกของแต่ละช่องมีติดตัวตั้งแต่ต้น)
+            new ShopItem { id = "float_feather", cat = TackleCat, slot = Tackle.Float, price = 0, name = "ทุ่นขนไก่ของพ่อ", desc = "ทุ่นไม้ไผ่เสียบขนไก่ ใช้ได้ทุกที่ ไม่เด่นอะไรเป็นพิเศษ" },
+            new ShopItem { id = "float_quill", cat = TackleCat, slot = Tackle.Float, day = 2, price = 250, name = "ทุ่นปากกาขนห่าน", desc = "ไวมาก ปลาแค่ตอดก็จุ่มให้เห็น · เวลาวัดเบ็ดนานขึ้น 25% · น้ำเชี่ยวโดนกระแสลาก" },
+            new ShopItem { id = "float_foam", cat = TackleCat, slot = Tackle.Float, day = 3, price = 300, name = "ทุ่นโฟมลูกกลม", desc = "นิ่งกลางน้ำเชี่ยว · ด่านแก่งและแม่น้ำโขง เวลาวัดเบ็ดนานขึ้น 30%" },
+            new ShopItem { id = "float_glow", cat = TackleCat, slot = Tackle.Float, day = 5, price = 450, name = "ทุ่นไฟเรืองแสง", desc = "ปลายทุ่นเรืองแสง เห็นชัดตอนมืด · กลางคืนเวลาวัดเบ็ดนานขึ้น 35%" },
+            new ShopItem { id = "line_mono", cat = TackleCat, slot = Tackle.Line, price = 0, name = "สายเอ็นธรรมดา", desc = "สายเอ็นใส ๆ ทั่วไป ใช้ได้ทุกที่" },
+            new ShopItem { id = "line_fluoro", cat = TackleCat, slot = Tackle.Line, day = 6, price = 500, name = "สายฟลูออโรใส", desc = "แทบมองไม่เห็นในน้ำ · ด่านน้ำใส ปลากินเร็วขึ้น 25%" },
+            new ShopItem { id = "line_pe", cat = TackleCat, slot = Tackle.Line, day = 7, price = 900, name = "สายถัก PE", desc = "เหนียวมาก สายตึงช้าลง 18% สู้ปลาใหญ่สบาย · หนา ปลาน้ำใสระแวง" },
+            new ShopItem { id = "hook_std", cat = TackleCat, slot = Tackle.Hook, price = 0, name = "เบ็ดเบอร์ 8", desc = "ตัวเบ็ดขนาดกลาง ใช้ได้กับปลาทุกขนาด" },
+            new ShopItem { id = "hook_sharp", cat = TackleCat, slot = Tackle.Hook, day = 4, price = 350, name = "เบ็ดคมกริบ", desc = "ตีเบ็ดปลาหายากง่ายขึ้น · โซนทองกว้างขึ้น 35%" },
+            new ShopItem { id = "hook_big", cat = TackleCat, slot = Tackle.Hook, day = 8, price = 600, name = "เบ็ดเบอร์ใหญ่", desc = "ปลาที่ติดตัวโตขึ้น · ปลาเล็กกินไม่เข้า รอนานขึ้น 15%" },
+            new ShopItem { id = "reel_drag", cat = TackleCat, slot = Tackle.Drag, day = 6, price = 800, name = "ชุดเบรกรอก", desc = "สายตึงจนเกือบขาด รอกคลายสายให้เอง ปลาได้ระยะคืนนิดหน่อยแต่สายไม่ขาด" },
             new ShopItem { id = "uwlight", cat = Rods, price = 700, name = "ไฟล่อใต้น้ำ", desc = "แท่งไฟเรืองแสงผูกเหนือเหยื่อ · มองเห็นเหยื่อและปลาใต้น้ำชัดขึ้นมาก · ปลากินเหยื่อเร็วขึ้นนิดหน่อย" },
             new ShopItem { id = "lamp", cat = Ghost, price = 800, name = "ตะเกียงน้ำมันอย่างดี", desc = "แสงสว่างกว้างขึ้น · สติลดช้าลง 15%" },
             new ShopItem { id = "torch", cat = Ghost, price = 600, name = "ไฟฉายถ่านก้อนใหญ่", desc = "ส่องไกลขึ้น · ถ่านอยู่ได้นานขึ้นเกือบเท่าตัว" },
@@ -49,7 +63,7 @@ namespace CozyFishing
         public static ShopItem Get(string id) => Array.Find(Items, i => i.id == id);
 
         // ---------- สถานะของที่มี ----------
-        public static int Owned(ShopItem it) => it.id switch
+        public static int Owned(ShopItem it) => it.cat == TackleCat ? (Tackle.Has(it.id) ? 1 : 0) : it.id switch
         {
             "shrimp" => S.baitShrimp, "bran" => S.baitBran, "frog" => S.baitFrog, "amulet" => S.amulets,
             _ when it.id.StartsWith("rod") => S.rod >= it.level ? 1 : 0,
@@ -62,6 +76,7 @@ namespace CozyFishing
         public static bool CanBuy(ShopItem it, out string reason)
         {
             reason = null;
+            if (it.cat == TackleCat) { reason = Tackle.Has(it.id) ? "มีแล้ว" : !Tackle.Unlocked(it) ? $"ลุงยังไม่มีของ (มีวันที่ {it.day})" : S.money < it.price ? "เงินไม่พอ" : null; return reason == null; }
             if (it.id.StartsWith("rod") && S.rod != it.level - 1) reason = S.rod >= it.level ? "มีแล้ว" : "ต้องมีคันขั้นก่อนหน้า";
             else if (it.id.StartsWith("reel") && S.reel != it.level - 1) reason = S.reel >= it.level ? "มีแล้ว" : "ต้องมีรอกขั้นก่อนหน้า";
             else if (it.id == "amulet" && S.amulets >= 5) reason = "มีครบ 5 เส้นแล้ว";
@@ -75,6 +90,7 @@ namespace CozyFishing
         {
             if (!CanBuy(it, out _)) return false;
             S.money -= it.price;
+            if (it.cat == TackleCat) { Tackle.Give(it.id); Story.Save(); Tackle.Equip(it.id); return true; }   // ซื้อแล้วใส่ให้เลย
             switch (it.id)
             {
                 case "shrimp": S.baitShrimp += it.pack; if (S.bait == "worm") S.bait = "shrimp"; break;
@@ -118,10 +134,10 @@ namespace CozyFishing
         public static float CastDist => 18f + 4f * S.rod;                                        // 18 / 22 / 26 / 30 ม.
         public static float RodTension => 1f - 0.12f * S.rod;                                    // สายตึงช้าลงเมื่อคันดีขึ้น
         public static float ReelSpeed => 1f + 0.15f * S.reel;                                    // กรอสายได้ระยะมากขึ้น
-        public static float BiteMul => (ActiveBait == "bran" ? 0.65f : 1f) * (HasUwLight ? 0.9f : 1f);   // รำข้าว: ปลากินเร็วขึ้น · ไฟล่อใต้น้ำ: เร็วขึ้นนิด
+        public static float BiteMul => (ActiveBait == "bran" ? 0.65f : 1f) * (HasUwLight ? 0.9f : 1f) * Tackle.BiteMul;   // รำข้าว: ปลากินเร็วขึ้น · ไฟล่อใต้น้ำ: เร็วขึ้นนิด
         public static bool HasUwLight => S.items.Contains("uwlight");
         public static float RareMul => ActiveBait == "shrimp" ? 1.7f : 1f;                       // กุ้งเป็น: ปลาหายาก/ดาวสูง
-        public static float SizeBoost => ActiveBait == "frog" ? 0.22f : 0f;                      // กบ: ตัวใหญ่ขึ้น
+        public static float SizeBoost => (ActiveBait == "frog" ? 0.22f : 0f) + Tackle.SizeBoost;  // กบ / เบ็ดใหญ่: ตัวใหญ่ขึ้น
         public static float SanityDrainMul => (S.items.Contains("lamp") ? 0.85f : 1f) * (S.meritDay == S.day ? 0.5f : 1f);
         public static float BatteryDrainMul => S.items.Contains("torch") ? 0.55f : 1f;
         public static float FlashRange => S.items.Contains("torch") ? 30f : 22f;

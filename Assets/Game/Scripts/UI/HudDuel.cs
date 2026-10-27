@@ -105,6 +105,13 @@ namespace CozyFishing
             Card(b == "worm" ? null : Resources.Load<Texture2D>("UI/Shop/" + b), "hook", $"เหยื่อ: {Shop.BaitName(b)}",
                 (b == "shrimp" ? "ปลาหายาก/ดาวสูงเข้าบ่อยขึ้น" : b == "bran" ? "ปลากินเร็วขึ้น" : b == "frog" ? "ปลาตัวใหญ่ขึ้น" : "เหยื่อพื้นฐาน ใช้ได้ไม่จำกัด") + (b == "worm" ? "" : $" · เหลือ {Shop.BaitLeft(b)}"),
                 new (string, float, string)[0], dark);
+            // ทุ่น สาย เบ็ด ที่ใส่อยู่ (เปลี่ยนได้ในร้านลุงส้ม แท็บ "ทุ่น สาย เบ็ด")
+            foreach (var slot in new[] { Tackle.Float, Tackle.Line, Tackle.Hook })
+            {
+                var t = Shop.Get(Tackle.Equipped(slot));
+                Card(Resources.Load<Texture2D>("UI/Shop/" + t.id), "hook", $"{(slot == Tackle.Float ? "ทุ่น" : slot == Tackle.Line ? "สาย" : "ตัวเบ็ด")}: {t.name}", t.desc, new (string, float, string)[0], dark);
+            }
+            if (Tackle.HasDrag) Card(Resources.Load<Texture2D>("UI/Shop/reel_drag"), "reel", "ชุดเบรกรอก", Shop.Get("reel_drag").desc, new (string, float, string)[0], dark);
             Card(null, "eye", "ไฟล่อใต้น้ำ", Shop.HasUwLight ? "มีแล้ว · มองเห็นใต้น้ำชัดขึ้น ปลากินเร็วขึ้นนิด" : "ยังไม่มี · ซื้อที่ร้านลุงส้ม ฿700",
                 new[] { ("มองเห็นใต้น้ำ", Shop.HasUwLight ? 1f : 0.4f, Shop.HasUwLight ? "ชัดมาก" : "ปกติ") }, dark);
             Card(null, "trophy", "สู้ปลาบึกยักษ์แม่โขง", Boss.GearReady ? "อุปกรณ์พร้อมแล้ว! ไปด่านแก่งอาถรรพ์พญานาคได้เลย" : "ต้องมีคันคาร์บอนเบา + รอกเบทคาสติ้งขึ้นไป",

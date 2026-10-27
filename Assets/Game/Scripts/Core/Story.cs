@@ -41,6 +41,9 @@ namespace CozyFishing
         public string bait = "worm";
         public List<string> items = new List<string>();
         public bool glimpsed;                                // เห็นผีแวบ ๆ ครั้งแรกแล้ว (เย็นวันแรก)
+        // ทุ่น สาย เบ็ด (Tackle.cs): ของที่มี · ที่ใส่อยู่ · ลุงส้มสอนชิ้นไหนไปแล้ว
+        public List<string> tackle = new List<string>(), taught = new List<string>();
+        public string tFloat = Tackle.DefFloat, tLine = Tackle.DefLine, tHook = Tackle.DefHook;
     }
 
     public class EveningResult
