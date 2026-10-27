@@ -48,6 +48,8 @@ namespace CozyFishing
             c.fish = new Catch { species = sp, kg = (float)System.Math.Round(sp.kgMin + (sp.kgMax - sp.kgMin) * k, 1), cm = (int)(sp.cmMin + (sp.cmMax - sp.cmMin) * k) };
         }
 
+        public void ClearNibbles() => nibbles.Clear();
+
         public void Plan()
         {
             var rng = c.rng; float t = c.t;

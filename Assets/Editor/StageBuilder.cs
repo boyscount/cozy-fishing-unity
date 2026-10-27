@@ -153,8 +153,26 @@ public static partial class SceneBuilder
         Part(vg, PrimitiveType.Cylinder, "Stick", new Vector3(0, 0.22f, 0), new Vector3(0.035f, 0.03f, 0.035f), red);
         Part(vg, PrimitiveType.Capsule, "Glow", new Vector3(0, 0.3f, 0), new Vector3(0.05f, 0.06f, 0.05f), glowMat);
         Part(vg, PrimitiveType.Sphere, "Halo", new Vector3(0, 0.3f, 0), Vector3.one * 0.16f, ParticleMat("BobberHalo", new Color(0.7f, 1f, 0.4f, 0.22f)));
+        // เหยื่อปลอม 4 แบบ (Lures.cs): ใส่แล้วซ่อนทุ่น แสดงเหยื่อลอยปริ่มน้ำแทน
+        var silver = SurfMat("LureSilver", Hex("#d8dde4"), smooth: 0.85f); var goldM = SurfMat("LureGold", Hex("#e0b040"), smooth: 0.8f);
+        var vfr = V("lure_frog");
+        Part(vfr, PrimitiveType.Sphere, "Body", new Vector3(0, 0.02f, 0), new Vector3(0.14f, 0.06f, 0.18f), SurfMat("LureFrog", Hex("#5c9a34"), smooth: 0.6f));
+        Part(vfr, PrimitiveType.Sphere, "Belly", new Vector3(0, 0.0f, 0.01f), new Vector3(0.11f, 0.04f, 0.13f), SurfMat("LureFrogBelly", Hex("#e8e0a0"), smooth: 0.5f));
+        foreach (var sx in new[] { -1f, 1f }) { Part(vfr, PrimitiveType.Capsule, "Leg", new Vector3(sx * 0.07f, 0.0f, -0.1f), new Vector3(0.025f, 0.05f, 0.025f), SurfMat("LureFrog", Hex("#5c9a34"), smooth: 0.6f), sx * 60); Part(vfr, PrimitiveType.Sphere, "Eye", new Vector3(sx * 0.035f, 0.05f, 0.07f), Vector3.one * 0.025f, SurfMat("LureEye", Hex("#101010"), smooth: 0.9f)); }
+        var vsp = V("lure_spinner");
+        Part(vsp, PrimitiveType.Capsule, "Body", new Vector3(0, 0.02f, 0), new Vector3(0.03f, 0.05f, 0.03f), silver, 90);
+        Part(vsp, PrimitiveType.Sphere, "Blade", new Vector3(0, 0.05f, 0.05f), new Vector3(0.06f, 0.005f, 0.1f), goldM);
+        Part(vsp, PrimitiveType.Cylinder, "Skirt", new Vector3(0, 0.02f, -0.07f), new Vector3(0.04f, 0.03f, 0.04f), red, 90);
+        var vsn = V("lure_spoon");
+        Part(vsn, PrimitiveType.Sphere, "Body", new Vector3(0, 0.02f, 0), new Vector3(0.07f, 0.012f, 0.16f), silver);
+        Part(vsn, PrimitiveType.Sphere, "Stripe", new Vector3(0, 0.03f, 0), new Vector3(0.03f, 0.008f, 0.12f), red);
+        var vsw = V("lure_swim");
+        Part(vsw, PrimitiveType.Capsule, "Body", new Vector3(0, 0.02f, 0), new Vector3(0.05f, 0.09f, 0.05f), SurfMat("LureSwim", Hex("#e6a07a"), smooth: 0.55f), 90);
+        Part(vsw, PrimitiveType.Cube, "Tail", new Vector3(0, 0.02f, -0.11f), new Vector3(0.008f, 0.06f, 0.05f), SurfMat("LureSwim", Hex("#e6a07a"), smooth: 0.55f));
+        Part(vsw, PrimitiveType.Sphere, "Eye", new Vector3(0.022f, 0.035f, 0.06f), Vector3.one * 0.016f, SurfMat("LureEye", Hex("#101010"), smooth: 0.9f));
         foreach (var br in bobber.GetComponentsInChildren<Renderer>()) br.shadowCastingMode = ShadowCastingMode.Off;
         vq.gameObject.SetActive(false); vo.gameObject.SetActive(false); vg.gameObject.SetActive(false);
+        vfr.gameObject.SetActive(false); vsp.gameObject.SetActive(false); vsn.gameObject.SetActive(false); vsw.gameObject.SetActive(false);
         var aim = Prim(PrimitiveType.Cylinder, "AimRing", new Vector3(0, -50, 0), new Vector3(0.8f, 0.005f, 0.8f), UnlitMat("Aim", Color.white));
         aim.GetComponent<Renderer>().shadowCastingMode = ShadowCastingMode.Off;
         var line = new GameObject("FishingLine").AddComponent<LineRenderer>();

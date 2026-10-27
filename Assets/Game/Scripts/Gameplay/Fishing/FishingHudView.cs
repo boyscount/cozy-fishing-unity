@@ -20,6 +20,7 @@ namespace CozyFishing
                 case FishState.Casting: case FishState.Landed: case FishState.Retrieve: hud.Hint(""); hud.ActionLabel("", false, "wait"); break;
                 case FishState.Waiting:
                     if (c.Jigging) { hud.Hint("แตะตอนไฟเขียวสว่าง ล่อหมึกเข้าวงแสง · กดค้างเก็บสาย"); hud.ActionLabel("", FishingController.JigPulse > 0.5f, "reelin"); }   // วงปุ่มสว่างตามจังหวะไฟ
+                    else if (c.lure.Run != null) { hud.Hint(c.lure.Run.def.hint); hud.ActionLabel("", false, "reel"); }   // ไม่โชว์ป้าย วัดเบ็ด! ระหว่างลาก (จังหวะดูที่จุดในแถบลากเหยื่อ)
                     else { hud.Hint("รอให้ทุ่นจม… (กดเพื่อเก็บสาย)"); hud.ActionLabel("", false, "reelin"); }
                     break;
                 case FishState.Bite: hud.Hint("ทุ่นจม! กดเลย!"); hud.ActionLabel("ดึง!", true, "hook"); break;
@@ -28,6 +29,7 @@ namespace CozyFishing
                 default: hud.Hint(""); break;
             }
             hud.Power(State == FishState.Charging ? c.cast.Charge : -1);
+            hud.Lure(State == FishState.Waiting && c.lure.Run != null, c.lure.Run);
             hud.LineDistance(c.LineOut || State == FishState.Bite ? Vector2.Distance(new Vector2(player.Pos.x, player.Pos.z), new Vector2(bob.x, bob.z)) : -1);
             hud.Tension(State == FishState.Fight, Mathf.Clamp01((fight?.Tension ?? 0) + c.GaugeWobble * 0.18f * Mathf.Sin(Time.time * 11) * Mathf.PerlinNoise(Time.time * 4, 2)), fight?.Progress ?? 0, fight?.ZoneCenter ?? 0.5f, fight?.ZoneWidth ?? 0.6f, State == FishState.Fight && fight.Tension > 0.85f);
             hud.Strike(State == FishState.Strike, strike?.Pos ?? 0, strike?.Center ?? 0, strike?.Width ?? 0, strike?.Hits ?? 0, strike?.Need ?? 0, strike?.Misses ?? 0);

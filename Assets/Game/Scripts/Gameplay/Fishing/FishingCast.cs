@@ -6,7 +6,7 @@ namespace CozyFishing
     sealed class FishingCast
     {
         public const float ThrowDelay = 0.16f;   // จากปล่อยปุ่มถึงทุ่นพุ่งออก (ตรงกับเฟรมแขนสะบัดของท่า Mixamo)
-        public static float MaxCast => Shop.CastDist;   // ง้างเต็มแรง: คันไม้ไผ่ 18 ม. · คันจากร้านไกลขึ้นถึง 30 ม.
+        public static float MaxCast => Shop.CastDist * Skills.CastMul;   // ทักษะตีเบ็ดเพิ่มระยะ   // ง้างเต็มแรง: คันไม้ไผ่ 18 ม. · คันจากร้านไกลขึ้นถึง 30 ม.
 
         readonly FishingController c;
         readonly Renderer aimRenderer;

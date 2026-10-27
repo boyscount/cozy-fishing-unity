@@ -40,6 +40,11 @@ namespace CozyFishing
             new ShopItem { id = "hook_std", cat = TackleCat, slot = Tackle.Hook, price = 0, name = "เบ็ดเบอร์ 8", desc = "ตัวเบ็ดขนาดกลาง ใช้ได้กับปลาทุกขนาด" },
             new ShopItem { id = "hook_sharp", cat = TackleCat, slot = Tackle.Hook, day = 4, price = 350, name = "เบ็ดคมกริบ", desc = "ตีเบ็ดปลาหายากง่ายขึ้น · โซนทองกว้างขึ้น 35%" },
             new ShopItem { id = "hook_big", cat = TackleCat, slot = Tackle.Hook, day = 8, price = 600, name = "เบ็ดเบอร์ใหญ่", desc = "ปลาที่ติดตัวโตขึ้น · ปลาเล็กกินไม่เข้า รอนานขึ้น 15%" },
+            new ShopItem { id = "lure_none", cat = TackleCat, slot = Tackle.Lure, price = 0, name = "ไม่ใช้เหยื่อปลอม", desc = "ใช้เหยื่อสดกับทุ่นตามปกติ (ไส้เดือน กุ้ง รำข้าว กบ)" },
+            new ShopItem { id = "lure_frog", cat = TackleCat, slot = Tackle.Lure, day = 3, price = 350, name = "กบยาง", desc = "แตะ รอ แตะ ให้กบกระโดด · ปลานักล่าตัวใหญ่ชอบ · ใช้ได้ไม่หมด" },
+            new ShopItem { id = "lure_spinner", cat = TackleCat, slot = Tackle.Lure, day = 5, price = 450, name = "สปินเนอร์ใบหมุน", desc = "กดค้างกรอสม่ำเสมอ · ปลาว่องไวชอบ · ใช้ได้ไม่หมด" },
+            new ShopItem { id = "lure_spoon", cat = TackleCat, slot = Tackle.Lure, day = 7, price = 700, name = "ช้อนโลหะ", desc = "กรอเร็วแล้วปล่อยให้พลิ้ว · ปลาดาวสูงเข้าบ่อยขึ้นมาก · ใช้ได้ไม่หมด" },
+            new ShopItem { id = "lure_swim", cat = TackleCat, slot = Tackle.Lure, day = 9, price = 1100, name = "ปลายางส่ายหาง", desc = "แตะถี่ ๆ สม่ำเสมอ · ปลาตัวโตชอบมาก · ใช้ได้ไม่หมด" },
             new ShopItem { id = "reel_drag", cat = TackleCat, slot = Tackle.Drag, day = 6, price = 800, name = "ชุดเบรกรอก", desc = "สายตึงจนเกือบขาด รอกคลายสายให้เอง ปลาได้ระยะคืนนิดหน่อยแต่สายไม่ขาด" },
             new ShopItem { id = "uwlight", cat = Rods, price = 700, name = "ไฟล่อใต้น้ำ", desc = "แท่งไฟเรืองแสงผูกเหนือเหยื่อ · มองเห็นเหยื่อและปลาใต้น้ำชัดขึ้นมาก · ปลากินเหยื่อเร็วขึ้นนิดหน่อย" },
             new ShopItem { id = "lamp", cat = Ghost, price = 800, name = "ตะเกียงน้ำมันอย่างดี", desc = "แสงสว่างกว้างขึ้น · สติลดช้าลง 15%" },
@@ -112,7 +117,7 @@ namespace CozyFishing
         // ---------- เหยื่อ ----------
         public static int BaitLeft(string b) => b == "shrimp" ? S.baitShrimp : b == "bran" ? S.baitBran : b == "frog" ? S.baitFrog : 999;
         public static string BaitName(string b) => b == "shrimp" ? "กุ้งเป็น" : b == "bran" ? "รำข้าวปั้น" : b == "frog" ? "กบน้อย" : "ไส้เดือน";
-        public static string ActiveBait => BaitLeft(S.bait) > 0 ? S.bait : "worm";
+        public static string ActiveBait => Lures.Active ? "worm" : BaitLeft(S.bait) > 0 ? S.bait : "worm";   // ใส่เหยื่อปลอม: เหยื่อสดไม่มีผลและไม่ถูกใช้
         public static void SelectBait(string b) { S.bait = b; Story.Save(); }
         /// ใช้เหยื่อหนึ่งตัวเมื่อได้ปลา · คืนค่า true = เหยื่อหมดพอดี (สลับกลับเป็นไส้เดือน)
         public static bool UseBait()
@@ -134,9 +139,9 @@ namespace CozyFishing
         public static float CastDist => 18f + 4f * S.rod;                                        // 18 / 22 / 26 / 30 ม.
         public static float RodTension => 1f - 0.12f * S.rod;                                    // สายตึงช้าลงเมื่อคันดีขึ้น
         public static float ReelSpeed => 1f + 0.15f * S.reel;                                    // กรอสายได้ระยะมากขึ้น
-        public static float BiteMul => (ActiveBait == "bran" ? 0.65f : 1f) * (HasUwLight ? 0.9f : 1f) * Tackle.BiteMul;   // รำข้าว: ปลากินเร็วขึ้น · ไฟล่อใต้น้ำ: เร็วขึ้นนิด
+        public static float BiteMul => (ActiveBait == "bran" ? 0.65f : 1f) * (HasUwLight ? 0.9f : 1f) * Tackle.BiteMul * Skills.BiteMul;   // รำข้าว: ปลากินเร็วขึ้น · ไฟล่อใต้น้ำ: เร็วขึ้นนิด
         public static bool HasUwLight => S.items.Contains("uwlight");
-        public static float RareMul => ActiveBait == "shrimp" ? 1.7f : 1f;                       // กุ้งเป็น: ปลาหายาก/ดาวสูง
+        public static float RareMul => (ActiveBait == "shrimp" ? 1.7f : 1f) * Skills.RareMul;                       // กุ้งเป็น: ปลาหายาก/ดาวสูง
         public static float SizeBoost => (ActiveBait == "frog" ? 0.22f : 0f) + Tackle.SizeBoost;  // กบ / เบ็ดใหญ่: ตัวใหญ่ขึ้น
         public static float SanityDrainMul => (S.items.Contains("lamp") ? 0.85f : 1f) * (S.meritDay == S.day ? 0.5f : 1f);
         public static float BatteryDrainMul => S.items.Contains("torch") ? 0.55f : 1f;

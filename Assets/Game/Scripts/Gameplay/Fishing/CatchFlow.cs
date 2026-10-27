@@ -26,6 +26,8 @@ namespace CozyFishing
             if (c.BossHooked) { Boss.MarkCaught(); c.boss.Reset(); }
             if (Duel.Active && !Duel.Done) { var dm = Duel.Resolve(true, fish.kg, fish.species.name); if (dm.Length > 0) hud.Toast(dm); }
             IsNew = FishDex.Record(fish.species.id, fish.kg);
+            int lvUp = Skills.AddXp(Skills.XpForCatch(fish.species.stars, Lures.Active));   // ต้นไม้ทักษะ: ได้แต้มเมื่อเลเวลอัป
+            if (lvUp > 0) hud.Toast($"ระดับชาวประมง {Skills.FisherLevel}! ได้แต้มทักษะ (ดูที่หน้าเช้า ปุ่มทักษะ)");
             Cloud.SubmitFish(world.StageId, fish.species.id, fish.kg);   // กระดานปลาใหญ่ประจำสัปดาห์ของด่านนี้ (ออนไลน์เท่านั้น)
             if (Shop.ActiveBait != "worm" && Shop.UseBait()) hud.Toast("เหยื่อหมดแล้ว กลับไปใช้ไส้เดือน");
             caughtClue = Mystery.OnCatch(world.StageId, fish.species.id, Story.S.time, c.NearSpecial, c.NearDock, c.rng);

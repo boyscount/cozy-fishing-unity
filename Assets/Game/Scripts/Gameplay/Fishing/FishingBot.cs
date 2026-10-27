@@ -16,7 +16,8 @@ namespace CozyFishing
             float t = c.t; var fight = c.fight; var strike = c.strike;
             switch (c.State)
             {
-                case FishState.Waiting:   // ทดสอบ: บอทไดหมึกตามจังหวะไฟ
+                case FishState.Waiting:   // ทดสอบ: บอทไดหมึกตามจังหวะไฟ · ลากเหยื่อปลอมตามจังหวะของเหยื่อ
+                    if (c.lure.Run != null) return c.lure.Run.BotHold(Time.time);
                     if (c.Jigging && FishingController.JigPulse > 0.85f && Time.time > next) { next = Time.time + 0.8f; return true; }
                     return false;
                 case FishState.Free: return t > 1.2f && t < 1.2f + 0.9f;            // ง้าง ~0.9 วิ แล้วปล่อย

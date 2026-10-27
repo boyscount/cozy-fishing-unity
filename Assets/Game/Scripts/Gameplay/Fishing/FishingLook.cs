@@ -8,7 +8,7 @@ namespace CozyFishing
         readonly FishingController c;
         readonly Vector3[] linePts = new Vector3[24];
         readonly float lineBase = 0.014f;
-        float lineW0 = 1;
+        float lineW0 = 1, bubbleAt;
 
         public FishingLook(FishingController c)
         {
@@ -20,11 +20,21 @@ namespace CozyFishing
         public void ApplyTackle()
         {
             if (c == null || c.bobber == null) return;
-            string want = "V_" + Tackle.Equipped(Tackle.Float).Replace("float_", "");
+            string want = Lures.Active ? "V_" + Tackle.Equipped(Tackle.Lure) : "V_" + Tackle.Equipped(Tackle.Float).Replace("float_", "");
             bool found = false;
             foreach (Transform t in c.bobber.transform) if (t.name == want) found = true;
             foreach (Transform t in c.bobber.transform) if (t.name.StartsWith("V_")) t.gameObject.SetActive(found ? t.name == want : t.name == "V_feather");
             lineW0 = lineBase * Tackle.LineWidth;
+        }
+
+        /// ทักษะตาเหยี่ยว: ฟองอากาศผุดตรงจุดปลาชุม
+        public void SkillBubbles()
+        {
+            if (!(Skills.SeeBubbles && (c.State == FishState.Free || c.State == FishState.Waiting) && Time.time > bubbleAt)) return;
+            var rng = c.rng; var world = c.world;
+            bubbleAt = Time.time + 1.6f + (float)rng.NextDouble();
+            var sp = world.Special; float a = (float)rng.NextDouble() * 6.28f, r = (float)rng.NextDouble() * world.SpecialRadius * 0.7f;
+            WaterFx.AddRipple(sp.x + Mathf.Cos(a) * r, sp.z + Mathf.Sin(a) * r, 0.35f);
         }
 
         public void Update(Vector3 tip)

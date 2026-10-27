@@ -12,7 +12,9 @@ namespace CozyFishing
         public float ZoneCenter = 0.5f, ZoneWidth = 0.6f;
         public bool Dashing { get; private set; }
         public float PullBoost, ReelTensionMul = 1f, ReelProgMul = 1f;   // บอส: ตั้งทุกเฟรมตามช่วงการสู้
-        public bool Drag;                 // เบรกรอก (Tackle): สายตึงเกือบขาด รอกคลายสายให้ แลกกับปลาได้ระยะคืน
+        public bool Drag;
+        public float ReleaseMul = 1f, SkillProgMul = 1f;   // ทักษะสู้ปลา (Skills.cs): ผ่อนสายเร็วขึ้น · กรอปลาเข้าเร็วขึ้น
+        public bool DashSoon => !Dashing && nextDash - Time < 0.6f && nextDash > Time;   // ปลากำลังจะพุ่ง (ทักษะอ่านทางปลา)                 // เบรกรอก (Tackle): สายตึงเกือบขาด รอกคลายสายให้ แลกกับปลาได้ระยะคืน
         public bool Slipping { get; private set; }
         public event Action OnSlip;
         readonly FishSpecies sp;
@@ -51,11 +53,11 @@ namespace CozyFishing
             if (reeling)
             {
                 Tension += (0.35f + pull * 0.5f) * rodK * ReelTensionMul * dt;
-                Progress += sp.prog * reelK * ReelProgMul * dt * (InZone ? 1f : 0.35f) - (Dashing ? sp.dash * 0.06f * dt : 0f);
+                Progress += sp.prog * reelK * ReelProgMul * SkillProgMul * dt * (InZone ? 1f : 0.35f) - (Dashing ? sp.dash * 0.06f * dt : 0f);
             }
             else
             {
-                Tension -= (0.55f - pull * 0.25f) * dt;
+                Tension -= (0.55f - pull * 0.25f) * ReleaseMul * dt;
                 Progress -= pull * 0.03f * dt;
             }
             Tension = Math.Max(0, Tension);

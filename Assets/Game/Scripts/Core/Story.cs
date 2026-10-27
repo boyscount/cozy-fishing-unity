@@ -43,7 +43,9 @@ namespace CozyFishing
         public bool glimpsed;                                // เห็นผีแวบ ๆ ครั้งแรกแล้ว (เย็นวันแรก)
         // ทุ่น สาย เบ็ด (Tackle.cs): ของที่มี · ที่ใส่อยู่ · ลุงส้มสอนชิ้นไหนไปแล้ว
         public List<string> tackle = new List<string>(), taught = new List<string>();
-        public string tFloat = Tackle.DefFloat, tLine = Tackle.DefLine, tHook = Tackle.DefHook;
+        public string tFloat = Tackle.DefFloat, tLine = Tackle.DefLine, tHook = Tackle.DefHook, tLure = Lures.None;
+        // ต้นไม้ทักษะ (Skills.cs): ค่าประสบการณ์ในระดับนี้ · ระดับชาวประมง (เริ่ม 0) · แต้มที่ยังไม่ใช้ · ขั้นของแต่ละสาย
+        public int xp, fLevel, skillPts, skCast, skRetrieve, skFight, skRead;
     }
 
     public class EveningResult
