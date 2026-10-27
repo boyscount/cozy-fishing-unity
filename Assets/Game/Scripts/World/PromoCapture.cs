@@ -15,7 +15,8 @@ namespace CozyFishing
     [DefaultExecutionOrder(32000)]   // หลังทุกระบบวางกล้องเสร็จ (รวมคัตซีน)
     public class PromoCapture : MonoBehaviour
     {
-        const int W = 3840, H = 2160, FPS = 30;
+        const int FPS = 30;
+        int W = 3840, H = 2160;   // ขนาดภาพ · ตัวเลือก res1080 / res720 ใน COZY_PROMO ช่องที่ 4 (คลิปหน้าเว็บไม่ต้อง 4K ประหยัดดิสก์)
         string outDir; float maxSec = 150; int maxFish = 2;
         RenderTexture rt; Texture2D tex; Camera bound;
         bool withUi, withAudio; RenderTexture uiRt; Material over; UIDocument uiDoc; int rate; AudioListener ear;
@@ -34,7 +35,7 @@ namespace CozyFishing
             pc.outDir = p[0];
             if (p.Length > 1) float.TryParse(p[1], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out pc.maxSec);
             if (p.Length > 2) int.TryParse(p[2], out pc.maxFish);
-            if (p.Length > 3) { pc.withUi = p[3].Contains("ui"); pc.withAudio = p[3].Contains("audio"); }
+            if (p.Length > 3) { pc.withUi = p[3].Contains("ui"); pc.withAudio = p[3].Contains("audio"); if (p[3].Contains("res1080")) { pc.W = 1920; pc.H = 1080; } else if (p[3].Contains("res720")) { pc.W = 1280; pc.H = 720; } }
         }
 
         void Start()

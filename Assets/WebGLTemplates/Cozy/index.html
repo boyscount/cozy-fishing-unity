@@ -99,6 +99,16 @@
     #landing .feat .big { font: 400 34px "Chonburi", serif; color: var(--lampHi); }
     #landing .feat .t { font-size: 19px; font-weight: 600; }
     #landing .feat p { font-size: 16px; }
+    #landing [hidden] { display: none !important; }
+    #landing .board { padding-block: 0 56px; display: flex; flex-direction: column; gap: 14px; }
+    #landing .board ol { list-style: none; margin: 0; padding: 0; background: var(--card); border-radius: 14px; max-width: 720px; }
+    #landing .board li { display: flex; gap: 14px; align-items: center; padding: 12px 18px; border-bottom: 1px solid var(--chip); }
+    #landing .board li:last-child { border-bottom: 0; }
+    #landing .board .rk { font: 400 22px "Chonburi", serif; color: var(--lampHi); width: 1.6em; flex-shrink: 0; }
+    #landing .board .who { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+    #landing .board .nm { font-size: 18px; font-weight: 600; overflow-wrap: anywhere; }
+    #landing .board .sub { font-size: 14px; color: var(--muted); font-weight: 300; }
+    #landing .board .kg { font-size: 19px; color: var(--lampHi); font-variant-numeric: tabular-nums; flex-shrink: 0; }
     #landing footer { border-top: 1px solid #1f3a40; padding-block: 28px; text-align: center; font-size: 14px; color: var(--dim); display: flex; flex-direction: column; gap: 14px; align-items: center; }
   </style>
 </head>
@@ -116,7 +126,7 @@
         <div class="ctas"><button class="play" type="button">เล่นฟรีตอนนี้</button><a class="ghost" href="#lp-stages">ดูด่านทั้งหมด</a></div>
         <div class="note">เล่นบนเบราว์เซอร์ ไม่ต้องติดตั้ง · มือถือและคอม · โหลดครั้งแรกราว 50 MB</div>
       </div>
-      <div class="video"><video src="TemplateData/promo.mp4" poster="TemplateData/keyart-secret.jpg" controls playsinline preload="none" aria-label="คลิปตัวอย่างเกม 30 วินาที"></video></div>
+      <div class="video"><video src="TemplateData/promo.mp4" poster="TemplateData/keyart-secret.jpg" controls playsinline preload="none" aria-label="คลิปตัวอย่างเกม 42 วินาที"></video></div>
     </section>
     <section id="lp-stages" class="band">
       <div class="wrap">
@@ -135,6 +145,11 @@
       <div class="feat"><div class="big">70</div><div class="t">ชนิดปลาไทยให้สะสม</div><p>ปลาหมอ ปลาช่อน ปลาหมึก ไปจนถึงปลาบึกยักษ์แห่งแม่น้ำโขง</p></div>
       <div class="feat"><div class="big">ลุงส้ม</div><div class="t">ร้านอุปกรณ์ในหมู่บ้าน</div><p>คันเบ็ด รอก ทุ่น สาย ตัวเบ็ด ทุกชิ้นใช้ได้จริง ลุงสอนวิธีใช้ทีละชิ้น</p></div>
       <div class="feat"><div class="big">ดวล</div><div class="t">ท้าเพื่อนผ่านลิงก์</div><p>ตกปลาชุดเดียวกัน ใครได้น้ำหนักรวมมากกว่าชนะ ทุกสัปดาห์มีเทศกาลปลาใหญ่</p></div>
+    </section>
+    <section id="lp-board" class="wrap board" hidden>
+      <h2>กระดานปลาใหญ่สัปดาห์นี้</h2>
+      <ol id="lp-board-list"></ol>
+      <div class="note" id="lp-board-time"></div>
     </section>
     <footer class="wrap"><button class="play" type="button">ออกไปตกปลา</button><div>ภาษาไทย / English · เซฟความคืบหน้าในเครื่องและบนคลาวด์</div></footer>
   </div>
@@ -217,8 +232,29 @@
       document.documentElement.classList.remove("landing"); window.scrollTo(0, 0);
       loadUnity();
     }
+    // กระดานปลาใหญ่: ไฟล์ภาพรวมที่ GitHub Actions อัปเดตทุกชั่วโมง (Tools/leaderboard_snapshot.py) · ไม่มีข้อมูล = ซ่อนส่วนนี้
+    function loadBoard() {
+      fetch("leaderboard.json?t=" + Date.now()).then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
+        if (!d || !d.entries || !d.entries.length) return;
+        var ol = document.getElementById("lp-board-list");
+        d.entries.forEach(function (e, i) {
+          var li = document.createElement("li");
+          var rk = document.createElement("span"); rk.className = "rk"; rk.textContent = i + 1;
+          var who = document.createElement("span"); who.className = "who";
+          var nm = document.createElement("span"); nm.className = "nm"; nm.textContent = e.name || "ชาวประมงนิรนาม";
+          var sub = document.createElement("span"); sub.className = "sub"; sub.textContent = [e.fish, e.stage].filter(Boolean).join(" · ");
+          who.appendChild(nm); who.appendChild(sub);
+          var kg = document.createElement("span"); kg.className = "kg"; kg.textContent = Number(e.kg).toFixed(2) + " กก.";
+          li.appendChild(rk); li.appendChild(who); li.appendChild(kg); ol.appendChild(li);
+        });
+        var t = new Date(d.updated);
+        if (!isNaN(t)) document.getElementById("lp-board-time").textContent = "อัปเดตล่าสุด " + t.toLocaleString("th-TH", { dateStyle: "medium", timeStyle: "short" }) + " · อัปเดตทุกชั่วโมง";
+        document.getElementById("lp-board").hidden = false;
+      }).catch(function () {});
+    }
     if (showLanding) {
       document.documentElement.classList.add("landing");
+      loadBoard();
       document.querySelectorAll("#landing .play").forEach(function (b) { b.addEventListener("click", startGame); });
     }
     function loadUnity() {
