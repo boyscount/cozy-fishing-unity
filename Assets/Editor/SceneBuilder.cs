@@ -101,7 +101,7 @@ public static partial class SceneBuilder
 
         // ---------- ผิวน้ำบ่อ + น้ำขังในแปลงนา (shader เดียวกัน ตั้งค่าต่างกัน) ----------
         var water = new GameObject("PondWater");
-        water.AddComponent<MeshFilter>().sharedMesh = SaveMesh(Grid(28, 28, 70, new Vector3(0, PaddyWorld.Water, PaddyWorld.Pond.y)), "PondWater");
+        water.AddComponent<MeshFilter>().sharedMesh = SaveMesh(Grid(38, 38, 84, new Vector3(0, PaddyWorld.Water, PaddyWorld.Pond.y)), "PondWater");
         var wm = LoadOrCreate($"{MatDir}/Water_Paddy.mat", waterShader);
         wm.SetColor("_Shallow", Hex("#c9dcb4")); wm.SetColor("_Deep", Hex("#2f4f3a"));
         wm.SetFloat("_DepthScale", 1.6f); wm.SetFloat("_Clarity", 0.5f); wm.SetFloat("_Glint", 1.5f); wm.SetFloat("_Refraction", 0.03f); wm.SetFloat("_Reflect", 0.85f); wm.SetFloat("_FoamWidth", 0.05f);
@@ -161,9 +161,9 @@ public static partial class SceneBuilder
         // กอกล้วยข้างบ้าน + ศาลากลางนาริมบ่อ (Blender · ไม่มีเท็กซ์เจอร์ ไฟล์เล็กมาก)
         foreach (var (x, z, s, yaw) in new[] { (-13.2f, -6.0f, 1f, 20f), (-8.0f, -10.2f, 0.9f, 140f), (-15.6f, -7.2f, 1.1f, 260f) })
             Nature(s > 1 ? "banana_tree_02" : "banana_tree_01", x, z, s, yaw, 0.35f, sink: 0.05f);
-        Nature("thai_sala", 13.5f, 10f, 1f, -100, 2.4f, sink: 0.05f);
+        Nature("thai_sala", 19.5f, 12.5f, 1f, -100, 2.4f, sink: 0.05f);
         // ต้นไม้ใหญ่ (Jacaranda) · ตาลโตนดยังใช้โมเดลเดิม (Poly Haven ไม่มีต้นตาล)
-        foreach (var (x, z, s) in new[] { (-7.5f, -9.5f, 0.3f), (11f, -6.5f, 0.27f), (14.5f, 6f, 0.25f), (-15f, 4f, 0.28f) })
+        foreach (var (x, z, s) in new[] { (-7.5f, -9.5f, 0.3f), (11f, -6.5f, 0.27f), (18.5f, 3.5f, 0.25f), (-15f, 4f, 0.28f) })
             Nature("jacaranda_tree", x, z, s, Rf(0, 360), 0.7f, sink: 0.1f);
         // ตาลโตนดสร้างด้วยโค้ด (ProceduralMeshes.SugarPalm): ลำต้นลายเปลือกไม้จริง + ใบพัดจีบไหวตามลม
         var palmTrunk = SurfMat("SugarPalmTrunk", Hex("#b8a890"), tex: "bark_brown_02", tiles: 0.9f, cull: CullMode.Off);
@@ -178,10 +178,10 @@ public static partial class SceneBuilder
             colliders.Add(new Vector4(x, z, 0.5f, 99));
         }
         // พุ่มไม้
-        foreach (var (x, z, s) in new[] { (-5.5f, -8.8f, 0.45f), (6f, -8.5f, 0.5f), (12.5f, 1f, 0.45f), (-12.5f, -1f, 0.5f), (-18f, 14f, 0.7f), (19f, 16f, 0.7f) })
+        foreach (var (x, z, s) in new[] { (-5.5f, -8.8f, 0.45f), (6f, -8.5f, 0.5f), (16.5f, -0.5f, 0.45f), (-12.5f, -1f, 0.5f), (-18f, 14f, 0.7f), (19f, 16f, 0.7f) })
             Nature("shrub_02", x, z, s, Rf(0, 360), 0.6f);
         // โขดหิน
-        Nature("rock_moss_set_01", -8.8f, 1.5f, 0.45f, Rf(0, 360), 0.9f, sink: 0.12f, height: 0.75f);
+        Nature("rock_moss_set_01", -13.5f, -4.5f, 0.45f, Rf(0, 360), 0.9f, sink: 0.12f, height: 0.75f);
         Nature("boulder_01", 9.5f, 3.5f, 0.9f, Rf(0, 360), 0.7f, sink: 0.15f, height: 0.85f);
         Nature("namaqualand_boulder_02", 3.8f, -4.4f, 0.55f, Rf(0, 360), 0.5f, sink: 0.1f, height: 0.45f);
         Nature("boulder_01", -6f, -3.6f, 0.6f, Rf(0, 360), 0.5f, sink: 0.15f, height: 0.55f);
@@ -237,7 +237,7 @@ public static partial class SceneBuilder
             var r = go.AddComponent<MeshRenderer>(); r.sharedMaterial = mat; r.shadowCastingMode = shadows ? ShadowCastingMode.On : ShadowCastingMode.Off;
             return go;
         }
-        foreach (var (cx, cz, r) in new[] { (5.5f, 10.5f, 2.6f), (-6f, 9f, 2f), (7f, 2f, 1.6f), (-8f, 4f, 1.4f), (0f, 14f, 1.8f) })
+        foreach (var (cx, cz, r) in new[] { (6.5f, 13.5f, 2.8f), (-7f, 12f, 2.2f), (8f, 5.5f, 1.8f), (-9.5f, 7f, 1.6f), (0f, 18f, 2f) })
             for (int i = 0; i < 12; i++)
             {
                 float x = cx + Rf(-1, 1) * r, z = cz + Rf(-1, 1) * r;

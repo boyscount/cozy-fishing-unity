@@ -7,7 +7,7 @@ namespace CozyFishing
     // พิกัด: เวอร์ชันเว็บใช้ระบบมือขวา (three.js) → Unity กลับแกน z (zUnity = -zWeb) เพื่อให้มุมกล้องเหมือนเดิม
     public class PaddyWorld : MonoBehaviour, IWorld
     {
-        public static readonly Vector2 Pond = new Vector2(0, 6);     // (x, zUnity)
+        public static readonly Vector2 Pond = new Vector2(0, 9);     // (x, zUnity) · ขยายบ่อ: ศูนย์กลางเลื่อนไปทางเหนือ 3 ม. ฝั่งบ้าน/ท่าน้ำอยู่ที่เดิม
         public const float Water = -0.3f, PaddyY = -0.12f, Dike = 2.6f;
         public Rect dock = new Rect(-3.92f, -0.1f, 1.44f, 4.3f);       // พื้นที่ท่าไม้ (x, z, w, h) — SceneBuilder ตั้งค่าตามจริง
         public float dockY = 0.27f;
@@ -17,13 +17,14 @@ namespace CozyFishing
         public float WaterY => Water;
         public Vector3 Spawn => new Vector3(1.5f, 0, -7.6f);
         public float SpawnYaw => 0f;
-        public Vector3 Special => new Vector3(5.5f, Water, 10.5f);
+        public Vector3 Special => new Vector3(5.5f, Water, 14f);
         public float SpecialRadius => 3f;
-        public Rect CamBounds => new Rect(-12, -9, 24, 21);
+        public Rect CamBounds => new Rect(-14, -9, 28, 26);
         public Vector2 CamFocus(Vector3 p) => new Vector2(p.x * 0.75f, p.z * 0.6f + Pond.y * 0.4f);
 
         static float SStep(float a, float b, float x) { var t = Mathf.Clamp01((x - a) / (b - a)); return t * t * (3 - 2 * t); }
-        public static float PondR(float th) => 10.5f + 1.3f * Mathf.Sin(2 * th + 0.5f) + 0.8f * Mathf.Sin(3 * th + 1.7f) + 0.4f * Mathf.Sin(5 * th);
+        // รัศมีเดิม 10.5 → 13: จากจุดเกิด/ท่าน้ำเหวี่ยงลงน้ำได้ราว 30 ม. (คันขั้นสูงสุด)
+        public static float PondR(float th) => 13f + 1.3f * Mathf.Sin(2 * th + 0.5f) + 0.8f * Mathf.Sin(3 * th + 1.7f) + 0.4f * Mathf.Sin(5 * th);
 
         // ฟังก์ชันเดิมรับพิกัดเว็บ (zWeb) — ห่อให้ทุกเมธอดรับพิกัด Unity
         static float PaddyW(float x, float zw)

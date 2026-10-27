@@ -88,6 +88,7 @@ namespace CozyFishing
                 var u = GameUrl.Value; int li = u.IndexOf("lure=");
                 if (li >= 0) { var id = "lure_" + u.Substring(li + 5).Split('&')[0]; if (Shop.Get(id) != null) { Tackle.Give(id); Tackle.Equip(id); } }
             }
+            if (Bot && GameUrl.Value.Contains("measurecast")) CastProbe.Run(world);   // ทดสอบ: วัดระยะเหวี่ยงลงน้ำไกลสุดของด่าน
             look.ApplyTackle(); Tackle.Changed += look.ApplyTackle;
             Set(FishState.Free);
         }
@@ -115,7 +116,7 @@ namespace CozyFishing
         public void ResetLine()
         {
             if (hud.CatchCardOpen) hud.CloseCard(true);
-            catchFlow.Clear();
+            catchFlow.Clear(); lure.Clear();   // เลิกลากเหยื่อปลอมค้าง (แถบปลาสนใจไม่ค้างข้ามวัน)
             if (preview != null) preview.StopLive();
             if (caughtGo) Destroy(caughtGo);
             caughtGo = null;
@@ -126,7 +127,7 @@ namespace CozyFishing
 
         void Update()
         {
-            if (paused) { hud.Power(-1); hud.Tension(false, 0, 0, 0, 0, false); hud.Strike(false, 0, 0, 0, 0, 0, 0); hud.Alert(false, default, false); return; }
+            if (paused) { hud.Power(-1); hud.Tension(false, 0, 0, 0, 0, false); hud.Strike(false, 0, 0, 0, 0, 0, 0); hud.Alert(false, default, false); hud.Lure(false, null); return; }
             float dt = Time.deltaTime;
             bool held = GameInput.ActionHeld || (Bot && bot.Held());
             if (held && !prevHeld) OnDown();

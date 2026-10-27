@@ -44,6 +44,20 @@ namespace CozyFishing
             var world = c.world;
             Target = CastPoint(Charge);
             OnWater = world.CanCast(Target.x, Target.z);
+            if (!OnWater)   // เหวี่ยงแรงเลยน้ำไปตกฝั่งตรงข้าม: ให้ตกที่ขอบน้ำฝั่งไกลแทน (น้ำแคบ/คันแรง ไม่เสียจังหวะ)
+            {
+                var player = c.player; var f = player.Forward; float d0 = new Vector2(Target.x - player.Pos.x, Target.z - player.Pos.z).magnitude;
+                for (float d = d0 - 0.5f; d > 1.3f; d -= 0.5f)
+                {
+                    float x = player.Pos.x + f.x * d, z = player.Pos.z + f.z * d;
+                    if (!world.CanCast(x, z)) continue;
+                    float back = Mathf.Min(0.6f, d - 1.3f);
+                    Target = new Vector3(player.Pos.x + f.x * (d - back), 0, player.Pos.z + f.z * (d - back));
+                    OnWater = world.CanCast(Target.x, Target.z) || world.CanCast(x, z);
+                    if (!world.CanCast(Target.x, Target.z)) Target = new Vector3(x, 0, z);
+                    break;
+                }
+            }
             Target.y = OnWater ? world.WaterY + 0.03f : world.OnSolid(Target.x, Target.z) ? world.StandY(Target.x, Target.z) + 0.05f : world.GroundH(Target.x, Target.z) + 0.08f;
             c.from = c.player.rodTip.position;
             flightDur = 0.5f + Vector3.Distance(c.from, Target) * 0.045f;
