@@ -30,6 +30,7 @@ namespace CozyFishing
                     return false;
                 case FishState.Fight: if (c.BossHooked && c.boss.Running) return false;   // บอทผ่อนสายตอนบอสวิ่งเข้าแก่ง
                     return fight.Tension < Mathf.Min(0.8f, fight.ZoneCenter + fight.ZoneWidth * 0.3f);
+                case FishState.Grabbing: return c.grab.phase == GrabPlay.Phase.Reach;   // บอทยื่นมือค้าง (จับ/ชักมือ/บีบทำใน GrabPlay)
                 case FishState.Netting: return c.net.Swinging && !(c.t > 1.3f && CastNet.GradeOf(c.net.Needle) == CastNet.Grade.Perfect);   // บอทปล่อยแหตอนเข็มเข้าช่อง PERFECT (สาวแหทำใน NetThrow)
                 case FishState.Caught: if (c.hud.CatchCardOpen && t > 6f) c.hud.CloseCard(false); return false;
                 default: return false;

@@ -15,6 +15,9 @@ namespace CozyFishing
             bool touch = hud.TouchUi;
             switch (State)
             {
+                case FishState.Free when Raft.Aboard: hud.Hint(touch ? (CastNet.Using ? "บนแพ · จอยถ่อแพไปหาฝูงปลา · กดค้างแกว่งแห" : "บนแพ · จอยถ่อแพ · กดค้างปุ่มเหวี่ยงเพื่อเล็ง") : (CastNet.Using ? "บนแพ · WASD ถ่อแพไปหาฝูงปลา · กด E ค้างแกว่งแห" : "บนแพ · WASD ถ่อแพ · คลิกค้าง/กด E ค้าง เพื่อเล็ง")); hud.ActionLabel("", false, CastNet.Using ? "net" : "cast"); break;
+                case FishState.Free when c.grab.NearHole: hud.Hint(HandGrab.TooHurt ? "มือเจ็บเกินไป วันนี้พักก่อน" : $"โพรงปลาริมตลิ่ง · กดเพื่อลงงมด้วยมือเปล่า (งมได้อีก {HandGrab.Left} โพรงวันนี้)"); hud.ActionLabel("งม", false, "hand"); break;
+                case FishState.Grabbing: hud.Hint(""); hud.ActionLabel(c.grab.phase == GrabPlay.Phase.Feel ? "จับ!" : "", false, "hand"); break;
                 case FishState.Free when CastNet.Using: hud.Hint(touch ? $"ถือแหอยู่ · รอฝูงปลาผุดน้ำ แล้วกดค้างแกว่งแห ปล่อยตอนเข็มเข้าช่องเขียว (เหลือ {CastNet.ThrowsLeft} ครั้ง)" : $"ถือแหอยู่ · รอฝูงปลาผุดน้ำ แล้วกด E ค้างแกว่งแห ปล่อยตอนเข็มเข้าช่องเขียว (เหลือ {CastNet.ThrowsLeft} ครั้ง)"); hud.ActionLabel("", false, "net"); break;
                 case FishState.Netting:
                     hud.Hint(touch ? "" : c.net.Swinging ? "ปล่อยตอนเข็มเข้าช่องเขียว · วงทองต้องครอบฝูงปลา" : c.net.Hauling ? "สาวแห! แตะตอนวงสว่าง" : "");   // มือถือ: เกจทอดแหมีคำบอกในตัวแล้ว ไม่ซ้อนป้ายคำแนะนำ
@@ -34,6 +37,9 @@ namespace CozyFishing
             }
             hud.Power(State == FishState.Charging ? c.cast.Charge : -1);
             hud.Net(State == FishState.Netting, c.net);
+            hud.Grab(State == FishState.Grabbing, c.grab);
+            var raft = Raft.Current;
+            hud.RaftButton(raft != null && State == FishState.Free && (Raft.Aboard || raft.Near), Raft.Aboard, Raft.Aboard && raft.LandingPoint(out _));
             hud.NetButton(CastNet.Owned && CastNet.StageOk(c.world.StageId) && (State == FishState.Free || State == FishState.Netting), CastNet.Using, CastNet.ThrowsLeft, State == FishState.Free);
             hud.Lure(State == FishState.Waiting && c.lure.Run != null, c.lure.Run);
             hud.LineDistance(c.LineOut || State == FishState.Bite ? Vector2.Distance(new Vector2(player.Pos.x, player.Pos.z), new Vector2(bob.x, bob.z)) : -1);

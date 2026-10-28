@@ -11,6 +11,9 @@ namespace CozyFishing
         public static bool ButtonHeld;           // ปุ่ม 🎣 บนจอ
         public static bool PointerOverUi;        // Hud บอกว่าเมาส์อยู่บน UI (ไม่นับเป็นการคลิกฉาก)
         public static bool Blocked;              // มีหน้าต่างเปิดอยู่ (การ์ดปลา ฯลฯ)
+        public static bool PullButton;           // ปุ่ม "ชักมือ" บนจอตอนงมปลา (Hud ตั้ง true, อ่านแล้วล้าง)
+        /// ชักมือกลับตอนงมปลา: Q · คลิกขวา · ปุ่มบนจอ
+        public static bool PullPressed { get { bool b = PullButton; PullButton = false; var k = Keyboard.current; var m = Mouse.current; return b || (!Blocked && ((k != null && k.qKey.wasPressedThisFrame) || (m != null && m.rightButton.wasPressedThisFrame))); } }
         public static bool JumpButton;           // ปุ่มกระโดดบนจอ (กดครั้งเดียว Hud ตั้ง true, PlayerController รับแล้วล้าง)
         public static Vector2 TouchLook;         // ระยะลากนิ้วบนที่ว่างของจอในเฟรมนี้ (พิกเซลของ panel)
 

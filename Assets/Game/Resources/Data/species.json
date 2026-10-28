@@ -186,6 +186,9 @@
    "time": "evening",
    "desc": "ปลาบู่ทองในนิทานพื้นบ้าน ใครได้เจอถือเป็นลาภ (ซ่อนอยู่ใต้กอบัวหนาแน่นมุมบ่อ)"
   },
+    {"id": "duk_na", "stage": "paddy", "name": "ปลาดุกนา", "en": "Rice-field catfish", "stars": 2, "chance": 0, "price": 140, "kgMin": 0.15, "kgMax": 0.9, "cmMin": 18, "cmMax": 40, "shape": [1.4, 0.72, 1.05], "top": "#3b3936", "belly": "#948b7c", "fin": "#2f2d2b", "pattern": "none", "pull": 0.38, "dash": 0.75, "prog": 0.33, "win": 1, "rare": false, "glow": false, "whiskers": true, "time": "any", "method": "hand", "desc": "ซุกตัวในโพรงริมตลิ่ง งมได้ด้วยมือเปล่า ระวังเงี่ยงข้างหัว ปิ้งกับน้ำจิ้มแจ่วอร่อยนัก"},
+    {"id": "pu_na", "stage": "paddy", "name": "ปูนา", "en": "Rice-field crab", "stars": 1, "chance": 0, "price": 90, "kgMin": 0.04, "kgMax": 0.12, "cmMin": 5, "cmMax": 9, "shape": [1, 1, 1], "top": "#5b4a32", "belly": "#a08a5a", "fin": "#4a3a26", "pattern": "none", "pull": 0.2, "dash": 0.4, "prog": 0.5, "win": 1, "rare": false, "glow": false, "whiskers": false, "time": "any", "method": "hand", "desc": "ขุดรูอยู่ตามคันนาและริมตลิ่ง ก้ามหนีบเจ็บ ตำส้มตำปูหรือทำน้ำพริกปูก็ได้"},
+    {"id": "hoi_kab", "stage": "paddy", "name": "หอยกาบน้ำจืด", "en": "Freshwater mussel", "stars": 1, "chance": 0, "price": 60, "kgMin": 0.08, "kgMax": 0.25, "cmMin": 6, "cmMax": 12, "shape": [1, 1, 1], "top": "#4a4436", "belly": "#9a9178", "fin": "#3a3428", "pattern": "none", "pull": 0.1, "dash": 0.1, "prog": 0.6, "win": 1, "rare": false, "glow": false, "whiskers": false, "time": "any", "method": "hand", "desc": "ฝังตัวในโคลนก้นคลอง บางตัวมีไข่มุกน้ำจืดเม็ดเล็ก ๆ ซ่อนอยู่ข้างใน"},
   {
    "id": "nil",
    "stage": "falls",

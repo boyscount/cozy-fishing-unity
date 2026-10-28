@@ -48,6 +48,8 @@ namespace CozyFishing
         public int xp, fLevel, skillPts, skCast, skRetrieve, skFight, skRead;
         // แหทอด (CastNet.cs): ถือแหอยู่ไหม · วันที่ทอดล่าสุด + จำนวนครั้งที่ทอดไปแล้ววันนั้น
         public bool useNet; public int netDay, netThrows;
+        // งมปลามือเปล่า (HandGrab.cs): วันที่งมล่าสุด · งมไปกี่โพรงแล้ว · แผลที่มือ (หายเองวันรุ่งขึ้น)
+        public int grabDay, grabsUsed, handWound;
     }
 
     public class EveningResult
@@ -137,7 +139,7 @@ namespace CozyFishing
         {
             s.marketIds.Clear(); s.marketMul.Clear();
             foreach (var sp in FishDatabase.All) { s.marketIds.Add(sp.id); s.marketMul.Add((float)Math.Round(0.65 + rng.NextDouble() * 0.7, 2)); }
-            var pool = FishDatabase.ForStage("paddy").Where(sp => !sp.rare).ToArray();
+            var pool = FishDatabase.Rod("paddy").Where(sp => !sp.rare).ToArray();
             s.hot = pool.Length > 0 ? pool[rng.Next(pool.Length)].id : null;
         }
         static float MarketMul(string id) { int i = S.marketIds.IndexOf(id); return i >= 0 ? S.marketMul[i] : 1f; }

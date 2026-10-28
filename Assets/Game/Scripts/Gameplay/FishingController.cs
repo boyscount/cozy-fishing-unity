@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace CozyFishing
 {
-    public enum FishState { Free, Charging, Casting, Landed, Waiting, Bite, Strike, Fight, Caught, Retrieve, Snapped, Netting }
+    public enum FishState { Free, Charging, Casting, Landed, Waiting, Bite, Strike, Fight, Caught, Retrieve, Snapped, Netting, Grabbing }
 
     // วงจรตกปลาครบ: กดค้างเล็ง → ปล่อยเหวี่ยง → ทุ่นลอยรอ (มีตอดเบา ๆ) → ทุ่นจม → (ปลาหายาก: ตีเบ็ด) → มินิเกมดึงปลา → ได้ปลา
     // ย้ายมาจาก game object ใน main.js ของเวอร์ชันเว็บ
@@ -63,6 +63,7 @@ namespace CozyFishing
         internal BossFight boss;
         internal LureRetrieve lure;
         internal NetThrow net;
+        internal GrabPlay grab;
         CatchFlow catchFlow;
         FishingLook look;
         FisherPose pose;
@@ -80,6 +81,7 @@ namespace CozyFishing
             boss = new BossFight(this);
             lure = new LureRetrieve(this);
             net = new NetThrow(this);
+            grab = new GrabPlay(this);
             catchFlow = new CatchFlow(this);
             pose = new FisherPose(this);
             hudView = new FishingHudView(this);
@@ -92,6 +94,7 @@ namespace CozyFishing
             }
             if (GameUrl.Value.Contains("castnet")) { Tackle.Give(CastNet.Id); Story.S.useNet = true; }   // ทดสอบ: ?castnet ให้แหแล้วถือแหเลย
             if (Bot && GameUrl.Value.Contains("measurecast")) CastProbe.Run(world);   // ทดสอบ: วัดระยะเหวี่ยงลงน้ำไกลสุดของด่าน
+            if (world.StageId == "paddy") gameObject.AddComponent<Raft>().Init(this);   // แพไม้ไผ่ที่บ่อหลังบ้าน (ได้พร้อมแห)
             look.ApplyTackle(); Tackle.Changed += look.ApplyTackle;
             Set(FishState.Free);
         }
@@ -120,7 +123,8 @@ namespace CozyFishing
         {
             if (hud.CatchCardOpen) hud.CloseCard(true);
             catchFlow.Clear(); lure.Clear();   // เลิกลากเหยื่อปลอมค้าง (แถบปลาสนใจไม่ค้างข้ามวัน)
-            net.Clear(true);
+            net.Clear(true); grab.Clear();
+            Raft.Current?.ResetToDock();
             if (preview != null) preview.StopLive();
             if (caughtGo) Destroy(caughtGo);
             caughtGo = null;
@@ -131,7 +135,7 @@ namespace CozyFishing
 
         void Update()
         {
-            if (paused) { net.Clear(false); hud.Net(false, null); hud.NetButton(false, false, 0, false); hud.Power(-1); hud.Tension(false, 0, 0, 0, 0, false); hud.Strike(false, 0, 0, 0, 0, 0, 0); hud.Alert(false, default, false); hud.Lure(false, null); return; }
+            if (paused) { net.Clear(false); grab.Clear(); hud.Grab(false, null); hud.Net(false, null); hud.NetButton(false, false, 0, false); hud.RaftButton(false, false, false); hud.Power(-1); hud.Tension(false, 0, 0, 0, 0, false); hud.Strike(false, 0, 0, 0, 0, 0, 0); hud.Alert(false, default, false); hud.Lure(false, null); return; }
             float dt = Time.deltaTime;
             bool held = GameInput.ActionHeld || (Bot && bot.Held());
             if (held && !prevHeld) OnDown();
@@ -184,6 +188,9 @@ namespace CozyFishing
                 case FishState.Netting:
                     net.Step(dt, held);
                     break;
+                case FishState.Grabbing:
+                    grab.Step(dt, held);
+                    break;
                 case FishState.Caught:
                     float kc = Mathf.Min(1, t / 0.7f);
                     var top = player.Pos + Vector3.up * 2.4f;
@@ -198,10 +205,12 @@ namespace CozyFishing
             }
             if (State != FishState.Charging) aim.SetActive(false);
             net.SchoolStep(dt);
+            if (Bot && Time.frameCount % 90 == 0) CastProbe.Note($"fc upd st={State} stage={world.StageId}");
+            try { grab.WorldStep(dt); } catch (System.Exception e) { if (Bot) CastProbe.Note("grab ws fail: " + e.GetType().Name + " " + e.Message); }
             look.SkillBubbles();
             look.Update(tip);
             // ถือแห: ซ่อนทุ่นกับสายเบ็ด
-            bool netHand = CastNet.Using && (State == FishState.Free || State == FishState.Netting);
+            bool netHand = (CastNet.Using && (State == FishState.Free || State == FishState.Netting)) || State == FishState.Grabbing;   // งมปลา: วางคันเบ็ดไว้ด้วย
             if (netHand) { bobber.SetActive(false); line.enabled = false; netHid = true; }
             else if (netHid) { bobber.SetActive(true); line.enabled = true; netHid = false; }
             pose.Update();
@@ -213,8 +222,9 @@ namespace CozyFishing
         {
             switch (State)
             {
-                case FishState.Free: if (CastNet.Using) { net.Begin(); break; } cast.Charge = 0; Set(FishState.Charging); break;
+                case FishState.Free: if (CastNet.Using) { net.Begin(); break; } if (grab.NearHole && grab.Begin()) break; cast.Charge = 0; Set(FishState.Charging); break;
                 case FishState.Netting: net.Down(); break;
+                case FishState.Grabbing: grab.Down(); break;
                 case FishState.Waiting: if (lure.Run != null) { lure.Tap(); break; } if (Jigging) { jig.Tap(); break; } StartRetrieve(); hud.Toast("เก็บสาย"); break;
                 case FishState.Bite:
                     if (!fish.IsJunk && fish.species.stars >= 3 && !Bot) Cloud.SubmitQuick(Mathf.RoundToInt(t * 1000));   // กระดานมือไว (มิลลิวินาที น้อย = ไว)

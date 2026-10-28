@@ -10,6 +10,7 @@ namespace CozyFishing
     public class FishSpecies
     {
         public string id, stage, name, en, pattern, time, desc;
+        public string method;    // "hand" = ได้จากการงมมือเปล่าเท่านั้น (ไม่กินเบ็ด ไม่ติดแห ไม่ว่ายในบ่อ)
         public string photoId;   // ใช้รูป/โมเดลรูปของชนิดอื่น (ชนิดเดียวกันต่างด่าน เช่น ชะโดเขื่อน = chado) · ว่าง = ใช้ id
         public string top, belly, fin;
         public int stars, chance, price;
@@ -62,6 +63,8 @@ namespace CozyFishing
         public static IReadOnlyList<FishSpecies> All { get { Load(); return all; } }
         public static FishSpecies Get(string id) { Load(); return byId.TryGetValue(id, out var s) ? s : null; }
         public static IEnumerable<FishSpecies> ForStage(string stage) => All.Where(s => s.stage == stage);
+        /// ชนิดที่กินเบ็ด/ติดแห/ว่ายในบ่อ (ไม่รวมของที่ได้จากการงมมือเปล่า)
+        public static IEnumerable<FishSpecies> Rod(string stage) => ForStage(stage).Where(s => s.method != "hand");
 
         static void Load()
         {

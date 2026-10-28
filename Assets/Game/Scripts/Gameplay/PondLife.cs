@@ -32,7 +32,7 @@ namespace CozyFishing
         public void Init(IWorld w, FishingController f)
         {
             world = w; fishing = f;
-            var species = FishDatabase.ForStage(w.StageId).Where(s => s.Photo != null && !s.rare).ToList();
+            var species = FishDatabase.Rod(w.StageId).Where(s => s.Photo != null && !s.rare).ToList();
             if (species.Count == 0) return;
             int n = 14;
             for (int i = 0; i < n; i++)

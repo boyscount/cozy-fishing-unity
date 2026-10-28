@@ -15,7 +15,7 @@ namespace CozyFishing
         public static Catch Roll(string stage, bool nearSpecial, float depth, float junkChance, float hour, Random rng, float haunt = 0)
         {
             if (rng.NextDouble() < junkChance) return new Catch { junk = Junk[rng.Next(Junk.Length)] };
-            var pool = FishDatabase.ForStage(stage).ToArray();
+            var pool = FishDatabase.Rod(stage).ToArray();
             if (pool.Length == 0) return new Catch { junk = Junk[0] };
             var per = Period(hour);
             var d = Math.Min(depth, 3f);

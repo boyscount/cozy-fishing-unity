@@ -17,6 +17,10 @@ namespace CozyFishing
         public Vector3 elbowHint;
         public bool crank;                  // กำลังกรอสาย → มือซ้ายจับมือหมุนรอก
         public float crankSpeed;            // รอบ/วินาที
+        // งมปลา (GrabPlay): ย่อตัวโน้มไปหน้า สองมือยื่นเข้าโพรงใต้น้ำ · เท้ายันพื้น · ซ่อนคันเบ็ด
+        public float grabW, grabDrop, grabCurl;   // grabCurl: 1 = แบนิ้ว (คลำ) · -1 = กำ (จับปลา)
+        public Vector3 grabL, grabR, footL, footR;
+        bool headHidden;
         public Transform rodTip;            // จุดผูกสายเบ็ด (ลูกของมือขวาในโมเดล) — ย้ายไปปลายคันใหม่ทุกเฟรม
         Animator anim;
         HumanPoseHandler hph; HumanPose pose;
@@ -58,9 +62,12 @@ namespace CozyFishing
             return l.ToArray();
         }
 
+        public static int LastIK = -1;   // ทดสอบ: เฟรมล่าสุดที่ Animator เรียก IK
         void OnAnimatorIK(int layer)
         {
+            LastIK = Time.frameCount;
             const AvatarIKGoal L = AvatarIKGoal.LeftHand;
+            if (grabW > 0.001f) { GrabIK(); return; }
             crankW = Mathf.MoveTowards(crankW, crank && weight < 0.01f && crankArm != null ? 1 : 0, Time.deltaTime * 5);
             if (weight > 0.001f)
             {
@@ -82,6 +89,21 @@ namespace CozyFishing
             }
         }
 
+        void GrabIK()
+        {
+            float w = grabW;
+            anim.bodyPosition += (Vector3.down * grabDrop - transform.forward * 0.05f) * w;      // คุกเข่า ลำตัวอยู่ใต้กล้อง      // ย่อตัว โน้มไปหน้า
+            anim.bodyRotation = Quaternion.Slerp(anim.bodyRotation, Quaternion.AngleAxis(22, transform.right) * anim.bodyRotation, w);
+            void Goal(AvatarIKGoal g, Vector3 p) { anim.SetIKPositionWeight(g, w); anim.SetIKPosition(g, p); anim.SetIKRotationWeight(g, 0); }
+            Goal(AvatarIKGoal.LeftHand, grabL); Goal(AvatarIKGoal.RightHand, grabR);
+            Goal(AvatarIKGoal.LeftFoot, footL); Goal(AvatarIKGoal.RightFoot, footR);
+            var c = transform.position + Vector3.up * 0.9f;
+            anim.SetIKHintPositionWeight(AvatarIKHint.LeftElbow, w); anim.SetIKHintPosition(AvatarIKHint.LeftElbow, c - transform.right * 0.55f + transform.forward * 0.1f);
+            anim.SetIKHintPositionWeight(AvatarIKHint.RightElbow, w); anim.SetIKHintPosition(AvatarIKHint.RightElbow, c + transform.right * 0.55f + transform.forward * 0.1f);
+            anim.SetIKHintPositionWeight(AvatarIKHint.LeftKnee, w); anim.SetIKHintPosition(AvatarIKHint.LeftKnee, footL + transform.forward * 0.6f + Vector3.up * 0.4f);
+            anim.SetIKHintPositionWeight(AvatarIKHint.RightKnee, w); anim.SetIKHintPosition(AvatarIKHint.RightKnee, footR + transform.forward * 0.6f + Vector3.up * 0.4f);
+        }
+
         // ศอกซ้ายกางลงข้างลำตัว (ไม่ให้แขนพับเข้ามาขวางหน้าคัน)
         Vector3 ElbowOut()
         {
@@ -94,7 +116,21 @@ namespace CozyFishing
         {
             if (hph == null) return;
             // งอนิ้ว: -1 = กำแน่น · มือขวากำด้ามคันตลอด · มือซ้ายกำตามน้ำหนัก IK (ตอนจับปลา)
+            // งมปลามุมบุคคลที่หนึ่ง: ย่อหัวจนมองไม่เห็น (กล้องอยู่ระดับไหล่) · คืนขนาดเมื่อเลิกงม
+            var head = anim.GetBoneTransform(HumanBodyBones.Head);
+            if (head != null && (grabW > 0.3f || headHidden)) { headHidden = grabW > 0.3f; head.localScale = headHidden ? Vector3.one * 0.001f : Vector3.one; }
             hph.GetHumanPose(ref pose);
+            if (rod != null && rod.gameObject.activeSelf == grabW > 0.5f) rod.gameObject.SetActive(grabW <= 0.5f);   // งมปลา: วางคันเบ็ดไว้ก่อน
+            if (grabW > 0.001f)
+            {   // งมปลา: แบนิ้วคลำ (curl 1) ↔ กำแน่น (curl -1) ทั้งสองมือ
+                float f = Mathf.Lerp(0.35f, -0.85f, (1 - grabCurl) * 0.5f), th = Mathf.Lerp(0.2f, -0.4f, (1 - grabCurl) * 0.5f);
+                foreach (var i in rightFingers) pose.muscles[i] = Mathf.Lerp(-0.95f, f, grabW);
+                foreach (var i in leftFingers) pose.muscles[i] = Mathf.Lerp(pose.muscles[i], f, grabW);
+                foreach (var i in rightThumb) pose.muscles[i] = Mathf.Lerp(-0.45f, th, grabW);
+                foreach (var i in leftThumb) pose.muscles[i] = Mathf.Lerp(pose.muscles[i], th, grabW);
+                hph.SetHumanPose(ref pose);
+                return;
+            }
             foreach (var i in rightFingers) pose.muscles[i] = -0.95f;
             foreach (var i in rightThumb) pose.muscles[i] = -0.45f;
             float lw = Mathf.Max(weight, crankW);

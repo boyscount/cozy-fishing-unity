@@ -18,6 +18,10 @@ namespace CozyFishing
         ParticleSystem rays, leaves, lineBubbles, mudBubbles; GameObject bed; Transform[] weeds; Vector3 bedAt = new Vector3(9999, 0, 0);
         bool active, noSpot; float enterT;
         public static bool Diving;   // กล้องอยู่ใต้น้ำข้างเหยื่อ (ใช้ตอนอัดคลิปโปรโมต)
+        public static UnderwaterView Instance;
+        // งมปลามือเปล่า (GrabPlay): ดำลงมองเข้าโพรงริมตลิ่ง ใช้บรรยากาศใต้น้ำชุดเดียวกัน (ไม่ขึ้นกับตัวเลือก "ภาพใต้น้ำ")
+        public static bool GrabMode; public static Vector3 GrabCam, GrabLook;
+        public void Silt(Vector3 p, int n) { if (silt == null) return; silt.transform.position = p; silt.Emit(n); }
         Light baitLight;
         bool swamp, manor, cave, clear; GameObject shrimp, worm0; ParticleSystem silt; bool wasBite;
         Color fogColor; FogMode savedMode; float savedDensity, savedStart, savedEnd;
@@ -25,6 +29,7 @@ namespace CozyFishing
         public void Init(IWorld w, FishingController f, CameraRig r)
         {
             blockersReady = false; lastB = new Vector3(9999, 0, 0);   // ด่านใหม่: เก็บของที่บังใหม่
+            Instance = this;
             world = w; fishing = f; rig = r; swamp = w.StageId == "mangrove"; manor = w.StageId == "headman"; cave = w.StageId == "cave"; clear = w.StageId == "reservoir";   // เขื่อนบนดอย: น้ำใสเย็น มองไกล
             // ผิวน้ำมองจากใต้น้ำ: แผ่นใหญ่ระดับผิวน้ำตามกล้องไป (mesh ผิวน้ำของบางด่านเล็ก มองไกลแล้วทะลุเห็นฟ้า) · ตลิ่งที่สูงกว่าน้ำบังส่วนเกินเอง
             Material waterMat = null;
@@ -403,6 +408,7 @@ namespace CozyFishing
 
         bool Want()
         {
+            if (GrabMode) return unders.Count > 0;
             if (!Enabled || unders.Count == 0 || noSpot) return false;
             var s = fishing.State;
             if (s != FishState.Waiting && s != FishState.Bite) return false;
@@ -419,6 +425,7 @@ namespace CozyFishing
             bool want = Want();
             if (want && !active) Enter(); else if (!want && active) Exit();
             if (!active) return;
+            if (GrabMode) { GrabStep(); return; }
             var bob = fishing.BobberPos; var b = Bait;
             var d = bob - fishing.player.Pos; d.y = 0; d = d.sqrMagnitude > 1e-4f ? d.normalized : Vector3.forward;
             var right = Vector3.Cross(Vector3.up, d);
@@ -458,6 +465,24 @@ namespace CozyFishing
             wasBite = nibble;
             fishing.hud.DepthReading = Mathf.Max(0, world.DepthAt(bob.x, bob.z));
             foreach (var u in unders) u.transform.position = new Vector3(cam.x, world.WaterY, cam.z);
+        }
+
+        // งมปลา: กล้องนิ่งหน้าโพรง · ซ่อนเหยื่อกับสาย · ตะกอน แสง ใบไม้ ตามกล้องเหมือนเดิม
+        void GrabStep()
+        {
+            rig.Override(GrabCam + new Vector3(Mathf.Sin(Time.time * 0.7f) * 0.03f, Mathf.Sin(Time.time * 0.9f) * 0.02f, 0), GrabLook);
+            bait.SetActive(false); leader.enabled = false;
+            var camT = Camera.main ? Camera.main.transform : null;
+            if (camT != null)
+            {
+                motes.transform.position = camT.position + camT.forward * 1.2f;
+                var fw = camT.forward; fw.y = 0; fw = fw.sqrMagnitude > 1e-4f ? fw.normalized : Vector3.forward;
+                rays.transform.position = new Vector3(camT.position.x, world.WaterY - 1.6f, camT.position.z) + fw * 5.5f;
+                leaves.transform.position = camT.position + camT.forward * 1.4f + Vector3.up * 0.4f;
+            }
+            foreach (var u in unders) u.transform.position = new Vector3(GrabCam.x, world.WaterY, GrabCam.z);
+            PlaceBed(GrabLook, GrabCam);   // สาหร่ายหางกระรอกรอบปากโพรง
+            fishing.hud.DepthReading = -1;
         }
 
         // กล้องใต้น้ำ: ลองมุมรอบเหยื่อ 12 ทิศ (เริ่มจากฝั่งผู้เล่น) · รอบแรกเอาเฉพาะมุมที่หิน/ขอนไม้/เสาไม่บังเหยื่อ

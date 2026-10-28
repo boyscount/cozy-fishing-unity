@@ -79,7 +79,7 @@ public static class ProjectTools
             scenes = scenes,
             locationPathName = outDir,
             target = BuildTarget.WebGL,
-            options = System.Environment.GetEnvironmentVariable("CLEAN_BUILD") == "1" ? BuildOptions.CleanBuildCache : BuildOptions.None,
+            options = (System.Environment.GetEnvironmentVariable("CLEAN_BUILD") == "1" ? BuildOptions.CleanBuildCache : BuildOptions.None) | (System.Environment.GetEnvironmentVariable("DEV") == "1" ? BuildOptions.Development : BuildOptions.None),   // DEV=1: บิลด์ทดสอบที่พิมพ์ log/exception ออกคอนโซล
         });
         var s = report.summary;
         Debug.Log($"[ProjectTools] build {s.result} size={s.totalSize / 1024 / 1024}MB time={s.totalTime} out={outDir}");

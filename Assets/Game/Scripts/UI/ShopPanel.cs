@@ -78,6 +78,7 @@ namespace CozyFishing
             StyleButton(back, Color.clear); GoldFrame(back, 2); back.style.position = Position.Absolute; back.style.left = 16; back.style.bottom = 14; back.style.color = new Color(1f, 0.9f, 0.75f); back.style.fontSize = 22; Pad(back, 6, 18);
             back.name = "back"; Hoverable(back, new Color(0.3f, 0.22f, 0.08f, 0.9f)); shop.Add(back);
             shop.RegisterCallback<GeometryChangedEvent>(_ => Layout());
+            say.RegisterCallback<GeometryChangedEvent>(_ => Layout());   // คำพูดยาวขึ้นบรรทัดใหม่ → ดันกล่องรายละเอียดขึ้นตาม
         }
 
         // จอกว้าง: แผงซ้าย กล่องรายละเอียดข้าง ๆ คำพูดล่าง · จอแคบ: แผงบนเต็มกว้าง รายละเอียดใต้แผง คำพูดล่างสุด
@@ -88,17 +89,18 @@ namespace CozyFishing
             bool n = hud.Narrow || w < h;
             var say = shop.Q("say");
             var ps = shopPanel.style; var ds = shopDetail.style; var ss = say.style;
+            float sayH = float.IsNaN(say.layout.height) || say.layout.height < 1 ? 110 : say.layout.height;   // กล่องรายละเอียดต้องอยู่เหนือคำพูดลุงส้มเสมอ (ปุ่มซื้อไม่โดนทับ)
             shop.style.backgroundPositionX = new BackgroundPosition(BackgroundPositionKeyword.Left, Length.Percent(n ? 68 : 50));   // จอตั้ง: เลื่อนภาพให้เห็นลุงส้มหลังเคาน์เตอร์
             if (!n)
             {
                 ps.left = w * 0.04f; ps.top = h * 0.05f; ps.width = Mathf.Min(460, w * 0.36f); ps.height = h * 0.7f; ps.right = StyleKeyword.Auto; ps.bottom = StyleKeyword.Auto;
-                ds.left = w * 0.04f + Mathf.Min(460, w * 0.36f) + 18; ds.top = h * 0.36f; ds.width = Mathf.Min(360, w * 0.28f); ds.right = StyleKeyword.Auto; ds.bottom = StyleKeyword.Auto;
+                ds.left = w * 0.04f + Mathf.Min(460, w * 0.36f) + 18; ds.top = StyleKeyword.Auto; ds.width = Mathf.Min(360, w * 0.28f); ds.right = StyleKeyword.Auto; ds.bottom = 16 + sayH + 14; ds.maxHeight = h - (16 + sayH + 14) - h * 0.05f;
                 ss.left = w * 0.25f; ss.right = w * 0.2f; ss.bottom = 16; ss.top = StyleKeyword.Auto;
             }
             else
             {
                 ps.left = 12; ps.right = 12; ps.top = 12; ps.width = StyleKeyword.Auto; ps.height = h * 0.46f; ps.bottom = StyleKeyword.Auto;
-                ds.left = 12; ds.right = 12; ds.top = h * 0.46f + 20; ds.width = StyleKeyword.Auto; ds.bottom = StyleKeyword.Auto;
+                ds.left = 12; ds.right = 12; ds.top = StyleKeyword.Auto; ds.width = StyleKeyword.Auto; ds.bottom = 70 + sayH + 10; ds.maxHeight = h - (70 + sayH + 10) - (h * 0.46f + 20);
                 ss.left = 12; ss.right = 12; ss.bottom = 70; ss.top = StyleKeyword.Auto;
             }
         }

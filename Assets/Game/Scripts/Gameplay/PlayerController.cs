@@ -18,6 +18,7 @@ namespace CozyFishing
         public float Yaw;
         public Vector3 Pos;
         public bool CanWalk = true, CanTurn = true;
+        public bool Riding;                      // ยืนบนแพ (Raft.cs วางตำแหน่งให้ทุกเฟรม) · ไม่เดินเอง หันได้
         public float ArmRTarget;                 // ฝั่ง FishingController ตั้งท่ามือขวา (เหวี่ยง/ถือคัน/ดึง)
         public float ArmLTarget = float.NaN;
         IWorld world;
@@ -44,7 +45,7 @@ namespace CozyFishing
                 Yaw = Mathf.LerpAngle(Yaw, want, Mathf.Min(1, dt * (CanWalk ? 12 : 5)));
             }
             // กระโดด (เฉพาะตอนเดินเล่น ไม่ใช่ระหว่างตกปลา)
-            if (GameInput.JumpPressed && CanWalk && !Airborne)
+            if (GameInput.JumpPressed && CanWalk && !Airborne && !Riding)
             {
                 jumpVel = jumpSpeed;
                 if (animator != null) animator.CrossFadeInFixedTime("Jump", 0.08f, 0, JumpLeadIn);
@@ -54,7 +55,7 @@ namespace CozyFishing
                 hop += jumpVel * dt; jumpVel -= gravity * dt;
                 if (hop <= 0) { hop = 0; jumpVel = 0; }
             }
-            float target = CanWalk ? speed * mv.magnitude : 0;
+            float target = CanWalk && !Riding ? speed * mv.magnitude : 0;
             vel += (target - vel) * Mathf.Min(1, dt * 10);
             if (vel > 0.01f)
             {
@@ -66,7 +67,7 @@ namespace CozyFishing
                 else if (world.Walkable(Pos.x, nz, hop)) Pos.z = nz;
                 else vel = 0;
             }
-            Pos.y += (world.StandY(Pos.x, Pos.z) - Pos.y) * Mathf.Min(1, dt * 15);
+            if (!Riding) Pos.y += (world.StandY(Pos.x, Pos.z) - Pos.y) * Mathf.Min(1, dt * 15);
 
             if (animator != null)
             {

@@ -101,10 +101,32 @@ namespace CozyFishing
             netBtn.style.opacity = usingNet ? 1f : 0.85f;
         }
 
+        // ---------- ปุ่มขึ้น/ลงแพ (บ่อหลังบ้าน) ----------
+        VisualElement raftBtn; Label raftBadge; bool raftAboard, raftCanLand;
+        public void RaftButton(bool show, bool aboard, bool canLand)
+        {
+            raftAboard = aboard; raftCanLand = canLand;
+            if (raftBtn == null)
+            {
+                if (!show) return;
+                raftBtn = IconButton("raft", new Color(0.75f, 0.62f, 0.38f), () =>
+                {
+                    var r = Raft.Current; if (r == null) return;
+                    if (!raftAboard) r.Board();
+                    else if (raftCanLand) r.Leave();
+                    else Toast("ถ่อแพเข้าใกล้ฝั่งก่อนถึงจะลงได้");
+                }, out raftBadge);
+                raftBadge.AddToClassList(TextLocalizer.NoLoc);   // ตั้งทุกเฟรม → แปลเอง
+            }
+            raftBtn.style.display = show && !CardOpen && !ModalOpen ? DisplayStyle.Flex : DisplayStyle.None;
+            raftBadge.text = Loc.T(!aboard ? "ขึ้นแพ" : canLand ? "ลงแพ" : "ถ่อเข้าฝั่ง");
+            raftBtn.style.opacity = !aboard || canLand ? 1f : 0.7f;
+        }
+
         // ---------- การ์ดสรุปปลาที่ติดแห ----------
         public bool NetResultOpen => netResultEl != null && netResultEl.style.display == DisplayStyle.Flex;
 
-        public void NetResult(List<CastNet.Haul> hauls, bool anyNew, Action keep, Action release)
+        public void NetResult(List<CastNet.Haul> hauls, bool anyNew, Action keep, Action release, string title = null, string note = null)
         {
             if (netResultEl == null)
             {
@@ -116,7 +138,7 @@ namespace CozyFishing
             netResultBody.Clear();
             int total = 0; float kg = 0; int baht = 0;
             foreach (var h in hauls) { total += h.count; kg += h.kg; baht += CastNet.ValueOf(h); }
-            var t = L(netResultBody, $"ได้ปลาจากแห {total} ตัว!", 40, ink); t.style.unityFontDefinition = fontTitle;
+            var t = L(netResultBody, title ?? $"ได้ปลาจากแห {total} ตัว!", 40, ink); t.style.unityFontDefinition = fontTitle;
             if (anyNew) L(netResultBody, "มีปลาชนิดใหม่ในสมุดปลา!", 22, new Color(0.7f, 0.35f, 0.05f)).style.marginTop = 2;
             foreach (var h in hauls)
             {
@@ -126,7 +148,7 @@ namespace CozyFishing
                 L(row, $"{h.kg:0.00} กก. · {Story.Baht(CastNet.ValueOf(h))}", 22, new Color(0.42f, 0.3f, 0.17f), false);
             }
             var sum = L(netResultBody, $"รวม {kg:0.00} กก. · ขายได้ราว {Story.Baht(baht)}", 24, ink); sum.style.marginTop = 12;
-            L(netResultBody, "ปลาจากแหใส่ข้องรวมเป็นกองละชนิด (ชนิดละช่อง)", 18, new Color(0.45f, 0.35f, 0.22f), false).style.marginTop = 4;
+            L(netResultBody, note ?? "ปลาจากแหใส่ข้องรวมเป็นกองละชนิด (ชนิดละช่อง)", 18, new Color(0.45f, 0.35f, 0.22f), false).style.marginTop = 4;
             var btns = new VisualElement { pickingMode = PickingMode.Ignore }; btns.style.flexDirection = FlexDirection.Row; btns.style.justifyContent = Justify.Center; btns.style.marginTop = 16; netResultBody.Add(btns);
             void Close() { Hide(netResultEl); GameInput.Blocked = ModalOpen || CardOpen; }
             var kb = new Button(() => { Close(); keep(); }) { text = "เก็บใส่ข้อง" }; WoodButton(kb, true); kb.style.marginRight = 12; btns.Add(kb);

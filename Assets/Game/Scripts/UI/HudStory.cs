@@ -13,7 +13,7 @@ namespace CozyFishing
     public partial class Hud
     {
         public StoryDirector director;
-        ScrollView morningScroll;
+        ScrollView morningScroll; VisualElement morningBox, morningRoot;
         VisualElement statusBox, clockBox, homeBtn, ask, askBox, askBtns, fadeEl, morning, morningBody, evening, eveList, eveSum, bag, bagList;
         internal VisualElement dialogEl;
         VisualElement fadeArt;
@@ -140,7 +140,7 @@ namespace CozyFishing
             var bclose = new Button(() => Hide(bag)) { text = "ปิด" }; StyleButton(bclose, Gray); bclose.style.alignSelf = Align.Center; bclose.style.marginTop = 12; bagBox.Add(bclose);
 
             // เช้าที่บ้าน
-            morning = Overlay(out var mBox, 900);
+            morning = Overlay(out var mBox, 900); morningBox = mBox;
             morning.style.backgroundImage = Resources.Load<Texture2D>("UI/Frames/backdrop"); morning.style.backgroundSize = new BackgroundSize(BackgroundSizeType.Cover);
             mBox.style.borderTopWidth = mBox.style.borderBottomWidth = mBox.style.borderLeftWidth = mBox.style.borderRightWidth = 0;
             mBox.style.borderTopLeftRadius = mBox.style.borderTopRightRadius = mBox.style.borderBottomLeftRadius = mBox.style.borderBottomRightRadius = 0;
@@ -477,7 +477,18 @@ namespace CozyFishing
         public void RefreshMorning()
         {
             var s = Story.S;
-            morningBody.Clear();
+            morningRoot ??= morningBody; morningRoot.Clear(); morningBody = morningRoot;
+            bool hero = !Narrow;   // จอกว้าง: ภาพกระท่อมพรานด้านบน (HudMorningHero) · จอแคบ: หน้าสมุดแบบเดิม
+            MorningFrame(hero);
+            VisualElement goTarget = null;
+            if (hero)
+            {
+                BuildMorningHero(morningRoot, () => { if (goTarget != null) morningScroll.ScrollTo(goTarget); });
+                var rest = new VisualElement { pickingMode = PickingMode.Ignore }; rest.style.backgroundImage = JTex("page");
+                rest.style.unitySliceLeft = 110; rest.style.unitySliceRight = rest.style.unitySliceTop = rest.style.unitySliceBottom = 60;
+                rest.style.paddingTop = rest.style.paddingBottom = 34; rest.style.paddingLeft = 96; rest.style.paddingRight = 70; rest.style.marginTop = 10;
+                morningRoot.Add(rest); morningBody = rest;
+            }
             var brown = new Color(0.24f, 0.14f, 0.06f); var cream = new Color(1f, 0.93f, 0.78f);
             // สเก็ตช์ลายเส้นตามขอบหน้า (เลื่อนตามเนื้อหา)
             void Sketch(string tex, float? left, float? right, float top, float w, float h)
@@ -486,6 +497,7 @@ namespace CozyFishing
                 if (left != null) sk.style.left = left.Value; if (right != null) sk.style.right = right.Value;
                 sk.style.backgroundImage = JTex(tex); sk.style.backgroundSize = new BackgroundSize(BackgroundSizeType.Contain); sk.style.opacity = 0.45f;   // สเก็ตช์จาง ไม่แย่งสายตาจากตัวหนังสือ morningBody.Add(sk);
             }
+            if (!hero) {
             Sketch("sketch_fish_a", -20, null, 4, Narrow ? 110 : 150, Narrow ? 60 : 80);
             Sketch("sketch_fish_c", null, -10, 30, Narrow ? 100 : 140, Narrow ? 56 : 76);
             Sketch("sketch_fish_b", null, -16, Narrow ? 120 : 140, Narrow ? 96 : 130, Narrow ? 56 : 74);
@@ -516,6 +528,7 @@ namespace CozyFishing
             fest.style.paddingRight = Narrow ? 92 : 120; fest.style.overflow = Overflow.Visible;   // รูปสเก็ตช์ด่านเทศกาลหนีบคลิปทับมุมขวา
             var festPic = new VisualElement { pickingMode = PickingMode.Ignore }; Abs(festPic, null, Narrow ? -14 : -40, -20); festPic.style.width = Narrow ? 84 : 120; festPic.style.height = Narrow ? 100 : 144;
             festPic.style.backgroundImage = Weekly.Stage.id == "cave" ? JTex("prop_cave") : Weekly.Stage.Art; festPic.style.backgroundSize = new BackgroundSize(BackgroundSizeType.Contain); festPic.style.rotate = new Rotate(5); fest.Add(festPic);
+            }
             // ป้ายไม้: เงินเก็บ · ความสุขครอบครัว
             // สถานะ: ป้ายกระดาษกรอบหมึก (ไม่ใช่ไม้ ไม่ดูเป็นปุ่ม)
             var stats = new VisualElement { pickingMode = PickingMode.Ignore }; stats.style.marginTop = 12; stats.style.alignItems = Align.Center; stats.style.justifyContent = Justify.Center;
@@ -530,6 +543,7 @@ namespace CozyFishing
             Plaque("heart", $"ครอบครัว {(s.happy >= 75 ? "มีความสุข" : s.happy >= 40 ? "สบายดี" : "หิวโหย")} {s.happy}%", new Color(0.08f, 0.12f, 0.36f), "label_ink_blue");
             // ร้านโชห่วย: คันเบ็ด รอก เหยื่อ ของกันผี ของในบ้าน
             // ป้ายร้านเด่น ๆ: แผ่นไม้ส้มอุ่น รูปรอกสีจริง ชื่อร้าน + บรรทัดบอกว่ามีอะไรขาย · ไม่ให้ถูกบีบในรายการ
+            if (!hero) {
             var shopBtn = new Button(ShowShop) { text = "" }; WoodButton(shopBtn, true);
             shopBtn.style.alignSelf = Align.Center; shopBtn.style.flexShrink = 0; shopBtn.style.marginTop = 14; shopBtn.style.marginBottom = 4;
             shopBtn.style.flexDirection = FlexDirection.Row; shopBtn.style.alignItems = Align.Center; Pad(shopBtn, 12, 26); shopBtn.style.minWidth = Narrow ? 300 : 460;
@@ -568,6 +582,7 @@ namespace CozyFishing
                 var lb = L(eb, label, Narrow ? 18 : 21, new Color(0.24f, 0.11f, 0.03f)); lb.style.unityFontDefinition = fontTitle; lb.style.whiteSpace = WhiteSpace.Normal; lb.style.unityTextAlign = TextAnchor.MiddleCenter;
                 extra.Add(eb);
             }
+            }
             // เป้าหมายครอบครัว: กรอบไม้ไผ่บนกระดาษ + ภาพสเก็ตช์ของเป้าหมาย
             var g = Story.CurrentGoal;
             var gb = new VisualElement { pickingMode = PickingMode.Ignore }; Skin(gb, "bamboo_paper", 26); gb.style.paddingTop = 22; gb.style.paddingBottom = 24; gb.style.paddingLeft = 30; gb.style.paddingRight = 26;
@@ -597,7 +612,7 @@ namespace CozyFishing
             goBtn.style.textShadow = new TextShadow { offset = new Vector2(0, 2), blurRadius = 4, color = new Color(0.15f, 0.08f, 0.02f, 0.9f) };
             morningBody.Add(goBtn);
             var q = L(morningBody, "วันนี้จะไปตกปลาที่ไหน?", 34, new Color(0.3f, 0.17f, 0.06f)); q.style.marginTop = 22; q.style.unityFontDefinition = fontTitle;
-            goBtn.clicked += () => morningScroll.ScrollTo(q);
+            goBtn.clicked += () => morningScroll.ScrollTo(q); goTarget = q;
             for (int si = 0; si < Stages.All.Length; si++)
             {
                 var st = Stages.All[si];
@@ -655,6 +670,16 @@ namespace CozyFishing
                 }
             }
             MorningBackButton();
+        }
+
+        // กรอบหน้าเช้า: จอกว้างใช้ภาพกระท่อมเต็มกว้าง (ไม่มีกระดาษสมุดหุ้มรอบนอก ของวางบนสมุดซ่อน) · จอแคบใช้หน้าสมุดเดิม
+        void MorningFrame(bool hero)
+        {
+            var b = morningBox; if (b == null) return;
+            b.style.backgroundImage = hero ? new StyleBackground(StyleKeyword.None) : new StyleBackground(JTex("page"));
+            b.style.paddingTop = b.style.paddingBottom = hero ? 12 : 40; b.style.paddingLeft = hero ? 0 : 96; b.style.paddingRight = hero ? 0 : 70;
+            b.style.maxWidth = hero ? 1320 : 900;
+            foreach (var ch in b.Children()) if (ch != morningScroll) ch.style.display = hero ? DisplayStyle.None : DisplayStyle.Flex;
         }
 
         void MorningBackButton()

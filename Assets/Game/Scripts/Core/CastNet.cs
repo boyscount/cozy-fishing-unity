@@ -40,7 +40,7 @@ namespace CozyFishing
 
         // ---------- ฝูงปลา ----------
         /// ชนิดปลาที่ติดแหได้ในด่านนี้ (ปลาดาวเดียว) สุ่มตามโอกาสเจอ
-        public static List<FishSpecies> Pool(string stage) => FishDatabase.ForStage(stage).Where(s => s.stars <= 1 && !s.rare).ToList();
+        public static List<FishSpecies> Pool(string stage) => FishDatabase.Rod(stage).Where(s => s.stars <= 1 && !s.rare).ToList();
         public static FishSpecies PickSpecies(List<FishSpecies> pool, Random rng)
         {
             int sum = pool.Sum(s => Math.Max(1, s.chance)); int r = rng.Next(sum);

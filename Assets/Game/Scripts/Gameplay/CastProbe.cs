@@ -12,6 +12,8 @@ namespace CozyFishing
 #else
         static void CozyTestNote(string msg) { }
 #endif
+        /// ทดสอบ: เขียนข้อความลง document.body.dataset.cozyNote (บิลด์ release ตัด Debug.Log)
+        public static void Note(string msg) { Debug.Log(msg); CozyTestNote(msg); }
         public static void Run(IWorld w)
         {
             var p = w.Spawn;

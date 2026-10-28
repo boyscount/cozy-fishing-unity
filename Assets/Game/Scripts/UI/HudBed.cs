@@ -16,7 +16,7 @@ namespace CozyFishing
         {
             bed = new VisualElement { pickingMode = PickingMode.Position }; Abs(bed, 0, 0, 0, 0); root.Add(bed);
             bed.style.backgroundColor = new Color(0.05f, 0.04f, 0.035f);
-            bed.style.backgroundImage = Resources.Load<Texture2D>("UI/Frames/bedroom_bg"); bed.style.backgroundSize = new BackgroundSize(BackgroundSizeType.Cover);
+            WebArt.Load(this, "bedroom_bg.jpg", t => bed.style.backgroundImage = t); bed.style.backgroundColor = new Color(0.08f, 0.06f, 0.05f);   // ภาพห้องนอนโหลดจากหน้าเว็บ (ไม่นับรวมไฟล์เกม) bed.style.backgroundSize = new BackgroundSize(BackgroundSizeType.Cover);
             bed.style.justifyContent = Justify.Center; bed.style.alignItems = Align.Center;
             var brown = new Color(0.24f, 0.13f, 0.05f);
             var col = new VisualElement { pickingMode = PickingMode.Ignore }; col.style.alignItems = Align.Center; col.style.width = Length.Percent(92); col.style.maxWidth = 900; bed.Add(col);
