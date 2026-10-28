@@ -230,7 +230,7 @@ namespace CozyFishing
         void Hands(float dt)
         {
             if (cur == null) return;
-            var camP = cur.mouth + cur.inward * 0.95f + Vector3.up * 0.3f;   // inward ชี้ไปกลางบ่อ → กล้องอยู่ฝั่งน้ำ มองเข้าหาตลิ่ง
+            var camP = cur.mouth + cur.inward * 0.52f + Vector3.up * 0.28f;   // แขนยาว ~0.5 ม. → กล้อง (ไหล่) ต้องใกล้ปากโพรงพอให้มือเอื้อมถึง   // inward ชี้ไปกลางบ่อ → กล้องอยู่ฝั่งน้ำ มองเข้าหาตลิ่ง
             camP.y = Mathf.Min(camP.y, c.world.WaterY - 0.07f);
             var look = cur.mouth + cur.normal * 0.05f;
             UnderwaterView.GrabCam = camP; UnderwaterView.GrabLook = look;
@@ -245,6 +245,7 @@ namespace CozyFishing
             var jit = new Vector3(Mathf.Sin(Time.time * 29), Mathf.Sin(Time.time * 23 + 1), Mathf.Cos(Time.time * 31)) * 0.03f * sh;
             var hl = Vector3.Lerp(start - right * 0.13f, inside - right * 0.07f, reach) + jit;
             var hr = Vector3.Lerp(start + right * 0.13f, inside + right * 0.07f, reach) - jit;
+            if (FishingController.Bot && Time.frameCount % 45 == 0) CastProbe.Note("arms " + arms.Debug(hl) + $" cam2mouth={Vector3.Distance(camP, cur.mouth):0.00} reach01={reach:0.00}");
             try { arms.Pose(camP, fw, hl, hr, phase == Phase.Grip ? -1f : phase == Phase.Feel ? 0.2f : 1f, RollDeg); }
             catch (System.Exception e) { CastProbe.Note("fparms pose fail: " + e.GetType().Name + " " + e.Message); arms.Active = false; arms = null; armsFailed = true; }
         }

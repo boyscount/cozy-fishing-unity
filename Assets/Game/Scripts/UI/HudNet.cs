@@ -10,6 +10,7 @@ namespace CozyFishing
     public partial class Hud
     {
         VisualElement netRow, netGauge, netGood, netPerfect, netMark, netHaul, netBeat, netResultEl, netResultBody, netBtn;
+        Button netCancel;
         VisualElement[] netKnots; Label netPopL, netCountL, netBtnBadge; float netPopUntil; bool netCanToggle;
 
         void BuildNet()
@@ -55,6 +56,8 @@ namespace CozyFishing
             if (Time.time < netPopUntil) netPopL.style.scale = new Scale(Vector3.one * (1f + 0.25f * Mathf.Clamp01((netPopUntil - Time.time - 0.7f) / 0.3f)));
             bool swing = show && n != null && n.Swinging, haul = show && n != null && n.Hauling;
             netRow.style.display = swing || haul ? DisplayStyle.Flex : DisplayStyle.None;
+            if (netCancel == null) { netCancel = new Button(() => GameInput.PullButton = true) { text = "ยกเลิก" }; WoodButton(netCancel, true); netCancel.style.position = Position.Absolute; netCancel.style.right = TouchUi ? 300 : 230; netCancel.style.bottom = TouchUi ? 70 : 50; netCancel.style.fontSize = 24; root.Add(netCancel); }
+            netCancel.style.display = swing ? DisplayStyle.Flex : DisplayStyle.None;   // ยกเลิกทอดแหระหว่างแกว่ง
             if (!swing && !haul) return;
             netGauge.style.display = swing ? DisplayStyle.Flex : DisplayStyle.None;
             netHaul.style.display = haul ? DisplayStyle.Flex : DisplayStyle.None;

@@ -20,7 +20,7 @@ namespace CozyFishing
                 case FishState.Grabbing: hud.Hint(""); hud.ActionLabel(c.grab.phase == GrabPlay.Phase.Feel ? "จับ!" : "", false, "hand"); break;
                 case FishState.Free when CastNet.Using: hud.Hint(touch ? $"ถือแหอยู่ · รอฝูงปลาผุดน้ำ แล้วกดค้างแกว่งแห ปล่อยตอนเข็มเข้าช่องเขียว (เหลือ {CastNet.ThrowsLeft} ครั้ง)" : $"ถือแหอยู่ · รอฝูงปลาผุดน้ำ แล้วกด E ค้างแกว่งแห ปล่อยตอนเข็มเข้าช่องเขียว (เหลือ {CastNet.ThrowsLeft} ครั้ง)"); hud.ActionLabel("", false, "net"); break;
                 case FishState.Netting:
-                    hud.Hint(touch ? "" : c.net.Swinging ? "ปล่อยตอนเข็มเข้าช่องเขียว · วงทองต้องครอบฝูงปลา" : c.net.Hauling ? "สาวแห! แตะตอนวงสว่าง" : "");   // มือถือ: เกจทอดแหมีคำบอกในตัวแล้ว ไม่ซ้อนป้ายคำแนะนำ
+                    hud.Hint(touch ? "" : c.net.Swinging ? "ปล่อยตอนเข็มเข้าช่องเขียว · วงทองต้องครอบฝูงปลา · Q/คลิกขวา = ยกเลิก" : c.net.Hauling ? "สาวแห! แตะตอนวงสว่าง" : "");   // มือถือ: เกจทอดแหมีคำบอกในตัวแล้ว ไม่ซ้อนป้ายคำแนะนำ
                     hud.ActionLabel(c.net.Hauling ? "สาว!" : "", false, c.net.Hauling ? "reelin" : "net"); break;
                 case FishState.Free: hud.Hint(touch ? "กดค้างปุ่มเหวี่ยงเพื่อเล็ง · ลากจอเพื่อหมุนกล้อง" : "คลิกค้าง / กด E ค้าง เพื่อเล็ง · ปล่อยเพื่อเหวี่ยง\nWASD เดิน · Space กระโดด · คลิกขวาลาก หมุนกล้อง · ล้อเมาส์ ซูม"); hud.ActionLabel("", false, "cast"); break;
                 case FishState.Charging: hud.Hint(""); hud.ActionLabel("", true, "cast"); break;

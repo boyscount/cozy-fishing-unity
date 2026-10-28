@@ -96,6 +96,7 @@ namespace CozyFishing
             switch (phase)
             {
                 case Phase.Swing:
+                    if (GameInput.PullPressed) { c.hud.Toast("เก็บแหไว้ก่อน ยังไม่เสียครั้งทอด"); End(); return; }   // ยกเลิกระหว่างแกว่ง (Q / คลิกขวา / ปุ่มบนจอ) · ยังไม่นับครั้ง
                     charge = Mathf.Min(1, charge + dt / 1.6f);
                     needle = CastNet.Needle(pt);
                     var f = c.player.Forward; float d = MinDist + charge * (MaxDist - MinDist);

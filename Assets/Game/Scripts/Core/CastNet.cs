@@ -10,7 +10,7 @@ namespace CozyFishing
     public static class CastNet
     {
         public const string Id = "net_cast";
-        public const int ThrowsPerDay = 5;
+        public const int ThrowsPerDay = 10;   // เดิม 5
         static readonly string[] Stages = { "paddy" };
 
         static StoryState S => Story.S;
@@ -36,7 +36,7 @@ namespace CozyFishing
         }
         /// แหกางกี่ส่วน: เต็มวง / ค่อนวง / พับครึ่ง
         public static float Open(Grade g) => g == Grade.Perfect ? 1f : g == Grade.Good ? 0.72f : 0.4f;
-        public const float FullRadius = 2.3f;   // รัศมีแหกางเต็มวง (ม.)
+        public const float FullRadius = 3.1f;   // รัศมีแหกางเต็มวง (ม.) · เดิม 2.3
 
         // ---------- ฝูงปลา ----------
         /// ชนิดปลาที่ติดแหได้ในด่านนี้ (ปลาดาวเดียว) สุ่มตามโอกาสเจอ

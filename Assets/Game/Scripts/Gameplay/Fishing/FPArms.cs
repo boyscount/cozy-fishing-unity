@@ -68,12 +68,16 @@ namespace CozyFishing
             for (int i = 0; i < all.Length; i++) all[i].localRotation = rest[i];
             var fw = camFwd; fw.y = 0; fw = fw.sqrMagnitude > 1e-4f ? fw.normalized : Vector3.forward;
             go.transform.rotation = Quaternion.LookRotation(fw, Vector3.up);
+            var rgt = Vector3.Cross(Vector3.up, fw);
+            if (Vector3.Dot(L.up.position - R.up.position, rgt) > 0) go.transform.rotation = Quaternion.LookRotation(-fw, Vector3.up);   // โมเดลหันกลับด้าน: หมุน 180° ให้ไหล่ซ้ายอยู่ซ้ายจอ
             // ไหล่ทั้งสองอยู่ใต้กล้อง ~18 ซม. ถอยหลังนิด → แขนโผล่จากขอบล่างจอ
             var mid = (L.up.position + R.up.position) * 0.5f;
             go.transform.position += camPos - Vector3.up * 0.2f - fw * 0.08f - mid;
+            // มือเอื้อมไม่ถึงเป้า: เลื่อนไหล่ไปหน้าเท่าที่ขาด (ไม่เกิน 25 ซม. ไหล่ยังอยู่ใต้กล้อง ไม่โผล่ให้เห็น)
+            float need = Mathf.Max(Vector3.Distance(L.up.position, handL) - (L.a + L.b) * 0.92f, Vector3.Distance(R.up.position, handR) - (R.a + R.b) * 0.92f);
+            if (need > 0) go.transform.position += fw * Mathf.Min(need, 0.25f);
             var right = Vector3.Cross(Vector3.up, fw);
-            if (Vector3.Dot(L.up.position - R.up.position, right) > 0) { var tmp = handL; handL = handR; handR = tmp; }   // โมเดลหันกลับด้าน: ไหล่ "ซ้าย" อยู่ขวาจอ → สลับเป้า ไม่ให้แขนไขว้
-            float lo = Vector3.Dot(L.up.position - R.up.position, right) > 0 ? 1 : -1;   // ฝั่งจอของไหล่ "ซ้าย" (ศอกกางออกด้านนอกเสมอ)
+            float lo = -1;   // ไหล่ซ้ายอยู่ซ้ายจอเสมอ (หมุนโมเดลไว้แล้ว)
             Solve(L, handL, L.up.position + right * (0.35f * lo) - Vector3.up * 0.25f, curl, roll);
             Solve(R, handR, R.up.position - right * (0.35f * lo) - Vector3.up * 0.25f, curl, -roll);
         }
@@ -113,6 +117,7 @@ namespace CozyFishing
                 }
         }
 
+        public string Debug(Vector3 tl) => $"reach={L.a + L.b:0.00} dist={Vector3.Distance(L.up.position, tl):0.00} Lx={Vector3.Dot(L.up.position - R.up.position, go.transform.right):0.00} scale={scale:0.000}";
         public void Destroy() { if (go) Object.Destroy(go); }
     }
 }

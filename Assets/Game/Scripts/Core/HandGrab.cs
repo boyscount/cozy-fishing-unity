@@ -8,7 +8,7 @@ namespace CozyFishing
     //   งมได้วันละ PerDay โพรง · แผลที่มือสะสม → ช่องเขียวตอนบีบแคบลง · แผลเต็ม = พักก่อน หายเองวันรุ่งขึ้น
     public static class HandGrab
     {
-        public const int PerDay = 6, MaxWound = 3;
+        public const int PerDay = 12, MaxWound = 3;   // งมได้วันละ 12 โพรง (เดิม 6)
         public enum Kind { Fish, Crab, Clam, Thorn, Glass, Relic, Empty }
         public class Find { public Kind kind; public FishSpecies sp; public float kg; public int cm; public string feel; }
 
